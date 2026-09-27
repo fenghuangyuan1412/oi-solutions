@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P14357 拼数 · 计数排序分步演示</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:20px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:16px 18px; margin-bottom:16px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 14px; font-size:14px; cursor:pointer; margin-right:8px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  input[type=text] { background:#0d1020; color:var(--ink); border:1px solid #3d4778;
+                     border-radius:8px; padding:8px 10px; font:14px/1.4 Consolas,monospace; width:280px; }
+  .chars { display:flex; flex-wrap:wrap; gap:6px; }
+  .ch { width:34px; height:40px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+        border-radius:7px; background:#232a4a; border:1px solid #333c66; font:16px Consolas,monospace; }
+  .ch.digit { border-color:#4b5aa8; }
+  .ch.letter { color:#6b7396; background:#171b2e; text-decoration:line-through; }
+  .ch.active { outline:2px solid var(--acc); outline-offset:1px; transform:translateY(-3px); }
+  .ch .k { font-size:9px; color:var(--dim); margin-top:2px; }
+  .buckets { display:flex; align-items:flex-end; gap:12px; height:130px; padding-top:8px; }
+  .b { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
+  .bar { width:100%; background:linear-gradient(180deg,var(--acc),#0891b2); border-radius:5px 5px 0 0;
+         min-height:2px; transition:height .25s ease; }
+  .b .n { font-size:15px; font-weight:700; margin-bottom:4px; }
+  .b .d { font-size:13px; color:var(--dim); margin-top:6px; }
+  .b.hot .d { color:var(--acc); font-weight:700; }
+  .out { font:26px/1.3 Consolas,monospace; word-break:break-all; letter-spacing:1px; min-height:36px; }
+  .out .new { color:var(--acc); }
+  .note { color:var(--dim); font-size:14px; min-height:44px; }
+  .note b { color:var(--ink); }
+  .tag { display:inline-block; padding:1px 8px; border-radius:20px; font-size:12px; margin-right:6px; }
+  .tag.digit { background:#173a4a; color:var(--ok); }
+  .tag.letter { background:#4a1c1c; color:var(--warn); }
+  .row { display:flex; gap:16px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:300px; }
+  .prog { color:var(--dim); font-size:13px; margin-left:auto; }
+  .topbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+</style>
+</head>
+<body>
+<h1>P14357 [CSP-J 2025] 拼数</h1>
+<div class="sub">把字符串里的数字挑出来，用 10 个计数桶完成降序输出 —— 计数排序的最小实例</div>
+
+<div class="topbar">
+  <input type="text" id="src" value="290es1q0" maxlength="200">
+  <button id="load">载入</button>
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到输出</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="card"><h2>① 扫描：逐字符判断是否为数字</h2>
+  <div class="chars" id="chars"></div>
+</div>
+
+<div class="card"><h2>② 计数桶 cnt[0..9]</h2>
+  <div class="buckets" id="buckets"></div>
+</div>
+
+<div class="row">
+  <div class="card"><h2>③ 输出：从 9 到 0 依次打印</h2>
+    <div class="out" id="out"></div>
+  </div>
+  <div class="card" style="flex:1.4"><h2>讲解</h2>
+    <div class="note" id="note"></div>
+  </div>
+</div>
+
+<script>
+let S = '', steps = [], t = 0, timer = null;
+
+function build() {
+  steps = [{ kind:'init' }];
+  const cnt = new Array(10).fill(0);
+  for (let i = 0; i < S.length; i++) {
+    const c = S[i];
+    if (c >= '0' && c <= '9') { cnt[+c]++; steps.push({ kind:'scan', i, cnt:[...cnt] }); }
+    else steps.push({ kind:'scan', i, cnt:[...cnt] });
+  }
+  const out = [];
+  for (let d = 9; d >= 0; d--) {
+    while (cnt[d] > 0) { cnt[d]--; out.push(d); steps.push({ kind:'emit', d, cnt:[...cnt], out:[...out] }); }
+  }
+  steps.push({ kind:'done', out:[...out] });
+}
+
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+
+function render() {
+  const st = steps[t];
+  const charsBox = document.getElementById('chars');
+  charsBox.innerHTML = '';
+  for (let i = 0; i < S.length; i++) {
+    const c = S[i], isD = c >= '0' && c <= '9';
+    const box = el('div', 'ch ' + (isD ? 'digit' : 'letter') + (st.kind === 'scan' && st.i === i ? ' active' : ''));
+    box.appendChild(el('span', null, c));
+    box.appendChild(el('span', 'k', isD ? c - 48 : '跳过'));
+    charsBox.appendChild(box);
+  }
+
+  const cnt = st.cnt || new Array(10).fill(0);
+  const max = Math.max(1, ...cnt);
+  const bb = document.getElementById('buckets');
+  bb.innerHTML = '';
+  for (let d = 0; d <= 9; d++) {
+    const col = el('div', 'b' + (st.kind === 'emit' && st.d === d ? ' hot' : ''));
+    col.appendChild(el('div', 'n', cnt[d]));
+    const bar = el('div', 'bar'); bar.style.height = (cnt[d] / max * 78) + 'px';
+    col.appendChild(bar); col.appendChild(el('div', 'd', d));
+    bb.appendChild(col);
+  }
+
+  const outArr = st.out || [];
+  const ob = document.getElementById('out');
+  ob.innerHTML = '';
+  outArr.forEach((d, i) => {
+    const s = el('span', i === outArr.length - 1 && st.kind === 'emit' ? 'new' : '', d);
+    ob.appendChild(s);
+  });
+  if (!outArr.length) ob.innerHTML = '<span style="color:#8b93b5;font-size:16px">（还没开始输出）</span>';
+
+  const note = document.getElementById('note');
+  const prog = document.getElementById('prog');
+  const N = i => `<span class="tag ${i}">${i === 'digit' ? '数字' : '字母'}</span>`;
+  if (st.kind === 'init') note.innerHTML = `输入串 <b>${S}</b>。目标：挑出全部数字并拼成最大正整数。注意串里混有小写字母，必须跳过。`;
+  else if (st.kind === 'scan') {
+    const c = S[st.i], isD = c >= '0' && c <= '9';
+    note.innerHTML = `第 ${st.i} 位：<b>${c}</b> ${isD ? N('digit') + `是数字，下标 <b>'${c}'-'0' = ${c - 48}</b>，令 cnt[${c - 48}]++ → <b>${st.cnt[+c]}</b>` : N('letter') + `不是数字。<b>'${c}'-'0' = ${c - 48}</b> 超出 0~9 —— 原稿在此处写穿数组，必须跳过`}`;
+  }
+  else if (st.kind === 'emit') note.innerHTML = `从高位桶往低位桶取：数字 <b>${st.d}</b> 还有剩余，输出一个 <b>${st.d}</b>。当前已拼出 <b>${st.out.join('')}</b>`;
+  else note.innerHTML = `完成。答案 <b>${st.out.join('')}</b> —— 位数用满（引理 1），且每一位都不小于后一位（引理 2 交换论证）。`;
+  prog.textContent = `步骤 ${t + 1} / ${steps.length}`;
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === steps.length - 1;
+}
+
+function load() {
+  S = document.getElementById('src').value.trim();
+  if (!S) return;
+  t = 0; build(); render();
+}
+
+document.getElementById('next').onclick = () => { if (t < steps.length - 1) { t++; render(); } };
+document.getElementById('prev').onclick = () => { if (t > 0) { t--; render(); } };
+document.getElementById('load').onclick = load;
+document.getElementById('jump').onclick = () => {
+  t = steps.findIndex(s => s.kind === 'emit');
+  if (t < 0) t = steps.length - 1;
+  render();
+};
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+  e.target.textContent = '⏸ 暂停';
+  timer = setInterval(() => {
+    if (t >= steps.length - 1) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+    t++; render();
+  }, 420);
+};
+
+load();
+</script>
+</body>
+</html>

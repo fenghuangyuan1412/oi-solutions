@@ -16,10 +16,16 @@
 | 数据结构 | 0 | [solutions/ds](solutions/ds) |
 | 图论 | 0 | [solutions/graph](solutions/graph) |
 | 搜索 | 0 | [solutions/search](solutions/search) |
-| 贪心 | 0 | [solutions/greedy](solutions/greedy) |
+| 贪心 | 1 | [solutions/greedy](solutions/greedy) |
 | 数学 | 0 | [solutions/math](solutions/math) |
 | 字符串 | 0 | [solutions/string](solutions/string) |
 | 计算几何 | 0 | [solutions/geometry](solutions/geometry) |
+
+### 题目列表
+
+| 题号 | 题目 | 主题 | 核心思想 | 可视化 |
+| --- | --- | --- | --- | --- |
+| [P14357](https://www.luogu.com.cn/problem/P14357) | [CSP-J 2025] 拼数 | 贪心 / 计数排序 | 位数用满 + 降序交换论证 | [html](solutions/greedy/p14357-number/visualization.html) |
 
 ## 单题格式
 
