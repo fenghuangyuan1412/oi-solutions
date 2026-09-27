@@ -16,7 +16,7 @@
 | 数据结构 | 0 | [solutions/ds](solutions/ds) |
 | 图论 | 0 | [solutions/graph](solutions/graph) |
 | 搜索 | 0 | [solutions/search](solutions/search) |
-| 贪心 | 1 | [solutions/greedy](solutions/greedy) |
+| 贪心 | 2 | [solutions/greedy](solutions/greedy) |
 | 数学 | 0 | [solutions/math](solutions/math) |
 | 字符串 | 0 | [solutions/string](solutions/string) |
 | 计算几何 | 0 | [solutions/geometry](solutions/geometry) |
@@ -27,6 +27,7 @@
 | --- | --- | --- | --- | --- |
 | [P14357](https://www.luogu.com.cn/problem/P14357) | [CSP-J 2025] 拼数 | 贪心 / 计数排序 | 位数用满 + 降序交换论证 | [html](solutions/greedy/p14357-number/visualization.html) |
 | [P14358](https://www.luogu.com.cn/problem/P14358) | [CSP-J 2025] 座位 | 基础 / 模拟·排序 | 名次 k → 列 ceil(k/n)，行按列号奇偶翻转 | [html](solutions/basic/p14358-seat/visualization.html) |
+| [P14359](https://www.luogu.com.cn/problem/P14359) | [CSP-J 2025] 异或和 | 贪心 / 前缀异或 | 前缀异或配对 + 最多不相交区间最早结束贪心 | [html](solutions/greedy/p14359-xor/visualization.html) |
 
 ## 单题格式
 

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P14359 [CSP-J 2025] 异或和 · 前缀异或 + 贪心扫描可视化</title>
+<style>
+  :root { --bg:#12161c; --fg:#e6edf3; --mut:#8b98a5; --line:#2b333d; --acc:#f0883e; --ok:#3fb950; --bad:#f85149; --blue:#a5d6ff; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:20px; background:var(--bg); color:var(--fg);
+         font:15px/1.6 "Segoe UI","Microsoft YaHei",sans-serif; }
+  h1 { font-size:19px; margin:0 0 4px; }
+  h2 { font-size:15px; margin:22px 0 8px; color:var(--acc); }
+  .sub { color:var(--mut); font-size:13px; margin-bottom:16px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px; }
+  label { color:var(--mut); font-size:13px; }
+  input[type=number], input[type=text] { padding:5px 7px; background:#1b222a; color:var(--fg);
+    border:1px solid var(--line); border-radius:5px; font-size:14px; }
+  #src { width:320px; }
+  #k { width:80px; }
+  button { padding:5px 11px; background:#21283b; color:var(--fg); border:1px solid var(--line);
+           border-radius:5px; cursor:pointer; font-size:13px; }
+  button:hover { border-color:var(--acc); }
+  .cells { display:flex; gap:6px; flex-wrap:wrap; }
+  .cell { min-width:56px; text-align:center; border:1px solid var(--line); border-radius:6px;
+          padding:5px 4px; background:#1b222a; }
+  .cell .v { font-size:16px; font-weight:700; }
+  .cell .l { font-size:11px; color:var(--mut); }
+  .cell.cur { border-color:var(--acc); box-shadow:0 0 0 1px var(--acc); }
+  .cell.taken { background:#26331f; border-color:var(--ok); }
+  .cell.dim { opacity:.4; }
+  .kv { display:inline-block; background:#0d1117; border:1px solid var(--line); border-radius:5px;
+        padding:2px 8px; margin:2px 4px 2px 0; font-size:13px; }
+  .kv b { color:var(--blue); }
+  table { border-collapse:collapse; font-size:13px; }
+  th, td { border:1px solid var(--line); padding:4px 9px; text-align:center; }
+  th { background:#1b222a; color:var(--mut); }
+  tr.hot { background:#26331f; }
+  tr.now { outline:1px solid var(--acc); }
+  .panel { background:#1b222a; border:1px solid var(--line); border-radius:8px;
+           padding:12px 14px; margin-top:8px; }
+  code { background:#0d1117; padding:2px 6px; border-radius:4px; color:var(--blue); font-size:13px; }
+  .badge { padding:2px 9px; border-radius:20px; font-size:12px; }
+  .ok { background:rgba(63,185,80,.16); color:var(--ok); }
+  .bad { background:rgba(248,81,73,.16); color:var(--bad); }
+  .mut { color:var(--mut); font-size:13px; }
+</style>
+</head>
+<body>
+<h1>P14359 [CSP-J 2025] 异或和 · 逐步扫描演示</h1>
+<div class="sub">从左到右扫右端点 $i$：<code>x = sum[i] ^ k</code>，若 <code>d[x] &gt;= lst</code> 就立刻收割一个区间。<span style="color:var(--ok)">绿色</span>为已选区间覆盖的位置。</div>
+
+<div class="row">
+  <label>k =</label><input type="number" id="k" value="2" min="0">
+  <label>a 序列</label><input type="text" id="src" value="2 1 0 3">
+</div>
+<div class="row">
+  <button id="load">计算</button>
+  <button data-s="0">样例 1</button>
+  <button data-s="1">样例 2</button>
+  <button data-s="2">样例 3</button>
+  <button id="rand">随机数据</button>
+</div>
+<div class="row">
+  <button id="prev">上一步</button>
+  <button id="next">下一步</button>
+  <button id="play">自动播放</button>
+  <button id="jump">直接到底</button>
+  <span class="mut" id="stepInfo"></span>
+</div>
+
+<h2>序列与前缀异或</h2>
+<div class="cells" id="arr"></div>
+<div class="mut" style="margin:6px 0 2px">sum[i] = a1^…^ai</div>
+<div class="cells" id="pre"></div>
+
+<h2>当前这一步发生了什么</h2>
+<div class="panel" id="now"></div>
+
+<h2>d 表（前缀值 → 最近出现下标）</h2>
+<div class="panel" id="dtab"></div>
+
+<h2>扫描日志</h2>
+<div class="panel" style="overflow-x:auto"><table id="log"></table></div>
+
+<h2>交叉验证</h2>
+<div class="panel" id="check"></div>
+
+<script>
+const SAMPLES = [
+  { k: 2, a: '2 1 0 3', out: 2 },
+  { k: 3, a: '2 1 0 3', out: 2 },
+  { k: 0, a: '2 1 0 3', out: 1 },
+];
+
+let A = [], K = 0, trace = [], step = 0, timer = null;
+
+// 移植 solution.cpp 的贪心，同时记录每一步的完整现场
+function runGreedy(a, k) {
+  const n = a.length;
+  const sum = [0];
+  for (let i = 1; i <= n; i++) sum[i] = sum[i - 1] ^ a[i - 1];
+  const d = new Map();
+  d.set(0, 0);
+  let lst = 0, ans = 0;
+  const tr = [];
+  for (let i = 1; i <= n; i++) {
+    const x = sum[i] ^ k;
+    const dx = d.has(x) ? d.get(x) : -1;
+    const lstBefore = lst;
+    const hit = dx >= lst;
+    if (hit) { ans++; lst = i; }
+    d.set(sum[i], i);
+    tr.push({ i, sum: sum[i], x, dx, lstBefore, hit, ans, lst,
+              left: hit ? dx + 1 : null, right: hit ? i : null,
+              dSnapshot: new Map(d) });
+  }
+  return { ans, sum, trace: tr };
+}
+
+// 独立实现：O(n^2) 区间调度 DP，给出真最优值
+function dpBrute(a, k) {
+  const n = a.length;
+  const sum = [0];
+  for (let i = 1; i <= n; i++) sum[i] = sum[i - 1] ^ a[i - 1];
+  const f = new Array(n + 1).fill(0);
+  for (let i = 1; i <= n; i++) {
+    f[i] = f[i - 1];
+    for (let l = 1; l <= i; l++)
+      if ((sum[i] ^ sum[l - 1]) === k) f[i] = Math.max(f[i], f[l - 1] + 1);
+  }
+  return f[n];
+}
+
+function covered() {
+  const set = new Set();
+  for (let t = 0; t < step; t++) {
+    const s = trace[t];
+    if (s.hit) for (let p = s.left; p <= s.right; p++) set.add(p);
+  }
+  return set;
+}
+
+function render() {
+  const n = A.length;
+  const cov = covered();
+  const curI = step > 0 ? trace[step - 1].i : 0;
+
+  let h = '';
+  for (let i = 1; i <= n; i++) {
+    const cls = ['cell'];
+    if (cov.has(i)) cls.push('taken');
+    if (i === curI) cls.push('cur');
+    if (i > step) cls.push('dim');
+    h += `<div class="${cls.join(' ')}"><div class="v">${i > step ? '?' : A[i - 1]}</div><div class="l">a<sub>${i}</sub></div></div>`;
+  }
+  document.getElementById('arr').innerHTML = h;
+
+  const res = runGreedy(A, K);
+  h = `<div class="cell"><div class="v">${res.sum[0]}</div><div class="l">sum<sub>0</sub></div></div>`;
+  for (let i = 1; i <= n; i++) {
+    const cls = ['cell'];
+    if (i > step) cls.push('dim');
+    if (i === curI) cls.push('cur');
+    h += `<div class="${cls.join(' ')}"><div class="v">${i > step ? '?' : res.sum[i]}</div><div class="l">sum<sub>${i}</sub></div></div>`;
+  }
+  document.getElementById('pre').innerHTML = h;
+
+  const now = document.getElementById('now');
+  if (step === 0) {
+    now.innerHTML = `<span class="mut">初始状态：${'' } <code>d[0] = 0</code>（空前缀在下标 0），<code>lst = 0</code>，<code>ans = 0</code>。点「下一步」开始扫描。</span>`;
+  } else {
+    const s = trace[step - 1];
+    now.innerHTML =
+      `<div>右端点 <code>i = ${s.i}</code>，<code>sum[i] = ${s.sum}</code></div>` +
+      `<div>要找的前缀值 <code>x = sum[i] ^ k = ${s.sum} ^ ${K} = ${s.x}</code></div>` +
+      `<div>该值最近出现在下标 <code>d[x] = ${s.dx}</code>，当前门槛 <code>lst = ${s.lstBefore}</code>（判断用的是收割前的 lst）</div>` +
+      (s.hit
+        ? `<div style="color:var(--ok)">✔ <code>d[x] &gt;= lst</code> 成立 → 收割区间 <code>[${s.left}, ${s.right}]</code>（异或和 = ${K}），<code>ans = ${s.ans}</code>，<code>lst = ${s.lst}</code></div>`
+        : `<div style="color:var(--bad)">✘ <code>d[x] = ${s.dx} &lt; lst = ${s.lst}</code> → 左端点会被上一个区间覆盖（或该值未出现），跳过。随后登记 <code>d[${s.sum}] = ${s.i}</code></div>`) +
+      `<div class="mut" style="margin-top:6px">注意 <code>d[sum[i]] = i</code> 一定在判断之后执行：若 k = 0，则 x = sum[i]，提前登记会让自己匹配自己，凭空造出长度为 0 的区间。</div>`;
+  }
+
+  const snap = step > 0 ? trace[step - 1].dSnapshot : new Map([[0, 0]]);
+  const entries = [...snap.entries()].sort((x, y) => x[0] - y[0]);
+  document.getElementById('dtab').innerHTML = entries.length
+    ? entries.map(([v, idx]) => `<span class="kv">d[<b>${v}</b>] = ${idx}</span>`).join('')
+    : '<span class="mut">（空）</span>';
+
+  let lg = '<tr><th>i</th><th>sum[i]</th><th>x=sum[i]^k</th><th>d[x]</th><th>命中?</th><th>选出区间</th><th>ans</th><th>lst</th></tr>';
+  for (let t = 0; t < Math.min(step, trace.length); t++) {
+    const s = trace[t];
+    lg += `<tr class="${t === step - 1 ? 'hot' : ''}"><td>${s.i}</td><td>${s.sum}</td><td>${s.x}</td>` +
+          `<td>${s.dx}</td><td>${s.hit ? '是' : '否'}</td>` +
+          `<td>${s.hit ? '[' + s.left + ', ' + s.right + ']' : '—'}</td><td>${s.ans}</td><td>${s.lst}</td></tr>`;
+  }
+  document.getElementById('log').innerHTML = lg;
+
+  document.getElementById('stepInfo').textContent = `已扫描 ${step} / ${n} 个右端点，当前 ans = ${step ? trace[step - 1].ans : 0}`;
+
+  const full = step === n;
+  const g = runGreedy(A, K).ans, b = dpBrute(A, K);
+  document.getElementById('check').innerHTML = full
+    ? `贪心扫描结果 <code>${g}</code> ｜ 独立 O(n²) 区间 DP 最优解 <code>${b}</code> ` +
+      `<span class="badge ${g === b ? 'ok' : 'bad'}">${g === b ? '一致，贪心确实最优' : '不一致！'}</span>` +
+      `<br><span class="mut">官方样例期望值见按钮，可直接比对。</span>`
+    : `<span class="mut">扫描到第 ${step} 步。走到最后一步后，这里会用 O(n²) DP 复核贪心结果。</span>`;
+}
+
+function compute() {
+  K = Math.max(0, +document.getElementById('k').value || 0);
+  A = document.getElementById('src').value.trim().split(/[\s,]+/).map(Number).filter(v => !Number.isNaN(v));
+  if (!A.length) A = [0];
+  trace = runGreedy(A, K).trace;
+  step = A.length;
+  render();
+}
+
+document.getElementById('load').onclick = compute;
+document.querySelectorAll('[data-s]').forEach(btn => btn.onclick = () => {
+  const s = SAMPLES[+btn.dataset.s];
+  document.getElementById('k').value = s.k;
+  document.getElementById('src').value = s.a;
+  compute();
+  document.getElementById('check').innerHTML +=
+    `<br><span class="mut">该组官方期望输出 <code>${s.out}</code></span>`;
+});
+// 任何异常都显式写进页面，避免"静默失败 + 显示旧数据"
+window.onerror = (msg) => {
+  document.getElementById('stepInfo').innerHTML =
+    `<span style="color:var(--bad)">脚本异常：${msg}</span>`;
+};
+document.getElementById('rand').onclick = () => {
+  const n = 6 + ((Math.random() * 8) | 0);
+  const bits = [1, 2, 3, 4][(Math.random() * 4) | 0];
+  A = Array.from({ length: n }, () => (Math.random() * (1 << bits)) | 0);
+  document.getElementById('src').value = A.join(' ');
+  document.getElementById('k').value = (Math.random() * (1 << bits)) | 0;
+  compute();
+};
+document.getElementById('prev').onclick = () => { step = Math.max(0, step - 1); render(); };
+document.getElementById('next').onclick = () => { step = Math.min(A.length, step + 1); render(); };
+document.getElementById('jump').onclick = () => { step = A.length; render(); };
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '自动播放'; return; }
+  step = 0; e.target.textContent = '停止';
+  timer = setInterval(() => {
+    if (step >= A.length) { clearInterval(timer); timer = null; e.target.textContent = '自动播放'; return; }
+    step++; render();
+  }, 700);
+};
+
+compute();
+</script>
+</body>
+</html>
