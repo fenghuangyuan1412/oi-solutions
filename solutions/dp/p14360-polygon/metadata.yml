@@ -1,0 +1,38 @@
+id: P14360
+title: "[CSP-J 2025] 多边形 / polygon"
+source: luogu
+url: https://www.luogu.com.cn/problem/P14360
+topics: [dp/knapsack-counting, math/modular-arithmetic, greedy/extreme-anchoring]
+difficulty: 普及+/提高
+tags: [01背包计数, 补集转化, 排序, 快速幂]
+complexity:
+  time: O(n * max_a)
+  space: O(max_a)
+status: 算法已对拍验证（600 组随机 + 官方样例 + 8 组临界），未实机编译评测
+visualization: true
+samples:
+  - in: |
+      5
+      1 2 3 4 5
+    out: "9"
+  - in: |
+      5
+      2 2 3 8 10
+    out: "6"
+data_range: "3 <= n <= 5000, 1 <= a_i <= 5000, mod 998244353"
+verification:
+  brute_force_agreement: "600/600 随机 (n=3..10, a_i<=25)"
+  edge_cases_checked:
+    - "[5,5,10] 三点共线临界 -> 0"
+    - "[5,5,9]  刚好可拼   -> 1"
+    - "[1,1,1,1,1,1,1,1] 全为1 -> 219"
+    - "[1,2,3,5,8,13,21,34] 斐波那契退化 -> 69"
+    - "[3,3,3,3,3,3] 全等边 -> 42"
+    - "[1,1,1,1,40,40] 两个超大 -> 20"
+    - "[1,1,2,5,50,50,50] -> 61"
+    - "[1,1,1] 最小规模 -> 1"
+  compiler_verified: false
+  compiler_note: 本机无 g++/clang/cl，solution.cpp 仅人工核对
+notes: >
+  核心是补集转化：以极值锚定 i 为最大下标，合法 <=> 前缀子集之和 > a[i]，
+  坏子集数用计数型 01 背包的前缀和取得；m>=3 由判据自动蕴含，勿重复扣除。
