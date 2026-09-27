@@ -6,3 +6,8 @@
 .idea/
 __pycache__/
 .DS_Store
+
+# 并行会话的临时抓取/对拍脚本，不入库
+.p14358.html
+.parse_luogu.js
+.verify_p14358.js
