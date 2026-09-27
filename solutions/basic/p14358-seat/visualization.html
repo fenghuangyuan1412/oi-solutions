@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P14358 [CSP-J 2025] 座位 · 蛇形分座可视化</title>
+<style>
+  :root { --bg:#12161c; --fg:#e6edf3; --mut:#8b98a5; --line:#2b333d; --acc:#f0883e; --ok:#3fb950; --bad:#f85149; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:20px; background:var(--bg); color:var(--fg);
+         font:15px/1.6 "Segoe UI","Microsoft YaHei",sans-serif; }
+  h1 { font-size:19px; margin:0 0 4px; }
+  h2 { font-size:15px; margin:22px 0 8px; color:var(--acc); }
+  .sub { color:var(--mut); font-size:13px; margin-bottom:16px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px; }
+  label { color:var(--mut); font-size:13px; }
+  input[type=number], input[type=text] {
+    width:70px; padding:5px 7px; background:#1b222a; color:var(--fg);
+    border:1px solid var(--line); border-radius:5px; font-size:14px; }
+  #src { width:340px; }
+  button { padding:5px 11px; background:#21283b; color:var(--fg); border:1px solid var(--line);
+           border-radius:5px; cursor:pointer; font-size:13px; }
+  button:hover { border-color:var(--acc); }
+  table { border-collapse:collapse; }
+  td, th { border:1px solid var(--line); padding:6px 8px; text-align:center; min-width:62px; }
+  th { background:#1b222a; color:var(--mut); font-weight:600; font-size:12px; }
+  .rank { font-size:17px; font-weight:700; }
+  .score { font-size:12px; color:var(--mut); }
+  .dir { color:var(--acc); font-size:11px; }
+  .me { background:#3a2a12; }
+  .me .rank { color:var(--acc); }
+  .future { opacity:.22; }
+  .cur { outline:2px solid var(--ok); outline-offset:-2px; }
+  .panel { background:#1b222a; border:1px solid var(--line); border-radius:8px;
+           padding:12px 14px; margin-top:8px; font-size:14px; }
+  code { background:#0d1117; padding:2px 6px; border-radius:4px; font-size:13px; color:#a5d6ff; }
+  .badge { padding:2px 9px; border-radius:20px; font-size:12px; }
+  .ok { background:rgba(63,185,80,.16); color:var(--ok); }
+  .bad { background:rgba(248,81,73,.16); color:var(--bad); }
+  .step { color:var(--mut); font-size:13px; margin-left:6px; }
+</style>
+</head>
+<body>
+<h1>P14358 [CSP-J 2025] 座位 · 蛇形分座可视化</h1>
+<div class="sub">成绩由高到低沿<strong>列</strong>蛇形填充：奇数列自上而下，偶数列自下而上。橙色格为小 R（$a_1$）。</div>
+
+<div class="row">
+  <label>行数 n</label><input type="number" id="n" value="4" min="1" max="10">
+  <label>列数 m</label><input type="number" id="m" value="5" min="1" max="10">
+</div>
+<div class="row">
+  <label>成绩（第一个即小 R）</label>
+  <input type="text" id="src" value="100 99 98 97 96 95 94 93 92 91 90 89 88 87 86 85 84 83 82 81">
+</div>
+<div class="row">
+  <button id="load">计算</button>
+  <button id="rand">随机成绩</button>
+  <button data-s="0">样例 1</button>
+  <button data-s="1">样例 2</button>
+  <button data-s="2">样例 3</button>
+</div>
+<div class="row">
+  <button id="prev">上一步</button>
+  <button id="next">下一步</button>
+  <button id="play">自动播放</button>
+  <button id="jump">一次填满</button>
+  <span class="step" id="stepInfo"></span>
+</div>
+
+<h2>座位表</h2>
+<div id="grid"></div>
+
+<h2>公式代入</h2>
+<div class="panel" id="calc"></div>
+
+<h2>与原代码的一致性</h2>
+<div class="panel" id="check"></div>
+
+<script>
+const SAMPLES = [
+  { n: 2, m: 2, s: '99 100 97 98', out: '1 2' },
+  { n: 2, m: 2, s: '98 99 100 97', out: '2 2' },
+  { n: 3, m: 3, s: '94 95 96 97 98 99 100 93 92', out: '3 1' },
+];
+
+let N = 4, M = 5, scores = [], order = [], rankOfId = [], myRank = 0, step = 0, timer = null;
+
+// 按成绩降序，记录原始 id（1 号是小 R）
+function rebuild() {
+  const items = scores.map((x, i) => ({ x, id: i + 1 }));
+  items.sort((a, b) => b.x - a.x);
+  order = items;
+  rankOfId = [];
+  items.forEach((it, i) => rankOfId[it.id] = i + 1);
+  myRank = rankOfId[1];
+}
+
+// 小 R 的名次 -> (列, 行)，与原 solution.cpp 完全一致
+function formula(k, n) {
+  const c = Math.ceil(k / n);
+  const r = (c & 1) ? k - (c - 1) * n : c * n - k + 1;
+  return { c, r };
+}
+
+// 独立实现：真的沿蛇形走格子，用于交叉校验
+function walkGrid() {
+  const g = [];
+  let c = 1, r = 1, d = 1;
+  for (let k = 1; k <= N * M; k++) { g[k] = [c, r]; r += d;
+    if (r > N) { c++; r = N; d = -1; } else if (r < 1) { c++; r = 1; d = 1; } }
+  return g;
+}
+
+function render() {
+  const g = walkGrid();
+  const cellRank = {};
+  for (let k = 1; k <= N * M; k++) cellRank[g[k][0] + '-' + g[k][1]] = k;
+
+  let html = '<table><tr><th></th>';
+  for (let c = 1; c <= M; c++) html += `<th>第 ${c} 列<br><span class="dir">${c & 1 ? '↓ 自上而下' : '↑ 自下而上'}</span></th>`;
+  html += '</tr>';
+  for (let r = 1; r <= N; r++) {
+    html += `<tr><th>第 ${r} 行</th>`;
+    for (let c = 1; c <= M; c++) {
+      const k = cellRank[c + '-' + r];
+      const it = order[k - 1];
+      const isMe = it.id === 1;
+      const cls = ['cell'];
+      if (isMe) cls.push('me');
+      if (k > step) cls.push('future');
+      if (k === step) cls.push('cur');
+      html += `<td class="${cls.join(' ')}"><div class="rank">${k <= step ? k : '·'}</div>` +
+              `<div class="score">${k <= step ? '分' + it.x + (isMe ? ' 小R' : '') : ''}</div></td>`;
+    }
+    html += '</tr>';
+  }
+  document.getElementById('grid').innerHTML = html + '</table>';
+  document.getElementById('stepInfo').textContent =
+    `已填充 ${step} / ${N * M} 个座位` + (step >= myRank ? `（小 R 已就位：第 ${myRank} 名）` : '');
+
+  const { c, r } = formula(myRank, N);
+  document.getElementById('calc').innerHTML =
+    `小 R 名次 <code>k = ${myRank}</code>（降序第 ${myRank} 个）<br>` +
+    `列号 <code>c = ceil(k / n) = ceil(${myRank} / ${N}) = ${c}</code><br>` +
+    `c = ${c} 是<strong>${c & 1 ? '奇数 → 该列自上而下' : '偶数 → 该列自下而上'}</strong><br>` +
+    (c & 1
+      ? `行号 <code>r = k - (c-1)*n = ${myRank} - ${c - 1}*${N} = ${r}</code>`
+      : `行号 <code>r = c*n - k + 1 = ${c}*${N} - ${myRank} + 1 = ${r}</code>`) +
+    `<br><strong>答案：第 ${c} 列 第 ${r} 行</strong>`;
+
+  const walk = g[myRank];
+  const agree = walk[0] === c && walk[1] === r;
+  document.getElementById('check').innerHTML =
+    `公式法 <code>${c} ${r}</code> ｜ 蛇形走格子法 <code>${walk[0]} ${walk[1]}</code> ` +
+    `<span class="badge ${agree ? 'ok' : 'bad'}">${agree ? '一致' : '不一致'}</span><br>` +
+    `<span style="color:var(--mut);font-size:13px">两种独立实现互相验证，正是题解中对拍所用的暴力模拟。</span>`;
+}
+
+function loadFrom(n, m, s) {
+  N = n; M = m;
+  document.getElementById('n').value = n;
+  document.getElementById('m').value = m;
+  document.getElementById('src').value = s;
+  compute();
+}
+
+function compute() {
+  N = Math.min(10, Math.max(1, +document.getElementById('n').value || 1));
+  M = Math.min(10, Math.max(1, +document.getElementById('m').value || 1));
+  const want = N * M;
+  const parts = document.getElementById('src').value.trim().split(/[\s,]+/).map(Number).filter(v => !Number.isNaN(v));
+  scores = parts.slice(0, want);
+  while (scores.length < want) scores.push(scores.length + 1);
+  rebuild();
+  step = want;
+  render();
+}
+
+document.getElementById('load').onclick = compute;
+document.getElementById('rand').onclick = () => {
+  const n = Math.min(10, Math.max(1, +document.getElementById('n').value || 1));
+  const m = Math.min(10, Math.max(1, +document.getElementById('m').value || 1));
+  const pool = [];
+  for (let v = 1; v <= 100; v++) pool.push(v);
+  for (let i = pool.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  document.getElementById('n').value = n;
+  document.getElementById('m').value = m;
+  document.getElementById('src').value = pool.slice(0, n * m).join(' ');
+  compute();
+};
+document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => {
+  const s = SAMPLES[+b.dataset.s];
+  loadFrom(s.n, s.m, s.s);
+  document.getElementById('check').innerHTML +=
+    `<br><span style="color:var(--mut);font-size:13px">官方期望输出 <code>${s.out}</code></span>`;
+});
+document.getElementById('prev').onclick = () => { step = Math.max(0, step - 1); render(); };
+document.getElementById('next').onclick = () => { step = Math.min(N * M, step + 1); render(); };
+document.getElementById('jump').onclick = () => { step = N * M; render(); };
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '自动播放'; return; }
+  step = 0;
+  e.target.textContent = '停止';
+  timer = setInterval(() => {
+    if (step >= N * M) { clearInterval(timer); timer = null; e.target.textContent = '自动播放'; return; }
+    step++; render();
+  }, 260);
+};
+
+compute();
+</script>
+</body>
+</html>

@@ -11,7 +11,7 @@
 
 | 主题 | 题数 | 目录 |
 | --- | --- | --- |
-| 基础 | 0 | [solutions/basic](solutions/basic) |
+| 基础 | 1 | [solutions/basic](solutions/basic) |
 | 动态规划 | 0 | [solutions/dp](solutions/dp) |
 | 数据结构 | 0 | [solutions/ds](solutions/ds) |
 | 图论 | 0 | [solutions/graph](solutions/graph) |
@@ -26,14 +26,16 @@
 | 题号 | 题目 | 主题 | 核心思想 | 可视化 |
 | --- | --- | --- | --- | --- |
 | [P14357](https://www.luogu.com.cn/problem/P14357) | [CSP-J 2025] 拼数 | 贪心 / 计数排序 | 位数用满 + 降序交换论证 | [html](solutions/greedy/p14357-number/visualization.html) |
+| [P14358](https://www.luogu.com.cn/problem/P14358) | [CSP-J 2025] 座位 | 基础 / 模拟·排序 | 名次 k → 列 ceil(k/n)，行按列号奇偶翻转 | [html](solutions/basic/p14358-seat/visualization.html) |
 
 ## 单题格式
 
 ```
-solutions/dp/p1048-heart-of-the-gold/
+solutions/basic/p14358-seat/
 ├── README.md          # 题解：题意 → 暴力 → 观察 → 算法 → 正确性 → 复杂度
-├── solution.cpp       # 带逐段注释的 AC 代码
+├── solution.cpp       # 带逐段注释的代码
 ├── metadata.yml       # 难度、标签、复杂度、评测状态
+├── verify.js          # 可选，与暴力实现随机对拍的验证脚本
 └── visualization.html # 可选，浏览器直接打开的分步动画
 ```
 

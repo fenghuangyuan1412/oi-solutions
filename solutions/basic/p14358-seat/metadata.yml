@@ -1,0 +1,22 @@
+id: P14358
+title: "[CSP-J 2025] 座位 / seat"
+source: luogu
+url: https://www.luogu.com.cn/problem/P14358
+alias: CSP-J 2025 第二轮 T1
+topics: [basic/simulation, basic/sorting, math/index-derivation]
+difficulty: 普及-
+tags: [模拟, 排序, 下标推导, 蛇形填充]
+complexity:
+  time: O(nm log(nm))
+  space: O(nm)
+status: 未本地评测（本机无 C++ 编译器）；逻辑经 200000 组随机数据与蛇形暴力模拟对拍全部一致
+limits: 1 <= n,m <= 10, 1 <= a_i <= 100 且互不相同
+visualization: true
+samples:
+  - in: "2 2\n99 100 97 98"
+    out: "1 2"
+  - in: "2 2\n98 99 100 97"
+    out: "2 2"
+  - in: "3 3\n94 95 96 97 98 99 100 93 92"
+    out: "3 1"
+notes: 蛇形沿列走，每列 n 人，除数是 n 不是 m；输出顺序为先列后行
