@@ -1,0 +1,12 @@
+id: P0000
+title: 题目名称
+source: luogu
+url: https://www.luogu.com.cn/problem/P0000
+topics: [dp/knapsack]
+difficulty: 普及-
+complexity:
+  time: O(nm)
+  space: O(m)
+status: AC
+visualization: false
+notes: 一句话备注

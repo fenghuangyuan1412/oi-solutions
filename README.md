@@ -1,0 +1,43 @@
+# OI 题解知识库
+
+信息学奥赛（CSP / NOIP / 洛谷 / Codeforces）题解仓库。每道题一个目录，包含题意压缩、思路推导、正确性论证、逐段讲解代码和可视化演示。
+
+- 目录结构与写作规范见 [notes/CONVENTIONS.md](notes/CONVENTIONS.md)
+- 新建题目：`./scripts/new_problem.sh P1048 dp/knapsack 采药`
+
+## 题库索引
+
+索引由题解目录自动汇总，新增题目后更新此处。
+
+| 主题 | 题数 | 目录 |
+| --- | --- | --- |
+| 基础 | 0 | [solutions/basic](solutions/basic) |
+| 动态规划 | 0 | [solutions/dp](solutions/dp) |
+| 数据结构 | 0 | [solutions/ds](solutions/ds) |
+| 图论 | 0 | [solutions/graph](solutions/graph) |
+| 搜索 | 0 | [solutions/search](solutions/search) |
+| 贪心 | 0 | [solutions/greedy](solutions/greedy) |
+| 数学 | 0 | [solutions/math](solutions/math) |
+| 字符串 | 0 | [solutions/string](solutions/string) |
+| 计算几何 | 0 | [solutions/geometry](solutions/geometry) |
+
+## 单题格式
+
+```
+solutions/dp/p1048-heart-of-the-gold/
+├── README.md          # 题解：题意 → 暴力 → 观察 → 算法 → 正确性 → 复杂度
+├── solution.cpp       # 带逐段注释的 AC 代码
+├── metadata.yml       # 难度、标签、复杂度、评测状态
+└── visualization.html # 可选，浏览器直接打开的分步动画
+```
+
+GitHub 原生渲染 Markdown 中的 Mermaid 流程图与 `$$...$$` 公式，因此题解正文在仓库页面内即可直接看图，无需额外构建。
+
+## 参考项目
+
+本仓库的组织方式参考了以下开源项目：
+
+- [OI-wiki](https://github.com/OI-wiki/OI-wiki) — 主题分类体系（`dp` / `ds` / `graph` / `string` …）
+- [a1fredbao/OI-Solutions](https://github.com/a1fredbao/OI-Solutions) — 按平台分目录的题解记录格式
+- [EndlessCheng/codeforces-go](https://github.com/EndlessCheng/codeforces-go) — 按专题归纳的题解与模板
+- [cp-algorithms](https://github.com/cp-algorithms/cp-algorithms) — 算法原理讲解结构
