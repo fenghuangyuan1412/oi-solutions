@@ -11,3 +11,5 @@ __pycache__/
 .p14358.html
 .parse_luogu.js
 .verify_p14358.js
+/.verify_p*.js
+/.p*.html
