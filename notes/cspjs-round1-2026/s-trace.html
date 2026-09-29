@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CSP-S 2026 一轮模拟 · S1 lowbit / S2 递归树 / S3 单调栈 分步演示</title>
+<style>
+  :root{--bg:#0f1220;--card:#1a1f35;--ink:#e8ecff;--dim:#8b93b5;--acc:#5eead4;--bad:#f59e6b;--good:#5eead4;--line:#262c4a;}
+  *{box-sizing:border-box}
+  body{margin:0;padding:20px 22px 30px;background:var(--bg);color:var(--ink);font:15px/1.65 "Segoe UI",system-ui,sans-serif}
+  h1{font-size:20px;margin:0 0 4px}
+  h2{font-size:14px;letter-spacing:.06em;color:var(--dim);margin:0 0 10px;font-weight:600}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:12px}
+  button{background:#2b3358;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 12px;font-size:14px;cursor:pointer;margin:0 5px 5px 0}
+  button:hover:not(:disabled){background:#394373}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.on{background:#3d2b58;border-color:#9d6bff;color:#e6d9ff}
+  .tabbar{margin:0 0 12px}
+  .tabbar button{margin-right:6px}
+  input[type=text]{background:#0d1020;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 10px;font:14px Consolas,monospace;width:150px}
+  .topbar{position:sticky;top:0;z-index:9;background:#141930f5;border:1px solid var(--line);border-radius:12px;padding:9px 12px;margin-bottom:12px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;backdrop-filter:blur(4px)}
+  .prog{color:var(--ink);font:15px Consolas,monospace;margin:0 8px;white-space:nowrap}
+  .spd{margin-left:auto}
+  .narr{background:#132033;border:1px solid #2b6a7f;border-left:4px solid var(--acc);border-radius:10px;padding:11px 14px;font-size:15px;min-height:52px;margin-bottom:14px}
+  .narr b{color:var(--acc)}
+  .main{display:grid;grid-template-columns:minmax(0,1fr) 428px;gap:12px;align-items:start}
+  .side{min-width:0}
+  .tabdoc{display:none}
+  .tabdoc.show{display:block}
+  .row{display:flex;gap:12px;flex-wrap:wrap}.row>div{flex:1;min-width:280px}
+  .k{background:#131730;border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+  .k .lab{font-size:14px;color:var(--dim)}
+  .k .val{font:19px Consolas,monospace;margin-top:1px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:8px}
+  .k.hl{border-color:var(--bad)}
+  .k.hl .val{color:var(--bad)}
+  .k.goodk .val{color:var(--good)}
+  /* code */
+  .code{font:14px/1.45 Consolas,monospace;background:#0d1020;border:1px solid var(--line);border-radius:9px;padding:8px 6px;max-height:430px;overflow-y:auto}
+  .cl{display:flex;gap:8px;border-radius:4px;padding:1px 4px}
+  .cl.cur{background:#2a3560;box-shadow:inset 3px 0 0 var(--bad)}
+  .cl .no{color:#5a6488;min-width:26px;text-align:right;flex:none;user-select:none}
+  .cl .tx{white-space:pre-wrap;word-break:break-word}
+  .cl.cur .tx{color:var(--acc)}
+  /* var table */
+  table.v{width:100%;border-collapse:collapse;font:14px Consolas,monospace}
+  table.v th,table.v td{padding:3px 7px;border-bottom:1px solid #222743;text-align:left}
+  table.v th{color:var(--dim);font-weight:600}
+  table.v td.num{text-align:right;color:var(--acc)}
+  table.v tr.chg td{background:#232b4d}
+  /* S1 bit strip */
+  .bits{display:flex;gap:3px}
+  .bit{flex:1;min-width:0;text-align:center;border-radius:7px;border:1px solid #333c66;background:#232a4a;padding:4px 1px}
+  .bit .w{display:block;font:14px Consolas,monospace;color:var(--dim)}
+  .bit .b{display:block;font:bold 16px Consolas,monospace;color:var(--ink)}
+  .bit .p{display:block;font:14px Consolas,monospace;color:#5a6488}
+  .bit.one{background:#1d3a4d;border-color:#2b6a7f}
+  .bit.one .b{color:var(--acc)}
+  .bit.off{opacity:.5}
+  .bit.gone{background:#171b2e;border-color:#2a2f4c;opacity:.34}
+  .bit.gone .b{color:#5a6488;text-decoration:line-through}
+  .bit.lb{background:#4a3520;border-color:var(--bad);box-shadow:0 0 0 2px #f59e6b44}
+  .bit.lb .b{color:var(--bad)}
+  .crow{display:flex;gap:3px;align-items:center;margin-bottom:4px}
+  .clab{width:152px;flex:none;font:14px Consolas,monospace;color:var(--dim);text-align:right;padding-right:8px}
+  .crow .bits{flex:1}
+  .cb{flex:1;min-width:0;text-align:center;font:14px Consolas,monospace;border-radius:5px;padding:2px 0;background:#1c2140;border:1px solid #2b3255}
+  .cb.on{background:#1d3a4d;border-color:#2b6a7f;color:var(--acc)}
+  .cb.hi{background:#4a3520;border-color:var(--bad);color:var(--bad);font-weight:bold}
+  /* S3 bars + stack */
+  #s3svg{width:100%;display:block}
+  .stackwrap{display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap}
+  .stack{display:flex;flex-direction:column-reverse;gap:4px;min-height:150px;align-items:stretch;width:180px;flex:none;
+    border:1px dashed #3a4270;border-radius:9px;padding:8px;background:#12162b}
+  .scell{border-radius:7px;background:#232a4a;border:1px solid #3a4270;padding:4px 8px;font:14px Consolas,monospace;text-align:center}
+  .scell.top{background:#1d3a4d;border-color:var(--acc);color:var(--acc);font-weight:bold}
+  .slab{font:14px Consolas,monospace;color:var(--dim);width:120px;flex:none}
+  .resrow{display:flex;gap:3px}
+  .rc{flex:1;min-width:0;text-align:center;font:14px Consolas,monospace;border-radius:6px;padding:4px 1px;background:#171b2e;border:1px solid #2a2f4c;color:#5a6488}
+  .rc.set{background:#1d3a4d;border-color:#2b6a7f;color:var(--acc)}
+  .rc.minus{background:#3b2434;border-color:#7c4a6a;color:#f0a8cf}
+  .rc.new{box-shadow:0 0 0 2px #f59e6b66;border-color:var(--bad)}
+  .outp{font:16px Consolas,monospace;color:var(--bad);background:#241c2b;border:1px solid #4a3550;border-radius:8px;padding:8px 12px}
+  .hint{color:var(--dim);font-size:14px}
+  .note{color:var(--dim);font-size:14px}
+  .note b{color:var(--ink)}
+  .treeinfo{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .big{font:bold 20px Consolas,monospace;color:var(--bad)}
+  .stat{font:15px Consolas,monospace}
+  .stat em{font-style:normal;color:var(--acc)}
+  svg text{font-family:Consolas,monospace}
+</style>
+</head>
+<body>
+<h1>S1 / S2 / S3 三个程序的分步执行</h1>
+<div class="sub">配合讲义 <b>csp-s_first.md</b> 程序阅读题二（S-1 lowbit 拆位、S-2 组合数递归、S-3 单调栈）。全部步骤由页面加载时用 JS 逐行重跑程序生成，不是手写的追踪表；输出与本地 <code>g++ -static -O2</code> 实测一致。</div>
+
+<div class="tabbar" id="tabbar">
+  <button data-tab="s1">S1 · lowbit 拆位</button>
+  <button data-tab="s2">S2 · 组合数递归树</button>
+  <button data-tab="s3">S3 · 单调栈</button>
+</div>
+
+<div class="topbar">
+  <button id="prev">← 上一步</button>
+  <button id="next">下一步 →</button>
+  <button id="play">自动播放</button>
+  <button id="end">跳到末尾</button>
+  <button id="home">回到开头</button>
+  <span class="prog" id="prog"></span>
+  <span class="spd">
+    <button data-sp="1" class="on">1x</button><button data-sp="2">2x</button><button data-sp="4">4x</button>
+  </span>
+</div>
+
+<div class="narr" id="narr"></div>
+
+<div class="main">
+  <div class="viz">
+
+    <!-- ================= S1 ================= -->
+    <div class="tabdoc" id="doc-s1">
+      <div class="card">
+        <h2>S1 输入（改写第 7 行的 n，其余一字未动；上限 1e6）</h2>
+        <input type="text" id="in-s1" value="2026">
+        <button id="load-s1">载入并重跑</button>
+        <span class="hint" id="hint-s1"></span>
+      </div>
+      <div class="card"><h2>① n 的二进制位带（左高右低，权值 2^p 标在上方）</h2>
+        <div id="s1bits"></div>
+        <div class="hint" style="margin-top:8px">青=仍留在 n 里的 1 位，橙=本轮 lowbit 命中的那一位，划掉并变暗=已被 <code>n -= lb</code> 删掉。</div>
+      </div>
+      <div class="card"><h2>② 补码怎么算：-n = ~n + 1，相与之后只剩最低位的 1</h2>
+        <div id="s1comp"></div>
+      </div>
+      <div class="card"><h2>③ 变量状态</h2>
+        <div class="grid" id="s1keys"></div>
+        <div class="k" style="margin-top:9px"><div class="lab">循环不变量 s + n</div><div class="val" id="s1inv"></div></div>
+      </div>
+      <div class="card"><h2>④ 程序输出</h2><div id="s1out"></div></div>
+      <div class="card"><h2>⑤ 为什么 s 恰好等于原来的 n</h2><div class="note" id="s1why"></div></div>
+    </div>
+
+    <!-- ================= S2 ================= -->
+    <div class="tabdoc" id="doc-s2">
+      <div class="card">
+        <h2>S2 输入 C(n, m)（结点数上限 = 2·C(10,5)−1 = 503，超了会提示）</h2>
+        n=<input type="text" id="in-n" value="6"> m=<input type="text" id="in-m" value="3">
+        <button id="load-s2">载入并重跑</button>
+        <button id="memo-btn">记忆化：关</button>
+        <span class="hint" id="hint-s2"></span>
+      </div>
+      <div class="card"><h2>① 递归调用树（严格按真实调用顺序生长：先 <code>C(n-1,m)</code> 再 <code>C(n-1,m-1)</code>）</h2>
+        <div class="treeinfo" style="margin-bottom:8px">
+          <span class="stat">calls = <span class="big" id="s2calls">0</span></span>
+          <span class="stat">当前结点 <em id="s2cur">-</em></span>
+          <span class="stat">结点类型 <em id="s2kind">-</em></span>
+        </div>
+        <div id="s2tree"></div>
+        <div class="hint" style="margin-top:8px">圆圈里的数字是该子树返回值；橙色 = 正在执行的那一次调用；青色描边 = 当前调用栈路径；空心 = 尚未被调用到。</div>
+      </div>
+      <div class="card"><h2>② 计数账本</h2>
+        <div class="grid" id="s2keys"></div>
+        <div class="note" id="s2formula" style="margin-top:9px"></div>
+      </div>
+      <div class="card"><h2>③ 程序输出</h2><div id="s2out"></div></div>
+    </div>
+
+    <!-- ================= S3 ================= -->
+    <div class="tabdoc" id="doc-s3">
+      <div class="card">
+        <h2>S3 输入数组 a（≤12 个整数）</h2>
+        <input type="text" id="in-s3" value="5 3 8 1 6 2 4" style="width:260px">
+        <button id="load-s3">载入并重跑</button>
+        <span class="hint" id="hint-s3"></span>
+      </div>
+      <div class="card"><h2>① 数组柱状图 + 箭头（j 的下一个更大元素是 i）；每根柱子下方标 a[j]，角上标「进/出」次数</h2>
+        <div id="s3chart"></div>
+      </div>
+      <div class="row">
+        <div class="card"><h2>② 栈 st（存下标，栈底在下）</h2>
+          <div class="stackwrap"><div class="slab" id="s3slab"></div><div class="stack" id="s3stack"></div></div>
+        </div>
+        <div class="card"><h2>③ res[]（答案数组，逐个填上）</h2><div class="resrow" id="s3res"></div>
+          <div class="hint" id="s3stk"></div>
+        </div>
+      </div>
+      <div class="card"><h2>④ 程序输出</h2><div id="s3out"></div></div>
+      <div class="card"><h2>⑤ 均摊 O(n) 看得见</h2><div class="note" id="s3why"></div></div>
+    </div>
+
+  </div>
+
+  <div class="side">
+    <div class="card"><h2 id="codename">程序源码（逐字抄自 programs/）</h2><div class="code" id="code"></div></div>
+    <div class="card"><h2>变量状态表</h2><table class="v" id="vars"></table></div>
+    <div class="card"><h2>讲义对应</h2><div class="note" id="link"></div></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ---------- 源码（逐字） ---------- */
+var CODE = {
+  s1: ["// S1 — lowbit 枚举二进制中所有 1 位",
+"// 考察：位运算 n&(-n)、补码、循环不变量",
+"#include <iostream>",
+"using namespace std;",
+"",
+"int main() {",
+"    int n = 2026, cnt = 0, s = 0;",
+"    while (n > 0) {",
+"        int lb = n & (-n);  // 取最低位的 1",
+"        ++cnt;               // 已剥离位的个数",
+"        s += lb;             // 已剥离位之和",
+"        n -= lb;             // 删除最低位",
+"    }",
+"    cout << cnt << \" \" << s << \"\\n\";",
+"    return 0;",
+"}",
+"// 2026 = 11111101010(2)，含 8 个 1 位",
+"// 预期输出：8 2026"],
+  s2: ["#include <iostream>",
+"using namespace std;",
+"",
+"int calls = 0;",
+"",
+"int C(int n, int m) {",
+"    ++calls;",
+"    if (m == 0 || n == m) return 1;   // 叶子",
+"    return C(n - 1, m) + C(n - 1, m - 1);",
+"}",
+"",
+"int main() {",
+"    int ans = C(6, 3);",
+"    cout << ans << \" \" << calls << \"\\n\";",
+"    return 0;",
+"}",
+"// C(6,3) = 20",
+"// 调用次数 = 2*C(6,3)-1 = 39（满二叉树：内部节点=叶子-1，总=2*叶子-1）",
+"// 预期输出：20 39"],
+  s2m: ["#include <iostream>",
+"#include <cstring>",
+"using namespace std;",
+"int memo[20][20];",
+"int calls = 0;",
+"int C(int n, int m) {",
+"    ++calls;",
+"    if (m == 0 || n == m) return 1;",
+"    if (memo[n][m]) return memo[n][m];",
+"    return memo[n][m] = C(n - 1, m) + C(n - 1, m - 1);",
+"}",
+"int main() {",
+"    memset(memo, 0, sizeof memo);",
+"    cout << C(6, 3) << \" \" << calls << \"\\n\";",
+"    return 0;",
+"}"],
+  s3: ["// S3 — 单调栈求下一个更大元素",
+"// 考察：栈操作顺序、严格小于 vs 小于等于、均摊复杂度",
+"#include <iostream>",
+"#include <stack>",
+"using namespace std;",
+"",
+"int main() {",
+"    int a[7] = {5, 3, 8, 1, 6, 2, 4};",
+"    int n = 7, res[7];",
+"    stack<int> st;",
+"",
+"    for (int i = 0; i < n; ++i) {",
+"        while (!st.empty() && a[st.top()] < a[i]) {",
+"            res[st.top()] = a[i];",
+"            st.pop();",
+"        }",
+"        st.push(i);",
+"    }",
+"    // 栈里剩下的是右侧没有更大元素的",
+"    while (!st.empty()) {",
+"        res[st.top()] = -1;",
+"        st.pop();",
+"    }",
+"    for (int i = 0; i < n; ++i) cout << res[i] << \" \";",
+"    cout << \"\\n\";",
+"    return 0;",
+"}",
+"// a = {5, 3, 8, 1, 6, 2, 4}",
+"// res: 5->8, 3->8, 8->-1, 1->6, 6->-1, 2->4, 4->-1",
+"// 预期输出：8 8 -1 6 -1 4 -1"]
+};
+
+function bitsOf(v, B) { var t = v.toString(2); while (t.length < B) t = "0" + t; return t; }
+
+/* ================= S1 模拟器：严格照 s1.cpp 重跑 ================= */
+function simS1(n0) {
+  var B = n0 > 0 ? n0.toString(2).length : 1;
+  var n = n0, cnt = 0, s = 0, round = 0, steps = [], stripped = [];
+  function push(line, note, extra) {
+    var st = { line: line, n: n, cnt: cnt, s: s, lb: null, B: B, neg: null, comp: null, pos: null,
+      stripped: stripped.slice(), inv: s + n, note: note };
+    if (extra) for (var k in extra) st[k] = extra[k];
+    steps.push(st);
+  }
+  push(7, "第 7 行初始化：n=" + n0 + "，二进制 " + bitsOf(n0, B) + " 共 " + B + " 位，cnt=0，s=0。");
+  while (true) {
+    if (!(n > 0)) { push(8, "第 8 行 while 判断：n=0，条件 n > 0 为假，退出循环。循环总次数 = " + cnt + "，正好是原 n 二进制中 1 的个数（popcount）。"); break; }
+    round++;
+    push(8, "第 8 行 while 判断：n=" + n + " > 0 为真，进入第 " + round + " 轮循环体。");
+    var neg = (Math.pow(2, B) - n) % Math.pow(2, B);   // n 的 B 位补码
+    var comp = (Math.pow(2, B) - 1) - n;              // ~n（B 位内）
+    var lb = n & (-n);
+    var pos = lb.toString(2).length - 1;
+    push(9, "第 9 行 lb = n & (-n)：-n 的 " + B + " 位补码 = ~n + 1 = " + bitsOf(neg, B) + "，与 n = " + bitsOf(n, B) + " 逐位相与，高位全被 ~n 抹平，只剩最低位的 1，lb=" + lb + "。", { lb: lb, neg: neg, comp: comp, pos: pos });
+    cnt++;
+    push(10, "第 10 行 ++cnt：cnt=" + cnt + "，已经剥掉 " + cnt + " 个二进制 1 位。", { lb: lb, neg: neg, comp: comp, pos: pos });
+    s += lb;
+    push(11, "第 11 行 s += lb：s=" + s + "。权值 " + lb + " 刚从 n 搬进 s，而 n 这一行还没减，所以此刻 s + n = " + (s + n) + " = 原始 n + " + lb + "。", { lb: lb, neg: neg, comp: comp, pos: pos });
+    stripped.push(pos);
+    n -= lb;
+    push(12, "第 12 行 n -= lb：删掉第 " + pos + " 位（权值 2^" + pos + " = " + lb + "），n 变为 " + n + "；不变量立刻恢复：s + n = " + s + " + " + n + " = " + (s + n) + " = 原始 n。位带上这一位变暗划掉。", { lb: lb, neg: neg, comp: comp, pos: pos });
+  }
+  push(14, "第 14 行输出 " + cnt + " " + s + "。每轮删一个 1 位并把它的权值加进 s，全程 s + n = " + n0 + " 不变；n 归零时 s 就正好等于原来的 n。", { out: cnt + " " + s });
+  return { steps: steps, cnt: cnt, s: s, B: B, out: cnt + " " + s };
+}
+
+/* ================= S2 模拟器：严格照 s2.cpp / s2_memo.cpp 重跑 ================= */
+function simS2(nN, mM, memo) {
+  var calls = 0, nodes = [], steps = [], memoMap = {};
+  function rec(n, m, parent, side, depth) {
+    calls++;
+    var leaf = (m === 0 || n === m);
+    var node = { id: nodes.length, n: n, m: m, depth: depth, parent: parent, side: side,
+      leaf: leaf, hit: false, children: [], value: null, callsAt: calls, appearedAt: steps.length, resolvedAt: steps.length };
+    nodes.push(node);
+    if (parent !== null) nodes[parent].children.push(node.id);
+    function ent(line, note) { steps.push({ type: "enter", node: node.id, calls: calls, line: line, n: n, m: m, note: note }); }
+    if (leaf) {
+      node.value = 1;
+      ent(memo ? 7 : 7, "第 7 行 ++calls → calls=" + calls + "；第 8 行 m==0 || n==m 为真，这是一片叶子，直接返回 1。");
+      return 1;
+    }
+    var key = n + "," + m;
+    if (memo && memoMap.hasOwnProperty(key)) {
+      node.hit = true; node.value = memoMap[key];
+      ent(9, "第 7 行 ++calls → calls=" + calls + "（记忆化也要数这次调用）；第 9 行 memo[" + n + "][" + m + "] 已有值 " + node.value + "，直接返回，子树不再展开。");
+      return node.value;
+    }
+    ent(memo ? 7 : 7, memo
+      ? "第 7 行 ++calls → calls=" + calls + "；第 8、9 行都为假，第 10 行展开：先算 C(" + (n - 1) + "," + m + ")，再算 C(" + (n - 1) + "," + (m - 1) + ")。"
+      : "第 7 行 ++calls → calls=" + calls + "；第 8 行基线判定为假，第 9 行展开：先调用 C(" + (n - 1) + "," + m + ")，回来后再调用 C(" + (n - 1) + "," + (m - 1) + ")。");
+    var a = rec(n - 1, m, node.id, 0, depth + 1);
+    var b = rec(n - 1, m - 1, node.id, 1, depth + 1);
+    node.value = a + b;
+    if (memo) memoMap[key] = node.value;
+    node.resolvedAt = steps.length + 1;
+    steps.push({ type: "return", node: node.id, calls: calls, line: memo ? 10 : 9, n: n, m: m, value: node.value,
+      note: "第 " + (memo ? 10 : 9) + " 行返回：C(" + n + "," + m + ") = C(" + (n - 1) + "," + m + ") + C(" + (n - 1) + "," + (m - 1) + ") = " + a + " + " + b + " = " + node.value + (memo ? "，并写进 memo[" + n + "][" + m + "]。" : "。") });
+    return node.value;
+  }
+  var ans = rec(nN, mM, null, 0, 0);
+  var leaves = 0, internals = 0, maxDepth = 0, nLeaf = 0, nHit = 0, nExp = 0;
+  for (var i = 0; i < nodes.length; i++) {
+    if (nodes[i].children.length === 0 || nodes[i].hit) leaves++; else internals++;
+    if (nodes[i].leaf) nLeaf++; else if (nodes[i].hit) nHit++; else nExp++;
+    if (nodes[i].depth > maxDepth) maxDepth = nodes[i].depth;
+  }
+  steps.push({ type: "done", node: 0, calls: calls, line: memo ? 14 : 14, n: nN, m: mM, value: ans,
+    note: memo
+      ? "第 14 行输出 " + ans + " " + calls + "。记忆化把 " + (2 * ans - 1) + " 次压到 " + calls + " 次：真正展开的状态只有 " + nExp + " 个，每个发 2 次子调用，加上根自己，calls = 1 + 2×" + nExp + " = " + calls + "。"
+      : "第 14 行输出 " + ans + " " + calls + "。叶子 " + leaves + " 片每片贡献 1，内部结点 " + internals + " = 叶子−1，总数 " + calls + " = 2×" + ans + "−1。" });
+  var memoStates = 0; for (var k in memoMap) if (memoMap.hasOwnProperty(k)) memoStates++;
+  return { steps: steps, nodes: nodes, calls: calls, ans: ans, leaves: leaves, internals: internals,
+    nLeaf: nLeaf, nHit: nHit, nExp: nExp,
+    total: nodes.length, maxDepth: maxDepth, memoStates: memoStates, memo: !!memo,
+    out: ans + " " + calls, nm: [nN, mM] };
+}
+
+/* ================= S3 模拟器：严格照 s3.cpp 重跑 ================= */
+function simS3(a) {
+  var n = a.length, res = [], st = [], steps = [], arrows = [], inCnt = [], outCnt = [], i;
+  for (i = 0; i < n; i++) { res.push(null); inCnt.push(0); outCnt.push(0); }
+  function snap(line, note, ex) {
+    var s = { line: line, note: note, res: res.slice(), st: st.slice(), i: null, top: null, cmp: null,
+      popped: null, newRes: null, inCnt: inCnt.slice(), outCnt: outCnt.slice(), arrows: arrows.slice() };
+    if (ex) for (var k in ex) s[k] = ex[k];
+    steps.push(s);
+  }
+  snap(9, "第 8~10 行初始化：a = {" + a.join(", ") + "}，n=" + n + "，res 尚未赋值，栈 st 为空（栈底在下）。");
+  for (i = 0; i < n; i++) {
+    snap(12, "第 12 行 for：i 推进到 " + i + "，当前 a[i]=" + a[i] + "。", { i: i, cur: a[i] });
+    while (true) {
+      if (st.length === 0) { snap(13, "第 13 行 while：栈为空，!st.empty() 为假，&& 直接短路（根本不会去访问 a[st.top()]），退出 while。", { i: i, cur: a[i] }); break; }
+      var j = st[st.length - 1], ok = a[j] < a[i];
+      snap(13, "第 13 行 while：a[st.top()] = a[" + j + "] = " + a[j] + " < a[" + i + "] = " + a[i] + " ？" + (ok ? "真，进循环体。" : "假，退出 while。"), { i: i, cur: a[i], top: j, cmp: ok });
+      if (!ok) break;
+      res[j] = a[i];
+      arrows.push({ from: j, to: i });
+      snap(14, "第 14 行 res[st.top()] = a[i]：res[" + j + "] = " + a[i] + "，a[" + i + "] 正是 a[" + j + "] 右侧第一个比它大的元素。", { i: i, cur: a[i], newRes: j });
+      st.pop(); outCnt[j]++;
+      snap(15, "第 15 行 st.pop()：下标 " + j + " 出栈（第 " + outCnt[j] + " 次出栈），它的边界已定，之后再也用不到。", { i: i, cur: a[i], popped: j });
+    }
+    st.push(i); inCnt[i]++;
+    snap(17, "第 17 行 st.push(" + i + ")：下标 " + i + " 入栈（第 " + inCnt[i] + " 次进栈），栈内对应值自底向上仍严格递减，栈 = [" + st.join(", ") + "]。", { i: i, cur: a[i] });
+  }
+  snap(20, "第 12 行 for 结束（i=" + n + " 越界，走 " + (20) + " 行收尾）：栈里还剩 [" + st.join(", ") + "]，它们是右侧找不到更大元素的。");
+  while (st.length) {
+    var q = st[st.length - 1];
+    snap(20, "第 20 行 while：!st.empty() 为真，栈顶是 " + q + "，进循环体收尾。", { top: q, cmp: true });
+    res[q] = -1;
+    snap(21, "第 21 行 res[st.top()] = -1：res[" + q + "] = -1，a[" + q + "]=" + a[q] + " 右侧没有更大的元素。", { top: q, newRes: q });
+    st.pop(); outCnt[q]++;
+    snap(22, "第 22 行 st.pop()：下标 " + q + " 出栈，累计出栈 " + outCnt[q] + " 次。", { popped: q });
+  }
+  snap(20, "第 20 行 while：栈已空，条件为假，退出收尾循环。");
+  var tot = 0, t2; for (t2 = 0; t2 < n; t2++) tot += inCnt[t2];
+  snap(24, "第 24 行输出：" + res.join(" ") + "。全程进栈 " + tot + " 次、出栈 " + res.filter(function (x) { return x !== null; }).length + " 次，各不超过 n=" + n + "，这就是均摊 O(n)。", { out: res.join(" ") + " " });
+  var maxStk = 0; for (t2 = 0; t2 < steps.length; t2++) maxStk = Math.max(maxStk, steps[t2].st.length);
+  return { steps: steps, res: res, out: res.join(" "), inCnt: inCnt, outCnt: outCnt, maxStk: maxStk, n: n, a: a.slice() };
+}
+
+/* ================= 页面状态 ================= */
+var tabs = ["s1", "s2", "s3"], active = "s1";
+var state = {
+  s1: { sim: null, t: 0, n0: 2026 },
+  s2: { sim: null, memo: false, n: 6, m: 3, t: 0 },
+  s3: { sim: null, t: 0, a: [5, 3, 8, 1, 6, 2, 4] }
+};
+var timer = null, speed = 1;
+
+function comb(n, m) { var r = 1, i; if (m > n - m) m = n - m; for (i = 0; i < m; i++) r = r * (n - i) / (i + 1); return Math.round(r); }
+function $(id) { return document.getElementById(id); }
+function txt(id, s) { $(id).textContent = s; }
+
+function rebuild(tab) {
+  if (tab === "s1") state.s1.sim = simS1(state.s1.n0);
+  if (tab === "s2") state.s2.sim = simS2(state.s2.n, state.s2.m, state.s2.memo);
+  if (tab === "s3") state.s3.sim = simS3(state.s3.a);
+  state[tab].t = 0;
+  stopPlay();
+}
+
+/* ---------- 代码面板 / 变量表 ---------- */
+function renderCode(name, line) {
+  var box = $("code"), L = CODE[name];
+  box.innerHTML = "";
+  for (var i = 0; i < L.length; i++) {
+    var d = document.createElement("div");
+    d.className = "cl" + (i + 1 === line ? " cur" : "");
+    var no = document.createElement("span"); no.className = "no"; no.textContent = (i + 1);
+    var tx = document.createElement("span"); tx.className = "tx"; tx.textContent = L[i] === "" ? " " : L[i];
+    d.appendChild(no); d.appendChild(tx); box.appendChild(d);
+  }
+}
+function renderVars(rows) {
+  var tb = $("vars");
+  tb.innerHTML = "";
+  var h = document.createElement("tr");
+  h.innerHTML = "<th>变量</th><th>当前值</th>";
+  tb.appendChild(h);
+  rows.forEach(function (r) {
+    var tr = document.createElement("tr");
+    if (r.chg) tr.className = "chg";
+    var a = document.createElement("td"); a.textContent = r.k;
+    var b = document.createElement("td"); b.className = "num"; b.textContent = r.v;
+    tr.appendChild(a); tr.appendChild(b); tb.appendChild(tr);
+  });
+}
+
+/* ---------- S1 渲染 ---------- */
+function renderS1() {
+  var sim = state.s1.sim, st = sim.steps[state.s1.t], B = st.B, n0 = state.s1.n0;
+  // 位带
+  var strip = "", p;
+  for (p = B - 1; p >= 0; p--) {
+    var bitv = (n0 >> p) & 1;
+    var gone = st.stripped.indexOf(p) >= 0;
+    var isLb = (st.pos === p);
+    var cls = "bit " + (gone ? "gone" : (bitv ? "one" : "off")) + (isLb ? " lb" : "");
+    strip += '<div class="' + cls + '"><span class="w">' + (gone || bitv ? "2^" + p : "&nbsp;") + '</span><span class="b">' + bitv + '</span><span class="p">' + p + "</span></div>";
+  }
+  $("s1bits").innerHTML = '<div class="crow"><div class="clab">n = ' + st.n + "</div><div class=\"bits\">" + strip + "</div></div>";
+  // 补码三行
+  var comp = "";
+  if (st.neg !== null) {
+    function row(label, val, hiPos) {
+      var c = "", q;
+      for (q = B - 1; q >= 0; q--) {
+        var bv = (val >> q) & 1;
+        c += '<div class="cb' + (bv ? " on" : "") + (hiPos === q ? " hi" : "") + '">' + bv + "</div>";
+      }
+      return '<div class="crow"><div class="clab">' + label + '</div><div class="bits">' + c + "</div></div>";
+    }
+    comp = row("n", st.n, -1) + row("~n（按位取反）", st.comp, -1) + row("-n = ~n + 1", st.neg, -1) + row("n & (-n) = " + st.lb, st.lb, st.pos);
+    $("s1comp").innerHTML = comp + '<div class="hint" style="margin-top:6px">只有最低位的 1 在 n 与 -n 里同时为 1（更低的位置 n 是 0、-n 由进位填 1；更高的位置被 ~n 取反抹成 0），所以相与后只留这一位。</div>';
+  } else {
+    $("s1comp").innerHTML = '<div class="hint">进入循环体第 9 行时才计算补码；上面第 8 行只做 n > 0 的判断。</div>';
+  }
+  var K = [["n（当前余值）", st.n], ["cnt", st.cnt], ["s", st.s], ["lb", st.lb === null ? "—" : st.lb]];
+  $("s1keys").innerHTML = K.map(function (x, i) { return '<div class="k' + (i === 3 && st.lb !== null ? " hl" : "") + '"><div class="lab">' + x[0] + '</div><div class="val">' + x[1] + "</div></div>"; }).join("");
+  $("s1inv").textContent = "s + n = " + st.s + " + " + st.n + " = " + st.inv + (st.inv === n0 ? "（恒等于原始 n = " + n0 + "）" : "（= 原始 n + lb，第 12 行 n -= lb 后马上回到 " + n0 + "）");
+  $("s1out").innerHTML = st.out ? '<div class="outp">stdout: ' + st.out + "</div>" : '<div class="hint">循环还没结束，cout 那一行尚未执行。</div>';
+  $("s1why").innerHTML = "<b>循环不变量：s + n = 原始 n。</b>每轮 <code>n -= lb</code> 删掉一个二进制 1 位，同时 <code>s += lb</code> 把这一位的权值原样搬进 s，两边之和始终不变。于是 n 被删到 0 时，所有权值都搬到了 s 里，s 必然等于原来的 n；而删的次数 cnt 就是 1 的个数（popcount）。这正是判断 1-1、选择 1-4 与 1-6 的依据。严格说，只在第 11 句与第 12 句之间会短暂多出一个 lb（看上面那格的颜色提示），两句跑完立刻恢复——不变量是对“循环体整体”而言的。";
+  var prev = state.s1.t > 0 ? sim.steps[state.s1.t - 1] : null;
+  renderVars([
+    { k: "n", v: st.n, chg: !prev || prev.n !== st.n },
+    { k: "cnt", v: st.cnt, chg: !prev || prev.cnt !== st.cnt },
+    { k: "s", v: st.s, chg: !prev || prev.s !== st.s },
+    { k: "lb", v: st.lb === null ? "—" : st.lb, chg: !prev || prev.lb !== st.lb },
+    { k: "-n（" + st.B + " 位补码）", v: st.neg === null ? "—" : bitsOf(st.neg, st.B), chg: !prev || prev.neg !== st.neg },
+    { k: "s + n", v: st.inv },
+    { k: "原始 n", v: n0 }
+  ]);
+  $("codename").textContent = "程序源码（逐字抄自 programs/s1.cpp；演示只把第 7 行的 2026 换成 " + n0 + "）";
+  renderCode("s1", st.line);
+  $("link").innerHTML = "讲义《程序 S-1：lowbit 拆位》：判断 1-1（输出 <b>8 2026</b>）、1-2（补码性质）、1-3（n=0 输出 0 0），选择 1-4/1-5/1-6 = B/A/C，逐轮追踪表 n=2026 的 8 轮。";
+}
+
+/* ---------- S2 渲染 ---------- */
+function layoutS2(sim) {
+  var leafIdx = 0;
+  function visit(id) {
+    var nd = sim.nodes[id];
+    if (nd.children.length === 0 || nd.hit) { nd.x = leafIdx++; }
+    else { for (var i = 0; i < nd.children.length; i++) visit(nd.children[i]); nd.x = (sim.nodes[nd.children[0]].x + sim.nodes[nd.children[1]].x) / 2; }
+  }
+  visit(0);
+  return leafIdx;
+}
+function renderS2() {
+  var sim = state.s2.sim, st = sim.steps[state.s2.t];
+  var leafCount = layoutS2(sim);
+  var W = 900, rowH = sim.maxDepth > 14 ? 40 : 48, H = (sim.maxDepth + 1) * rowH + 44;
+  var padX = 26, innerW = W - padX * 2, sp = innerW / leafCount;
+  var r = Math.max(4, Math.min(15, sp * 0.44));
+  var showIn = sp > 34;
+  var curNode = st.node;
+  function pathOf(id) { var arr = []; while (id !== null && id !== undefined) { arr.push(id); id = sim.nodes[id].parent; } return arr; }
+  var path = st.type === "done" ? [0] : pathOf(curNode);
+  var e = "", g = "";
+  // 连线
+  for (var i = 0; i < sim.nodes.length; i++) {
+    var nd = sim.nodes[i];
+    if (nd.appearedAt > state.s2.t) continue;
+    if (nd.children.length === 0 || nd.hit) continue;
+    for (var c = 0; c < 2; c++) {
+      var ch = sim.nodes[nd.children[c]];
+      if (ch.appearedAt > state.s2.t) continue;
+      var x1 = padX + (nd.x + 0.5) * sp, y1 = nd.depth * rowH + 20 + r;
+      var x2 = padX + (ch.x + 0.5) * sp, y2 = ch.depth * rowH + 20 + r - r;
+      g += '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + (y2 - 2) + '" stroke="' + (path.indexOf(ch.id) >= 0 ? "#f59e6b" : "#3a4270") + '" stroke-width="' + (path.indexOf(ch.id) >= 0 ? 2.2 : 1.2) + '"/>';
+    }
+  }
+  // 结点
+  for (i = 0; i < sim.nodes.length; i++) {
+    nd = sim.nodes[i];
+    if (nd.appearedAt > state.s2.t) continue;
+    var cx = padX + (nd.x + 0.5) * sp, cy = nd.depth * rowH + 20 + r;
+    var resolved = state.s2.t >= nd.resolvedAt && (nd.leaf || nd.hit || nd.children.length === 2);
+    var isCur = (i === curNode && st.type !== "done");
+    var onPath = path.indexOf(i) >= 0;
+    var fill = "#232a4a", stroke = "#3a4270", sw = 1.2;
+    if (nd.leaf) { fill = "#1d3a4d"; stroke = "#5eead4"; }
+    if (nd.hit) { fill = "#3b2434"; stroke = "#c084fc"; }
+    if (onPath && !isCur) { stroke = "#5eead4"; sw = 2; }
+    if (isCur) { stroke = "#f59e6b"; sw = 3; fill = "#4a3520"; }
+    g += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + sw + '"><title>C(' + nd.n + "," + nd.m + ") calls=" + nd.callsAt + (nd.hit ? " 命中记忆化" : "") + "</title></circle>";
+    if (showIn) {
+      g += '<text x="' + cx + '" y="' + (cy + 5) + '" font-size="14" text-anchor="middle" fill="' + (resolved ? "#e8ecff" : "#5a6488") + '">' + (resolved ? nd.value : nd.n + "," + nd.m) + "</text>";
+    }
+    if (isCur && !showIn) {
+      var rgt = cx < W / 2;
+      g += '<text x="' + (rgt ? cx + r + 6 : cx - r - 6) + '" y="' + (cy + 5) + '" font-size="14" text-anchor="' + (rgt ? "start" : "end") + '" fill="#f59e6b">(' + nd.n + "," + nd.m + ")" + (st.type === "return" ? " = " + nd.value : "") + "</text>";
+    }
+  }
+  e = '<svg viewBox="0 0 ' + W + " " + H + '" style="width:100%;height:auto;display:block" preserveAspectRatio="xMidYMid meet">' + g + "</svg>";
+  if (!showIn) e += '<div class="hint">结点太密（共 ' + sim.total + " 个，横向已放不下标注）：橙色圆 = 当前这一次调用，旁边直接标出它的 (n,m)；亮线 = 当前调用栈路径。想逐结点看清，把 n、m 调小到叶子不超过约 25 个即可。</div>";
+  $("s2tree").innerHTML = e;
+  txt("s2calls", st.calls);
+  txt("s2cur", "(" + st.n + "," + st.m + ")");
+  txt("s2kind", st.type === "enter" ? (sim.nodes[st.node].leaf ? "叶子：返回 1" : (sim.nodes[st.node].hit ? "命中 memo：返回 " + sim.nodes[st.node].value : "内部结点：继续展开")) : (st.type === "return" ? "内部结点返回 " + st.value : "输出 ans calls"));
+  // 累计统计（按当前步真实数出来的，不是硬编码）
+  var le = 0, it = 0, tot = 0, hit = 0;
+  for (i = 0; i < sim.nodes.length; i++) {
+    if (sim.nodes[i].appearedAt > state.s2.t) continue;
+    tot++;
+    if (sim.nodes[i].leaf) le++;
+    else if (sim.nodes[i].hit) hit++;
+    else it++;
+  }
+  var K = sim.memo
+    ? [["calls（实测）", st.calls], ["已出现结点", tot], ["叶子（基线返回 1）", le], ["命中 memo", hit], ["真正展开的状态", it]]
+    : [["calls（实测）", st.calls], ["已出现结点", tot], ["叶子（累计）", le], ["内部结点（累计）", it], ["2·C−1", 2 * sim.ans - 1]];
+  $("s2keys").innerHTML = K.map(function (x, idx) { return '<div class="k' + (idx === 0 ? " hl" : "") + '"><div class="lab">' + x[0] + '</div><div class="val">' + x[1] + "</div></div>"; }).join("");
+  if (sim.memo) {
+    $("s2formula").innerHTML = "<b>记忆化后 calls = 1 + 2×" + sim.nExp + " = " + sim.calls + "</b>：真正展开的不同状态只有 " + sim.nExp +
+      " 个，每个恰好发起 2 次子调用；根结点是唯一“不被调用就存在”的调用，所以再加 1。" +
+      "去重后的状态总数 = " + sim.nExp + " 个内部状态 + " + sim.nLeaf + " 个基线状态 = " + (sim.nExp + sim.nLeaf) +
+      "，另有 " + sim.nHit + " 次调用被 memo 当场接住（它们仍然 ++calls，只是不再展开子树）。" +
+      "对照无记忆化的 2·C(" + sim.nm[0] + "," + sim.nm[1] + ")−1 = " + (2 * sim.ans - 1) + " 次：路径计数被换成了状态计数，这就是 DP 的本质。";
+  } else {
+    $("s2formula").innerHTML = "<b>一句话：叶子的返回值都是 1，内部结点把子树相加，所以根的值 = 叶子个数 = C(" + sim.nm[0] + "," + sim.nm[1] + ") = " + sim.ans +
+      "；而每个内部结点恰好生出 2 个孩子，满二叉树里内部结点数 = 叶子数 − 1 = " + (sim.leaves - 1) +
+      "，于是 calls = 叶子 + 内部 = 2·" + sim.ans + "−1 = " + sim.calls + "。</b>";
+  }
+  $("s2out").innerHTML = st.type === "done" ? '<div class="outp">stdout: ' + sim.out + "</div>" : '<div class="hint">还在递归中，第 ' + (sim.memo ? 14 : 14) + " 行的 cout 尚未执行（预期 " + sim.out + "）。</div>";
+  var prev = state.s2.t > 0 ? sim.steps[state.s2.t - 1] : null;
+  renderVars([
+    { k: "calls", v: st.calls, chg: !prev || prev.calls !== st.calls },
+    { k: "栈深（当前路径长）", v: path.length },
+    { k: "当前 C(n,m)", v: "(" + st.n + "," + st.m + ")" },
+    { k: "第 8 行 m==0 || n==m", v: (sim.nodes[st.node].leaf ? "真" : "假") },
+    { k: sim.memo ? "memo[n][m] 命中" : "本结点返回值", v: sim.memo ? (sim.nodes[st.node].hit ? "是（" + sim.nodes[st.node].value + "）" : "否") : (st.value !== undefined ? st.value : "未定") },
+    { k: "ans（根的值）", v: st.type === "done" ? sim.ans : "未定" },
+    { k: "结点总数", v: sim.total }
+  ]);
+  $("codename").textContent = "程序源码（逐字抄自 programs/" + (sim.memo ? "s2_memo.cpp" : "s2.cpp") + "；演示只把 main 里的 C(6, 3) 换成 C(" + sim.nm[0] + "," + sim.nm[1] + ")）";
+  renderCode(sim.memo ? "s2m" : "s2", st.line);
+  $("link").innerHTML = sim.memo
+    ? "讲义《程序 S-2》选择 2-5：加记忆化后 calls = <b>19</b>（本地实测 <code>s2_memo</code> 输出 <b>20 19</b>），判断 2-3 因此为 ✗。"
+    : "讲义《程序 S-2》判断 2-1（ans=20）、2-2（calls=39），选择 2-4 = B（2C−1）；推导“叶子数 = 组合数、内部 = 叶子−1”。";
+}
+
+/* ---------- S3 渲染 ---------- */
+function renderS3() {
+  var sim = state.s3.sim, st = sim.steps[state.s3.t], a = sim.a, n = sim.n;
+  var W = 900, H = 250, padX = 16, slot = (W - padX * 2) / n, base = H - 58;
+  var mx = Math.max.apply(null, a.concat([1]));
+  var cx = function (i) { return padX + slot * (i + 0.5); };
+  var bw = Math.min(52, slot * 0.62);
+  var g = '<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f59e6b"/></marker></defs>';
+  g += '<line x1="0" y1="' + (base + 1) + '" x2="' + W + '" y2="' + (base + 1) + '" stroke="#3a4270" stroke-width="1"/>';
+  // 箭头
+  var ar = st.arrows;
+  for (var k = 0; k < ar.length; k++) {
+    var A = ar[k], from = cx(A.from);
+    var hy = 26 + Math.min(k, 6) * 15;
+    g += '<path d="M' + from + "," + (base - (a[A.from] / mx) * (base - 40) - 12) + " Q" + ((from + cx(A.to)) / 2) + "," + (hy - 16) + " " + cx(A.to) + "," + (base - (a[A.to] / mx) * (base - 40) - 10) + '" fill="none" stroke="' + (k === ar.length - 1 ? "#f59e6b" : "#8b93b5") + '" stroke-width="' + (k === ar.length - 1 ? 2.6 : 1.4) + '" marker-end="url(#ah)"/>';
+  }
+  for (var i = 0; i < n; i++) {
+    var bh = (a[i] / mx) * (base - 40);
+    var inStk = st.st.indexOf(i) >= 0;
+    var col = st.res[i] === null ? "#394373" : (st.res[i] === -1 ? "#7c4a6a" : "#2b6a7f");
+    if (st.i === i) col = "#4a3520";
+    g += '<rect x="' + (cx(i) - bw / 2) + '" y="' + (base - bh) + '" width="' + bw + '" height="' + bh + '" fill="' + col + '" stroke="' + (st.i === i ? "#f59e6b" : (inStk ? "#5eead4" : "#3a4270")) + '" stroke-width="' + (st.i === i || inStk ? 2.4 : 1.2) + '"/>';
+    g += '<text x="' + cx(i) + '" y="' + (base - bh - 7) + '" font-size="15" text-anchor="middle" fill="#e8ecff">' + a[i] + "</text>";
+    g += '<text x="' + cx(i) + '" y="' + (base + 19) + '" font-size="14" text-anchor="middle" fill="#8b93b5">a[' + i + "]</text>";
+    g += '<text x="' + cx(i) + '" y="' + (base + 37) + '" font-size="14" text-anchor="middle" fill="#5eead4">进' + st.inCnt[i] + " 出" + st.outCnt[i] + "</text>";
+  }
+  if (st.i !== null && st.top !== null) {
+    g += '<text x="' + cx(n - 1) + '" y="20" font-size="15" text-anchor="end" fill="#f59e6b">a[st.top()]=' + a[st.top] + (st.cmp ? " &lt; " : " ≥ ") + "a[" + st.i + "]=" + a[st.i] + " → " + (st.cmp ? "真" : "假") + "</text>";
+  } else if (st.i !== null) {
+    g += '<text x="' + cx(n - 1) + '" y="20" font-size="15" text-anchor="end" fill="#f59e6b">i=' + st.i + " 栈空，条件短路为假</text>";
+  }
+  $("s3chart").innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" style="width:100%;height:auto;display:block" preserveAspectRatio="xMidYMid meet">' + g + "</svg>";
+  // 栈（栈底在下）
+  txt("s3slab", "栈 st 长度 " + st.st.length + "（本次运行峰值 " + sim.maxStk + "）；下=栈底，上=栈顶。");
+  var sh = "";
+  for (i = 0; i < st.st.length; i++) {
+    sh += '<div class="scell' + (i === st.st.length - 1 ? " top" : "") + '">st.top()=' + st.st[i] + " (a=" + a[st.st[i]] + ")" + (i === st.st.length - 1 ? "  ← 栈顶" : "") + "</div>";
+  }
+  $("s3stack").innerHTML = sh || '<div class="scell" style="opacity:.5">（空栈）</div>';
+  var rr = "";
+  for (i = 0; i < n; i++) {
+    rr += '<div class="rc' + (st.res[i] === null ? "" : (st.res[i] === -1 ? " minus" : " set")) + (st.newRes === i ? " new" : "") + '">res[' + i + "]=" + (st.res[i] === null ? "_" : st.res[i]) + "</div>";
+  }
+  $("s3res").innerHTML = rr;
+  txt("s3stk", "栈内对应值自底向上严格递减（这是不变量）：[" + st.st.map(function (j) { return a[j]; }).join(", ") + "]");
+  $("s3out").innerHTML = st.out ? '<div class="outp">stdout: ' + st.out + "</div>" : '<div class="hint">第 24 行的输出循环还没执行。</div>';
+  $("s3why").innerHTML = "<b>均摊 O(n) 看柱子角上的计数器：</b>每个下标恰好进栈 1 次，出栈最多 1 次（要么被某个更大的 a[i] 弹出，要么在收尾循环里被写 -1 弹出）。所以 while 循环体总执行次数 ≤ n，第 13 行的判断次数 ≤ 2n，总操作 ≤ 3n，是 O(n) 而不是 O(n²)。" +
+    "本次运行进栈 " + sim.inCnt.reduce(function (x, y) { return x + y; }, 0) + " 次、出栈 " + sim.outCnt.reduce(function (x, y) { return x + y; }, 0) + " 次，栈最大长度 " + sim.maxStk + "。";
+  var prev = state.s3.t > 0 ? sim.steps[state.s3.t - 1] : null;
+  renderVars([
+    { k: "i", v: st.i === null ? "—" : st.i, chg: !prev || prev.i !== st.i },
+    { k: "a[i]", v: st.i === null ? "—" : a[st.i], chg: !prev || prev.i !== st.i },
+    { k: "st.top()", v: st.st.length ? st.st[st.st.length - 1] : "空" },
+    { k: "a[st.top()]", v: st.st.length ? a[st.st[st.st.length - 1]] : "—" },
+    { k: "a[st.top()] < a[i]", v: st.cmp === null ? "—" : (st.cmp ? "真" : "假"), chg: !prev || prev.cmp !== st.cmp },
+    { k: "st.size()", v: st.st.length + "  [" + st.st.join(", ") + "]" },
+    { k: "st.pop() 影响", v: st.popped === null ? "—" : "下标 " + st.popped + " 出栈", chg: st.popped !== null },
+    { k: "res[]", v: st.res.map(function (x) { return x === null ? "_" : x; }).join(" ") }
+  ]);
+  $("codename").textContent = "程序源码（逐字抄自 programs/s3.cpp；演示只把第 8 行的数组换成 a = {" + a.join(", ") + "}）";
+  renderCode("s3", st.line);
+  $("link").innerHTML = "讲义《程序 S-3》：判断 3-1（res[3]=6）、3-2（存的是下标 ✗）、3-3（改 <= 仍对 ✓）；选择 3-4/3-5/3-6 = B/C/B（栈峰值 " + sim.maxStk + "）；逐元素栈状态追踪表。";
+}
+
+/* ---------- 总线控 ---------- */
+function curSim() { return state[active].sim; }
+function curT() { return state[active].t; }
+function setT(v) { state[active].t = v; render(); }
+function render() {
+  if (active === "s1") renderS1(); else if (active === "s2") renderS2(); else renderS3();
+  var N = curSim().steps.length;
+  txt("prog", "第 " + (curT() + 1) + " / " + N + " 步");
+  $("narr").textContent = curSim().steps[curT()].note;
+  $("prev").disabled = curT() === 0;
+  $("next").disabled = curT() >= N - 1;
+}
+function stopPlay() { if (timer) { clearInterval(timer); timer = null; $("play").textContent = "自动播放"; $("play").classList.remove("on"); } }
+function startPlay() {
+  if (timer) return;
+  $("play").textContent = "暂停"; $("play").classList.add("on");
+  timer = setInterval(function () {
+    if (curT() >= curSim().steps.length - 1) { stopPlay(); return; }
+    setT(curT() + 1);
+  }, Math.round(900 / speed));
+}
+function switchTab(name) {
+  stopPlay();
+  active = name;
+  var bs = $("tabbar").querySelectorAll("button");
+  for (var i = 0; i < bs.length; i++) bs[i].classList.toggle("on", bs[i].getAttribute("data-tab") === name);
+  for (i = 0; i < tabs.length; i++) $("doc-" + tabs[i]).classList.toggle("show", tabs[i] === name);
+  render();
+}
+$("tabbar").addEventListener("click", function (e) {
+  var b = e.target.closest("button"); if (!b) return; switchTab(b.getAttribute("data-tab"));
+});
+$("prev").onclick = function () { stopPlay(); if (curT() > 0) setT(curT() - 1); };
+$("next").onclick = function () { stopPlay(); if (curT() < curSim().steps.length - 1) setT(curT() + 1); };
+$("end").onclick = function () { stopPlay(); setT(curSim().steps.length - 1); };
+$("home").onclick = function () { stopPlay(); setT(0); };
+$("play").onclick = function () { if (timer) { stopPlay(); } else { if (curT() >= curSim().steps.length - 1) setT(0); startPlay(); } };
+document.querySelectorAll(".spd button").forEach(function (b) {
+  b.onclick = function () {
+    speed = parseInt(b.getAttribute("data-sp"), 10);
+    document.querySelectorAll(".spd button").forEach(function (x) { x.classList.remove("on"); });
+    b.classList.add("on");
+    if (timer) { stopPlay(); startPlay(); }
+  };
+});
+document.addEventListener("keydown", function (e) {
+  if (e.target && e.target.tagName === "INPUT") return;
+  if (e.key === "ArrowLeft") { e.preventDefault(); $("prev").click(); }
+  else if (e.key === "ArrowRight") { e.preventDefault(); $("next").click(); }
+  else if (e.key === " " || e.code === "Space") { e.preventDefault(); $("play").click(); }
+});
+/* 输入 */
+$("load-s1").onclick = function () {
+  var v = parseInt($("in-s1").value.trim(), 10);
+  if (!Number.isFinite(v) || v < 0 || v > 1000000) { alert("n 必须是 0 ~ 1000000 的整数（再大位带画不下，真实程序照样跑）。"); return; }
+  state.s1.n0 = v; rebuild("s1"); render();
+  txt("hint-s1", "popcount(" + v + ") = " + state.s1.sim.cnt + "，位带 " + state.s1.sim.B + " 位，共 " + state.s1.sim.steps.length + " 步。");
+};
+$("load-s2").onclick = function () {
+  var n = parseInt($("in-n").value.trim(), 10), m = parseInt($("in-m").value.trim(), 10);
+  if (!Number.isFinite(n) || !Number.isFinite(m) || n < 1 || m < 0 || m > n || n > 20) { alert("要求 1 ≤ n ≤ 20 且 0 ≤ m ≤ n。"); return; }
+  var C = comb(n, m);
+  if (C > comb(10, 5)) { alert("C(" + n + "," + m + ") = " + C + "，结点数会达到 2·C−1 = " + (2 * C - 1) + "，超过 C(10,5)=252 的上限，画面会糊成一团。请改小一点。"); return; }
+  if (n >= 20) { alert("n 需 < 20（记忆化数组 memo[20][20] 的边界）。"); return; }
+  state.s2.n = n; state.s2.m = m; rebuild("s2");
+  if (state.s2.sim.calls > 503) { alert("无记忆化调用次数 " + state.s2.sim.calls + " 过大，已自动改小范围之外，请调整。"); return; }
+  txt("hint-s2", "C(" + n + "," + m + ")=" + state.s2.sim.ans + "，叶子 " + state.s2.sim.leaves + "，内部 " + state.s2.sim.internals + "，结点 " + state.s2.sim.total + "，" + state.s2.sim.steps.length + " 步。");
+  render();
+};
+$("memo-btn").onclick = function () {
+  state.s2.memo = !state.s2.memo;
+  $("memo-btn").textContent = "记忆化：" + (state.s2.memo ? "开（s2_memo.cpp）" : "关");
+  $("memo-btn").classList.toggle("on", state.s2.memo);
+  rebuild("s2"); render();
+  txt("hint-s2", (state.s2.memo ? "记忆化后 calls = " : "无记忆化 calls = ") + state.s2.sim.calls + "，步数 " + state.s2.sim.steps.length + "；本地实测 " + (state.s2.memo ? "s2_memo.cpp → 20 19" : "s2.cpp → 20 39") + "。");
+};
+$("load-s3").onclick = function () {
+  var v = $("in-s3").value.trim().split(/[\s,]+/).map(Number).filter(function (x) { return Number.isFinite(x); });
+  if (v.length < 1 || v.length > 12) { alert("最多 12 个数（再密柱子上的字就叠住了）。"); return; }
+  state.s3.a = v; rebuild("s3");
+  txt("hint-s3", "n=" + v.length + "，栈峰值 " + state.s3.sim.maxStk + "，输出 [" + state.s3.sim.res.join(" ") + "]，共 " + state.s3.sim.steps.length + " 步。");
+  render();
+};
+
+/* ---------- 启动：步骤全部由模拟器现算 ---------- */
+state.s1.n0 = 2026; state.s2.n = 6; state.s2.m = 3; state.s3.a = [5, 3, 8, 1, 6, 2, 4];
+rebuild("s1"); rebuild("s2"); rebuild("s3");
+txt("hint-s1", "默认 n=2026：" + state.s1.sim.cnt + " 个 1 位，位带 " + state.s1.sim.B + " 位，" + state.s1.sim.steps.length + " 步，输出 " + state.s1.sim.out + "。");
+txt("hint-s2", "默认 C(6,3)：叶子 " + state.s2.sim.leaves + "，内部 " + state.s2.sim.internals + "，calls " + state.s2.sim.calls + "，" + state.s2.sim.steps.length + " 步，输出 " + state.s2.sim.out + "。");
+txt("hint-s3", "默认 a={5,3,8,1,6,2,4}：输出 [" + state.s3.sim.res.join(" ") + "]，" + state.s3.sim.steps.length + " 步。");
+switchTab("s1");
+</script>
+</body>
+</html>

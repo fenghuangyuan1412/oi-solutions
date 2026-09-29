@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CSP-J 2026 第一轮 阅读程序 · 逐步追踪</title>
+<style>
+:root{--bg:#0f1220;--card:#1a1f35;--ink:#e8ecff;--dim:#8b93b5;--acc:#5eead4;--bad:#f59e6b;--good:#5eead4;--line:#262c4a;}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+  font-family:"Microsoft YaHei","PingFang SC","Segoe UI",Arial,sans-serif;font-size:15px;line-height:1.6;}
+.wrap{max-width:1400px;margin:0 auto;padding:14px 20px 48px;}
+h1{font-size:22px;margin:4px 0 2px;}
+.sub{color:var(--dim);font-size:14px;margin:0 0 14px;}
+.tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.tab{background:var(--card);border:1px solid var(--line);color:var(--dim);
+  border-radius:10px;padding:8px 14px;font-size:15px;cursor:pointer;}
+.tab.on{color:var(--acc);border-color:var(--acc);}
+.tab small{display:block;color:var(--dim);font-size:13px;}
+.tab.on small{color:var(--dim);}
+.meta{background:var(--card);border:1px solid var(--line);border-radius:10px;
+  padding:8px 12px;margin-bottom:10px;color:var(--dim);font-size:14px;}
+.meta b{color:var(--ink);}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  background:var(--card);border:1px solid var(--line);border-radius:10px;
+  padding:10px 12px;margin-bottom:10px;}
+.btn{background:#232a4d;border:1px solid var(--line);color:var(--ink);
+  border-radius:8px;padding:6px 14px;font-size:14px;cursor:pointer;}
+.btn:hover{border-color:var(--acc);}
+.btn.on{border-color:var(--acc);color:var(--acc);}
+.btn:disabled{opacity:.4;cursor:default;}
+.stepno{color:var(--dim);font-size:14px;min-width:110px;}
+.sep{width:1px;height:22px;background:var(--line);margin:0 4px;}
+.lab{color:var(--dim);font-size:14px;}
+.nbox{display:flex;gap:6px;align-items:center;}
+.nbox input{width:76px;background:#12172c;border:1px solid var(--line);color:var(--ink);
+  border-radius:6px;padding:5px 8px;font-size:14px;}
+#narr{background:#141a30;border:1px solid var(--line);border-left:4px solid var(--acc);
+  border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:15px;min-height:48px;}
+.main{display:grid;grid-template-columns:minmax(0,480px) minmax(0,1fr);gap:16px;align-items:start;}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:12px 14px;min-width:0;overflow-wrap:break-word;}
+.ptitle{font-size:14px;color:var(--dim);margin-bottom:8px;border-bottom:1px solid var(--line);padding-bottom:6px;}
+.cl{display:flex;gap:10px;font-family:Consolas,"Courier New",monospace;
+  font-size:14px;line-height:1.6;padding:0 6px;border-radius:4px;white-space:pre;}
+.cl .ln{width:24px;text-align:right;color:var(--dim);flex:none;user-select:none;}
+.cl .lt{color:var(--ink);}
+.cl.cur{background:rgba(94,234,212,.13);box-shadow:inset 3px 0 0 var(--acc);}
+.cl.cur .lt{color:var(--acc);}
+.viz{display:none;}
+.viz.on{display:block;}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px;}
+.tile{min-width:44px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);
+  background:#12172c;text-align:center;font-size:14px;}
+.tile .k{display:block;color:var(--dim);font-size:13px;}
+.tile .v{display:block;font-size:18px;font-weight:700;}
+.tile.todo{color:var(--dim);}
+.tile.past{border-color:var(--dim);}
+.tile.cur{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc);}
+.tile.div{border-color:var(--good);background:rgba(94,234,212,.10);}
+.tile.div .v{color:var(--good);}
+.dtest{background:#12172c;border:1px solid var(--line);border-radius:10px;
+  padding:10px 14px;margin-bottom:12px;font-size:16px;}
+.dtest .rem{font-weight:700;}
+.dtest .rem.zero{color:var(--good);}
+.dtest .rem.nz{color:var(--bad);}
+.sumline{background:#12172c;border:1px solid var(--line);border-radius:10px;
+  padding:8px 14px;margin-bottom:12px;font-family:Consolas,monospace;font-size:15px;}
+.outbox{border:1px dashed var(--acc);border-radius:10px;padding:8px 14px;
+  font-family:Consolas,monospace;font-size:16px;color:var(--acc);margin-bottom:12px;}
+.note{color:var(--dim);font-size:14px;margin-bottom:10px;}
+table.vt{border-collapse:collapse;width:100%;margin-top:12px;font-size:14px;}
+table.vt th,table.vt td{border:1px solid var(--line);padding:6px 10px;text-align:left;}
+table.vt th{color:var(--dim);font-weight:400;background:#12172c;}
+table.vt td{font-family:Consolas,monospace;}
+.barsbox{display:flex;gap:10px;align-items:flex-end;padding:10px 4px 4px;min-height:180px;}
+.bcell{display:flex;flex-direction:column;align-items:center;gap:4px;width:52px;}
+.bvalue{font-size:15px;font-weight:700;}
+.bbar{width:46px;border-radius:6px 6px 2px 2px;background:#2c3561;border:1px solid var(--line);}
+.bidx{font-size:13px;color:var(--dim);}
+.bstat{font-size:13px;height:18px;color:var(--dim);}
+.bcell.set .bbar{border-color:var(--good);}
+.bcell.set .bstat{color:var(--good);}
+.bcell.hot .bbar{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc);}
+.bcell.hot .bstat{color:var(--acc);}
+.bcell.sw .bbar{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad);}
+.bcell.sw .bstat{color:var(--bad);}
+.bcell.sw .bvalue{color:var(--bad);}
+.sidegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px;}
+.stat{background:#12172c;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:14px;}
+.stat .v{display:block;font-size:20px;font-weight:700;}
+.stat .t{color:var(--dim);font-size:13px;}
+.chip{display:inline-block;border-radius:999px;padding:2px 10px;font-size:13px;
+  border:1px solid var(--good);color:var(--good);}
+.ladder{margin-bottom:12px;}
+.frow{display:flex;align-items:center;gap:8px;padding:3px 0;font-family:Consolas,monospace;font-size:15px;}
+.fbox{border-radius:8px;padding:4px 12px;border:1px solid var(--line);background:#12172c;}
+.frow.next .fbox{border-style:dashed;color:var(--dim);}
+.frow.here .fbox{border-color:var(--acc);color:var(--acc);box-shadow:0 0 0 1px var(--acc);}
+.frow.done .fbox{color:var(--dim);text-decoration:line-through;}
+.ftag{font-size:13px;color:var(--dim);}
+.frow.here .ftag{color:var(--acc);}
+.bitstrip{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:12px;}
+.bit{width:34px;height:34px;border-radius:8px;border:1px solid var(--good);
+  background:rgba(94,234,212,.12);color:var(--good);font-size:18px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;}
+.bit.empty{border-style:dashed;border-color:var(--line);color:var(--dim);background:none;}
+@media (max-width:1000px){.main{grid-template-columns:minmax(0,1fr);}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>CSP-J 2026 第一轮 · 阅读程序逐步追踪</h1>
+  <p class="sub">三个程序，一步一步演示计算机是怎么执行的。用「下一步」按钮或键盘 → / ← 翻步子，空格键播放 / 暂停。</p>
+
+  <div class="tabs">
+    <button class="tab on" data-tab="j1">J1 约数统计<small>循环 + 取模判断</small></button>
+    <button class="tab" data-tab="j2">J2 冒泡交换次数<small>双重循环 + 相邻交换</small></button>
+    <button class="tab" data-tab="j3">J3 十进制转二进制<small>递归：先钻下去，再回来输出</small></button>
+  </div>
+
+  <div class="meta" id="meta"></div>
+
+  <div class="bar">
+    <button class="btn" id="btnReset">回到开头</button>
+    <button class="btn" id="btnPrev">上一步</button>
+    <button class="btn" id="btnPlay">自动播放</button>
+    <button class="btn" id="btnNext">下一步</button>
+    <button class="btn" id="btnEnd">跳到末尾</button>
+    <span class="sep"></span>
+    <span class="stepno" id="stepno"></span>
+    <span class="sep"></span>
+    <span class="lab">速度</span>
+    <button class="btn spd on" data-spd="1">1x</button>
+    <button class="btn spd" data-spd="2">2x</button>
+    <button class="btn spd" data-spd="4">4x</button>
+    <span class="sep"></span>
+    <span class="nbox" id="ed-j1"><span class="lab">改 n（1~60）</span>
+      <input type="number" id="in-j1" min="1" max="60" value="12">
+      <button class="btn" data-regen="j1">重新演示</button></span>
+    <span class="nbox" id="ed-j3" style="display:none"><span class="lab">改 n（1~1000）</span>
+      <input type="number" id="in-j3" min="1" max="1000" value="13">
+      <button class="btn" data-regen="j3">重新演示</button></span>
+  </div>
+
+  <div id="narr"></div>
+
+  <div class="main">
+    <div class="panel">
+      <div class="ptitle">源程序（青色行 = 正在执行的行）</div>
+      <div id="code-j1"></div>
+      <div id="code-j2" style="display:none"></div>
+      <div id="code-j3" style="display:none"></div>
+    </div>
+
+    <div>
+      <div class="panel viz on" id="viz-j1">
+        <div class="ptitle">候选除数逐个试</div>
+        <div id="v-j1a"></div>
+        <div id="v-j1b"></div>
+        <div id="v-j1c"></div>
+        <div id="v-j1d"></div>
+        <table class="vt" id="vt-j1"></table>
+      </div>
+
+      <div class="panel viz" id="viz-j2">
+        <div class="ptitle">数组与冒泡过程</div>
+        <div id="v-j2round"></div>
+        <div class="barsbox" id="v-j2bars"></div>
+        <div id="v-j2test"></div>
+        <div class="sidegrid" id="v-j2side"></div>
+        <div id="v-j2note"></div>
+        <table class="vt" id="vt-j2"></table>
+      </div>
+
+      <div class="panel viz" id="viz-j3">
+        <div class="ptitle">递归调用阶梯（往下钻，再一层层返回）</div>
+        <div class="ladder" id="v-j3ladder"></div>
+        <div class="ptitle">输出缓冲（高位在左，逐个追加）</div>
+        <div class="bitstrip" id="v-j3bits"></div>
+        <table class="vt" id="vt-j3"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ---------------- 源程序文本（逐行带行号） ---------------- */
+const CODES = {
+  j1: [
+    '#include <iostream>',
+    'using namespace std;',
+    '',
+    'int main() {',
+    '    int n = 12, cnt = 0, s = 0;',
+    '    for (int i = 1; i <= n; ++i) {',
+    '        if (n % i == 0) {   // i 是 n 的约数',
+    '            ++cnt;           // 约数个数 +1',
+    '            s += i;          // 约数之和累加',
+    '        }',
+    '    }',
+    '    cout << cnt << " " << s << "\\n";',
+    '    return 0;',
+    '}'
+  ],
+  j2: [
+    '#include <iostream>',
+    'using namespace std;',
+    '',
+    'int main() {',
+    '    int a[6] = {5, 3, 8, 1, 6, 2};',
+    '    int cnt = 0;',
+    '    for (int i = 1; i <= 5; ++i) {',
+    '        for (int j = 5; j >= i; --j) {',
+    '            if (a[j] < a[j - 1]) {',
+    '                int t = a[j];',
+    '                a[j] = a[j - 1];',
+    '                a[j - 1] = t;',
+    '                ++cnt;',
+    '            }',
+    '        }',
+    '    }',
+    '    cout << cnt << "\\n";',
+    '    for (int i = 0; i < 6; ++i) cout << a[i] << " ";',
+    '    cout << "\\n";',
+    '    return 0;',
+    '}'
+  ],
+  j3: [
+    '#include <iostream>',
+    'using namespace std;',
+    '',
+    'int cnt = 0;',
+    '',
+    'void f(int n) {',
+    '    if (n <= 0) return;     // 递归出口',
+    '    f(n / 2);               // 先处理更高位',
+    '    ++cnt;                  // 记录输出次数',
+    '    cout << n % 2;          // 再输出当前位',
+    '}',
+    '',
+    'int main() {',
+    '    f(13);',
+    '    cout << " " << cnt << "\\n";',
+    '    return 0;',
+    '}'
+  ]
+};
+
+/* ---------------- 工具 ---------------- */
+function esc(x){return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function invCount(a){let c=0;for(let p=0;p<a.length;p++)for(let q=p+1;q<a.length;q++)if(a[p]>a[q])c++;return c;}
+
+/* ---------------- 步子生成器：J1 约数统计 ---------------- */
+function genJ1(n){
+  const steps=[];
+  let cnt=0,s=0,divs=[];
+  steps.push({line:5,narr:'第 5 行：初始化 n = '+n+'，cnt = 0，s = 0。接下来用 i 从 1 到 '+n+' 逐个去试除 '+n+'。',
+    st:{n:n,i:0,cnt:0,s:0,divs:[],test:null,done:false}});
+  for(let i=1;i<=n;i++){
+    const q=Math.floor(n/i), r=n%i;
+    steps.push({line:7,
+      narr:'第 6~7 行：取 i = '+i+'，算 '+n+' % '+i+'：'+n+' ÷ '+i+' = '+q+' 余 '+r+'。'+(r===0?'余数是 0，if 成立！':'余数不是 0，if 不成立，跳过循环体。'),
+      st:{n:n,i:i,cnt:cnt,s:s,divs:divs.slice(),test:{i:i,q:q,r:r},done:false}});
+    if(r===0){
+      cnt++;s+=i;divs.push(i);
+      steps.push({line:8,
+        narr:'第 8~9 行：'+i+' 是约数，执行 ++cnt（cnt = '+cnt+'）和 s += i（s = '+s+'）。',
+        st:{n:n,i:i,cnt:cnt,s:s,divs:divs.slice(),test:{i:i,q:q,r:r},done:false}});
+    }
+  }
+  steps.push({line:12,
+    narr:'第 12 行：循环结束，输出 '+cnt+' '+s+'。'+n+' 一共有 '+cnt+' 个约数，它们的和是 '+s+'。',
+    st:{n:n,i:n,cnt:cnt,s:s,divs:divs.slice(),test:null,done:true}});
+  return steps;
+}
+
+/* ---------------- 步子生成器：J2 冒泡交换次数 ---------------- */
+function genJ2(){
+  const A0=[5,3,8,1,6,2];
+  const INV0=invCount(A0);
+  const steps=[];
+  let a=A0.slice(),cnt=0;
+  const snap=function(line,narr,extra){
+    const st={arr:a.slice(),cnt:cnt,inv0:INV0,i:extra.i||0,j:extra.j||null,phase:extra.phase,cmp:extra.cmp||null};
+    steps.push({line:line,narr:narr,st:st});
+  };
+  snap(6,'第 5~6 行：数组 a = {5, 3, 8, 1, 6, 2}，cnt = 0。cnt 只统计真正发生的交换次数。',{phase:'init'});
+  for(let i=1;i<=5;i++){
+    snap(7,'第 7 行：第 '+i+' 轮开始，内层 j 从 5 递减到 '+i+'。前面 '+i+' 个位置（下标 0~'+(i-1)+'）本轮结束后就会永久就位。',{i:i,phase:'round'});
+    for(let j=5;j>=i;j--){
+      const left=a[j-1],right=a[j];
+      if(right<left){
+        snap(9,'第 8~9 行：j = '+j+'，比较 a['+j+'] = '+right+' 与 a['+(j-1)+'] = '+left+'：'+right+' < '+left+'，if 成立，要交换。',{i:i,j:j,phase:'cmp',cmp:[j-1,j]});
+        const t=a[j];a[j]=a[j-1];a[j-1]=t;cnt++;
+        snap(10,'第 10~13 行：交换这两个相邻的小方块，小的往前挪，cnt +1，cnt 现在是 '+cnt+'。',{i:i,j:j,phase:'swap',cmp:[j-1,j]});
+      }else{
+        snap(9,'第 8~9 行：j = '+j+'，比较 a['+j+'] = '+right+' 与 a['+(j-1)+'] = '+left+'：'+right+' 不小于 '+left+'，if 不成立，不交换，cnt 不变。',{i:i,j:j,phase:'cmp',cmp:[j-1,j]});
+      }
+    }
+  }
+  snap(17,'第 17 行：输出 cnt = '+cnt+'。恰好等于初始数组的逆序对数 '+INV0+'——每一趟交换正好消掉一个逆序对，所以交换次数 = 逆序对数。',{i:6,phase:'out1'});
+  snap(18,'第 18~19 行：依次输出排好序的数组：1 2 3 5 6 8，程序结束。',{i:6,phase:'out2'});
+  return steps;
+}
+
+/* ---------------- 步子生成器：J3 十进制转二进制递归 ---------------- */
+function genJ3(N){
+  const steps=[];
+  const frames=[];   // {v, st:'next'|'here'|'done'}
+  let cnt=0,out='';
+  const snap=function(line,narr){
+    steps.push({line:line,narr:narr,
+      st:{frames:frames.map(function(f){return {v:f.v,st:f.st};}),cnt:cnt,out:out,total:N}});
+  };
+  function rec(idx){
+    const v=frames[idx].v;
+    if(v<=0){
+      frames[idx].st='done';
+      snap(7,'第 7 行：f(0) 里 n <= 0 成立，命中递归出口，直接 return，一个字符都不输出。');
+      return;
+    }
+    frames[idx].st='here';
+    snap(7,'第 7 行：进入 f('+v+')，判断 n <= 0：'+v+' > 0，出口不成立，继续执行。');
+    const h=Math.floor(v/2);
+    frames.push({v:h,st:'next'});
+    snap(8,'第 8 行：先调用 f('+v+' / 2) = f('+h+')，让更深的递归去处理更高位——注意：本层的 ++cnt 和输出还没执行！');
+    rec(idx+1);
+    frames[idx].st='here';
+    cnt++;
+    snap(9,'第 9 行：从 f('+h+') 返回到 f('+v+')，开始往回走。执行 ++cnt，cnt = '+cnt+'。');
+    out+=String(v%2);
+    snap(10,'第 10 行：执行 cout << '+v+' % 2，输出这一位：'+(v%2)+'。（因为是返回时才输出，所以低位在最后。）');
+    frames[idx].st='done';
+    snap(11,'第 11 行：f('+v+') 执行完毕，返回上一层。');
+  }
+  frames.push({v:N,st:'next'});
+  snap(14,'第 14 行：main 里调用 f('+N+')，递归开始往下钻。');
+  rec(0);
+  snap(15,'第 15 行：所有递归返回后，main 输出一个空格和 cnt。程序最终输出：'+out+' '+cnt+'。');
+  return steps;
+}
+
+/* ---------------- 全局状态 ---------------- */
+const state={tab:'j1',idx:{j1:0,j2:0,j3:0},speed:1,timer:null};
+const STEPS={j1:genJ1(12),j2:genJ2(),j3:genJ3(13)};
+
+/* ---------------- 代码面板构建 ---------------- */
+['j1','j2','j3'].forEach(function(t){
+  const box=document.getElementById('code-'+t);
+  box.innerHTML=CODES[t].map(function(ln,i){
+    return '<div class="cl" data-l="'+(i+1)+'"><span class="ln">'+(i+1)+'</span><span class="lt">'+(esc(ln)||'&nbsp;')+'</span></div>';
+  }).join('');
+});
+
+/* ---------------- 各 tab 渲染 ---------------- */
+const $=function(id){return document.getElementById(id);};
+
+function rJ1(st){
+  let h='<div class="row">';
+  for(let k=1;k<=st.n;k++){
+    let cls='tile';
+    if(st.divs.indexOf(k)>=0)cls+=' div';
+    else if(k<=st.i)cls+=' past';
+    else cls+=' todo';
+    if(k===st.i)cls+=' cur';
+    h+='<div class="'+cls+'"><span class="k">i='+k+'</span><span class="v">'+k+'</span></div>';
+  }
+  h+='</div>';
+  $('v-j1a').innerHTML=h;
+
+  if(st.test){
+    const t=st.test;
+    $('v-j1b').innerHTML='<div class="dtest">第 7 行判断：'+st.n+' % '+t.i+
+      '&nbsp;&nbsp;竖式：'+st.n+' ÷ '+t.i+' = '+t.q+' 余 <span class="rem '+(t.r===0?'zero':'nz')+'">'+t.r+'</span>'+
+      '&nbsp;&nbsp;→&nbsp;&nbsp;<b>'+(t.r===0? t.i+' 是 '+st.n+' 的约数':' '+t.i+' 不是约数')+'</b></div>';
+  }else{
+    $('v-j1b').innerHTML='<div class="note">'+(st.done?'试除全部完成。':'还没开始检查，点「下一步」。')+'</div>';
+  }
+
+  let c='<div class="row">'+
+    '<div class="tile"><span class="k">cnt 约数个数</span><span class="v">'+st.cnt+'</span></div>'+
+    '<div class="tile"><span class="k">s 约数之和</span><span class="v">'+st.s+'</span></div>'+
+    '</div>';
+  $('v-j1c').innerHTML=c;
+
+  let d='';
+  if(st.divs.length)d+='<div class="sumline">s = '+st.divs.join(' + ')+' = '+st.s+'</div>';
+  if(st.done)d+='<div class="outbox">程序输出：'+st.cnt+' '+st.s+'</div>';
+  $('v-j1d').innerHTML=d;
+
+  $('vt-j1').innerHTML='<tr><th>变量</th><th>当前值</th><th>说明</th></tr>'+
+    '<tr><td>n</td><td>'+st.n+'</td><td>被试除的数</td></tr>'+
+    '<tr><td>i</td><td>'+(st.i===0?'（未进入循环）':st.i)+'</td><td>当前试到的候选约数</td></tr>'+
+    '<tr><td>cnt</td><td>'+st.cnt+'</td><td>已找到的约数个数</td></tr>'+
+    '<tr><td>s</td><td>'+st.s+'</td><td>约数之和</td></tr>';
+}
+
+function rJ2(st){
+  const settled=function(idx){
+    if(st.phase==='out1'||st.phase==='out2')return true;
+    if(st.phase==='round'||st.phase==='cmp'||st.phase==='swap')return idx<st.i;
+    return false;
+  };
+  let roundTxt='';
+  if(st.phase==='round'||st.phase==='cmp'||st.phase==='swap'){
+    roundTxt='<div class="note">第 '+st.i+' 轮（共 5 轮）：内层 <b>j 从 5 递减到 '+st.i+'</b>'+
+      (st.j!==null?'，当前 j = '+st.j+'，比较下标 '+(st.j-1)+' 与 '+st.j:'')+'。</div>';
+  }else if(st.phase==='init'){
+    roundTxt='<div class="note">初始数组，还未开始冒泡。</div>';
+  }else{
+    roundTxt='<div class="note">全部 '+ (5) +' 轮结束，数组已有序。</div>';
+  }
+  $('v-j2round').innerHTML=roundTxt;
+
+  let h='';
+  for(let k=0;k<6;k++){
+    let cls='bcell';
+    if(settled(k))cls+=' set';
+    if(st.cmp&&st.cmp.indexOf(k)>=0)cls+=(st.phase==='swap'?' sw':' hot');
+    const hpx=Math.round(28+st.arr[k]/8*110);
+    let stat='';
+    if(st.cmp&&st.cmp.indexOf(k)>=0)stat=(st.phase==='swap'?'换':'比');
+    else if(settled(k))stat='就位';
+    h+='<div class="'+cls+'"><div class="bvalue">'+st.arr[k]+'</div>'+
+       '<div class="bbar" style="height:'+hpx+'px"></div>'+
+       '<div class="bidx">a['+k+']</div><div class="bstat">'+stat+'</div></div>';
+  }
+  $('v-j2bars').innerHTML=h;
+
+  let test='';
+  if(st.phase==='cmp'&&st.cmp){
+    const j=st.j,L=st.arr[j-1],R=st.arr[j];
+    test='<div class="dtest">第 9 行判断：a['+j+'] &lt; a['+(j-1)+'] 即 '+R+' &lt; '+L+'？'+
+      '<b class="rem '+(R<L?'zero':'nz')+'">'+(R<L?'成立':'不成立')+'</b>'+
+      (R<L?'&nbsp;→ 交换并 cnt+1':'&nbsp;→ 什么都不做，j 继续减 1')+'</div>';
+  }else if(st.phase==='swap'&&st.cmp){
+    const j=st.j;
+    test='<div class="dtest">刚完成一次交换：a['+(j-1)+'] 与 a['+j+'] 对调，cnt +1。<span class="rem zero">这是消除一个逆序对</span></div>';
+  }else{
+    test='';
+  }
+  $('v-j2test').innerHTML=test;
+
+  const cur=invCount(st.arr), removed=st.inv0-cur;
+  $('v-j2side').innerHTML=
+    '<div class="stat"><span class="t">cnt（已交换次数）</span><span class="v">'+st.cnt+'</span></div>'+
+    '<div class="stat"><span class="t">已消除的逆序对</span><span class="v">'+removed+'</span></div>'+
+    '<div class="stat"><span class="t">剩余逆序对</span><span class="v">'+cur+'</span></div>'+
+    '<div class="stat"><span class="t">初始逆序对总数</span><span class="v">'+st.inv0+'</span></div>';
+
+  let note='';
+  if(st.phase==='out1'||st.phase==='out2'){
+    note='<div class="outbox">程序输出：9 和 1 2 3 5 6 8</div>';
+  }
+  note+='<div class="note">观察规律：每一步都有 <b>cnt = 已消除逆序对</b>「<span class="chip">'+st.cnt+' = '+removed+' 同步</span>」，而 初始 '+st.inv0+' = cnt + 剩余。一次相邻交换只能消掉恰好 1 个逆序对，所以总交换次数必然等于逆序对总数 9。'+
+    ' 剩余数变成 0 时，数组就有序了。</div>';
+  $('v-j2note').innerHTML=note;
+
+  let rows='<tr><th>变量</th><th>当前值</th><th>说明</th></tr>'+
+    '<tr><td>cnt</td><td>'+st.cnt+'</td><td>交换发生的次数</td></tr>'+
+    '<tr><td>i</td><td>'+(st.i===0?'（未开始）':st.i)+'</td><td>外层轮号，也是本轮 j 的下界</td></tr>'+
+    '<tr><td>j</td><td>'+(st.j?'5 递减中，j = '+st.j:'（本轮未开始）')+'</td><td>内层从 5 递减到 i</td></tr>'+
+    '<tr><td>a[0..5]</td><td>'+st.arr.join(' ')+'</td><td>数组当前状态（绿色边框 = 已就位）</td></tr>';
+  $('vt-j2').innerHTML=rows;
+}
+
+function rJ3(st){
+  let h='';
+  st.frames.forEach(function(f,idx){
+    let tag='';
+    if(f.st==='next')tag='将要进入';
+    else if(f.st==='here')tag='正在这一层执行';
+    else tag='已返回并输出完';
+    h+='<div class="frow '+f.st+'" style="margin-left:'+(idx*24)+'px">'+
+       '<div class="fbox">f('+f.v+')</div><div class="ftag">'+tag+
+       (f.st==='done'?'，返回时输出了 '+(f.v%2):'')+'</div></div>';
+    if(idx<st.frames.length-1&&f.st!=='done')h+='<div class="ftag" style="margin-left:'+((idx+1)*24+10)+'px">↓ 调用 f('+Math.floor(st.frames[idx+1].v)+') 之前先把更深一层压进栈</div>';
+    if(idx<st.frames.length-1&&f.st==='done')h+='<div class="ftag" style="margin-left:'+((idx+1)*24+10)+'px">↑ 从下一层返回</div>';
+  });
+  $('v-j3ladder').innerHTML=h;
+
+  let b='';
+  if(st.out.length===0)b='<div class="bit empty">空</div>';
+  for(let k=0;k<st.out.length;k++)b+='<div class="bit">'+st.out[k]+'</div>';
+  b+='<span class="note" style="margin:0 0 0 8px">先钻到 f(0) 出口，再在返回途中依次输出各位，高位先输出。</span>';
+  $('v-j3bits').innerHTML=b;
+
+  $('vt-j3').innerHTML='<tr><th>变量</th><th>当前值</th><th>说明</th></tr>'+
+    '<tr><td>cnt</td><td>'+st.cnt+'</td><td>全局变量，只在返回途中累加</td></tr>'+
+    '<tr><td>输出缓冲</td><td>'+(st.out||'（空）')+'</td><td>cout 已输出的字符，从左到右</td></tr>'+
+    '<tr><td>栈中层数</td><td>'+st.frames.length+'</td><td>阶梯上的 f(x) 一共出现过几层</td></tr>';
+}
+
+const RENDER={j1:rJ1,j2:rJ2,j3:rJ3};
+
+/* ---------------- 渲染调度 ---------------- */
+function render(){
+  const t=state.tab,steps=STEPS[t];
+  const k=Math.max(0,Math.min(state.idx[t],steps.length-1));
+  const st=steps[k];
+  ['j1','j2','j3'].forEach(function(o){
+    const sel='#code-'+o+' .cl';
+    document.querySelectorAll(sel).forEach(function(el){
+      el.classList.toggle('cur',(o===t)&&(parseInt(el.dataset.l,10)===st.line));
+    });
+  });
+  $('narr').textContent=st.narr;
+  $('stepno').textContent='第 '+(k+1)+' / '+steps.length+' 步';
+  RENDER[t](st.st);
+  $('btnPrev').disabled=(k===0);
+  $('btnNext').disabled=(k===steps.length-1);
+}
+
+function updateMeta(){
+  const t=state.tab;
+  let m='';
+  if(t==='j1'){
+    const n=clampN($('in-j1').value,1,60,12);
+    let c=0,s=0;for(let i=1;i<=n;i++)if(n%i===0){c++;s+=i;}
+    m='<b>J1 约数统计</b>：统计 '+n+' 有几个约数、约数之和是多少。当前 n = '+n+'，参考输出：<b>'+c+' '+s+'</b>。';
+  }else if(t==='j2'){
+    m='<b>J2 冒泡交换次数</b>：数组 {5,3,8,1,6,2} 做冒泡，cnt 数交换次数。参考输出：<b>9</b> 和 <b>1 2 3 5 6 8</b>。这个 n 固定，不可改。';
+  }else{
+    const N=clampN($('in-j3').value,1,1000,13);
+    const bits=N.toString(2),len=bits.replace(/0/g,'').length?'':'';
+    let cnt=0,x=N;while(x>0){cnt++;x=Math.floor(x/2);}
+    m='<b>J3 十进制转二进制</b>：f('+N+') 把 '+N+' 递归打印成二进制。当前 n = '+N+'，参考输出：<b>'+bits+' '+cnt+'</b>。';
+  }
+  $('meta').innerHTML=m;
+}
+
+/* ---------------- 控制 ---------------- */
+function clampN(v,lo,hi,dft){
+  v=parseInt(v,10);
+  if(isNaN(v))return dft;
+  return Math.max(lo,Math.min(hi,v));
+}
+function setTab(t){
+  stopPlay();
+  state.tab=t;
+  document.querySelectorAll('.tab').forEach(function(b){b.classList.toggle('on',b.dataset.tab===t);});
+  ['j1','j2','j3'].forEach(function(o){
+    $('code-'+o).style.display=(o===t?'block':'none');
+    $('viz-'+o).classList.toggle('on',o===t);
+  });
+  $('ed-j1').style.display=(t==='j1')?'flex':'none';
+  $('ed-j3').style.display=(t==='j3')?'flex':'none';
+  render();updateMeta();
+}
+document.querySelectorAll('.tab').forEach(function(b){
+  b.addEventListener('click',function(){setTab(b.dataset.tab);});
+});
+function go(d){
+  const t=state.tab,steps=STEPS[t];
+  state.idx[t]=Math.max(0,Math.min(steps.length-1,state.idx[t]+d));
+  render();
+}
+$('btnPrev').addEventListener('click',function(){stopPlay();go(-1);});
+$('btnNext').addEventListener('click',function(){stopPlay();go(1);});
+$('btnReset').addEventListener('click',function(){stopPlay();state.idx[state.tab]=0;render();});
+$('btnEnd').addEventListener('click',function(){stopPlay();state.idx[state.tab]=STEPS[state.tab].length-1;render();});
+
+const btnPlay=$('btnPlay');
+function stopPlay(){
+  if(state.timer){clearInterval(state.timer);state.timer=null;}
+  btnPlay.textContent='自动播放';btnPlay.classList.remove('on');
+}
+function startPlay(){
+  const t=state.tab;
+  if(state.idx[t]>=STEPS[t].length-1)state.idx[t]=0;
+  btnPlay.textContent='暂停';btnPlay.classList.add('on');
+  state.timer=setInterval(function(){
+    if(state.idx[t]<STEPS[t].length-1){state.idx[t]++;render();}
+    else stopPlay();
+  },900/state.speed);
+}
+btnPlay.addEventListener('click',function(){
+  if(state.timer)stopPlay();else startPlay();
+});
+document.querySelectorAll('.spd').forEach(function(b){
+  b.addEventListener('click',function(){
+    state.speed=parseInt(b.dataset.spd,10);
+    document.querySelectorAll('.spd').forEach(function(x){x.classList.toggle('on',x===b);});
+    if(state.timer){stopPlay();startPlay();}
+  });
+});
+document.querySelectorAll('[data-regen]').forEach(function(b){
+  b.addEventListener('click',function(){
+    const t=b.dataset.regen;
+    if(t==='j1'){const n=clampN($('in-j1').value,1,60,12);$('in-j1').value=n;STEPS.j1=genJ1(n);}
+    else{const n=clampN($('in-j3').value,1,1000,13);$('in-j3').value=n;STEPS.j3=genJ3(n);}
+    state.idx[t]=0;stopPlay();render();updateMeta();
+  });
+});
+['in-j1','in-j3'].forEach(function(id){
+  $(id).addEventListener('keydown',function(e){if(e.key==='Enter')document.querySelector('[data-regen="'+(id==='in-j1'?'j1':'j3')+'"]').click();});
+});
+document.addEventListener('keydown',function(e){
+  if(e.target&&e.target.tagName==='INPUT')return;
+  if(e.key==='ArrowRight'){e.preventDefault();stopPlay();go(1);}
+  else if(e.key==='ArrowLeft'){e.preventDefault();stopPlay();go(-1);}
+  else if(e.key===' '){e.preventDefault();if(state.timer)stopPlay();else startPlay();}
+});
+
+/* ---------------- 启动 ---------------- */
+setTab('j1');
+</script>
+</body>
+</html>
