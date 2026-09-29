@@ -1,0 +1,3 @@
+per-n matched: {1: 500, 2: 500, 3: 500, 4: 500, 5: 500, 6: 500}
+total groups = 3000, mismatch = 0
+RESULT: ALL MATCH -> r1 computes permanent

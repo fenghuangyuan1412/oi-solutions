@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>阅读程序(3) · xor 哈希找必经边对 —— SCP-S1 2026 分步演示</title>
+<style>
+  :root{--bg:#0f1220;--card:#1a1f35;--ink:#e8ecff;--dim:#8b93b5;--acc:#5eead4;--bad:#f59e6b;--good:#5eead4;--line:#262c4a;}
+  *{box-sizing:border-box}
+  body{margin:0;padding:20px;background:var(--bg);color:var(--ink);font:15px/1.65 "Segoe UI",system-ui,sans-serif}
+  h1{font-size:20px;margin:0 0 2px}
+  h2{font-size:16px;margin:0 0 8px;color:var(--acc)}
+  h3{font-size:15px;margin:12px 0 6px;color:var(--ink)}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px;max-width:1400px}
+  .card h2.t{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:0 0 10px}
+  .top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;max-width:1400px}
+  button{background:#2b3358;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 12px;font-size:14px;cursor:pointer;margin-right:2px}
+  button:hover:not(:disabled){background:#394373}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.tab{background:#1c2140}
+  button.tab.on{background:#2f6b62;border-color:var(--acc);color:#d8fff6;font-weight:600}
+  .prog{color:var(--dim);font-size:14px;margin-left:auto;white-space:nowrap}
+  select{background:#0d1020;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:6px 8px;font-size:14px}
+  .row{display:flex;gap:14px;flex-wrap:wrap}.row>div{flex:1;min-width:320px}
+  .k{background:#131730;border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-bottom:8px}
+  .k .lab{font-size:14px;color:var(--dim)}
+  .k .val{font:16px Consolas,monospace;margin-top:2px;word-break:break-all}
+  .k.acc .val{color:var(--acc)} .k.warn .val{color:var(--bad)}
+  .note{color:var(--dim);font-size:15px;min-height:66px;background:#131730;border:1px solid var(--line);border-radius:9px;padding:10px 13px}
+  .note b{color:var(--ink)} .note .hl{color:var(--acc)} .note .or{color:var(--bad)}
+  table{width:100%;border-collapse:collapse;font:14px Consolas,monospace}
+  th,td{padding:3px 8px;border-bottom:1px solid #222743;text-align:right;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  tr.cur td{background:#242c52;color:var(--acc)}
+  tr.dim td{opacity:.45}
+  td.ok{color:var(--good)} td.no{color:#f56c6c}
+  pre.src{margin:0;font:14px/1.45 Consolas,monospace;overflow-x:hidden;white-space:pre-wrap}
+  pre.src .ln{display:block;padding:0 8px;border-left:3px solid transparent;color:#9aa3c7}
+  pre.src .ln.on{background:#24344d;border-left-color:var(--acc);color:var(--ink)}
+  pre.src .ln .no{color:#57608a;display:inline-block;width:34px;text-align:right;margin-right:10px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{padding:4px 9px;border-radius:7px;background:#232a4a;border:1px solid #333c66;font:14px Consolas,monospace}
+  .chip.hi{border-color:#fde047;color:#fde047}
+  .chip.tree{border-color:var(--acc);color:var(--acc)}
+  .chip.back{border-color:var(--bad);color:var(--bad);border-style:dashed}
+  .chip.path{background:#1b3a38}
+  svg{width:100%;height:auto;display:block}
+  svg text{font-family:Consolas,monospace}
+  .ginfo{font:14px Consolas,monospace;color:var(--dim);margin-top:6px;min-height:22px}
+  textarea{width:100%;background:#0d1020;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:10px;font:14px Consolas,monospace;resize:vertical}
+  .small{font-size:14px;color:var(--dim)}
+  .formula{font:15px Consolas,monospace;background:#131730;border:1px solid var(--line);border-radius:9px;padding:10px 13px;margin:6px 0;word-break:break-all}
+  .formula .hl{color:var(--acc)} .formula .or{color:var(--bad)}
+  .tag{display:inline-block;padding:1px 8px;border-radius:6px;font-size:14px;margin-right:6px}
+  .tag.g{background:#1b3a38;color:var(--acc);border:1px solid var(--acc)}
+  .tag.o{background:#3a2b1b;color:var(--bad);border:1px solid var(--bad)}
+  .tabpane{display:none} .tabpane.on{display:block}
+</style>
+</head>
+<body>
+<h1>阅读程序(3)：用 xor 哈希在 DFS 树上找“必经边对”，并算出每个点的 ans[]</h1>
+<div class="sub">SCP-S1 2026（洛谷模拟卷）· 卷面行号 4~65 · 本页用 <b>33 题官方样例</b>（链 1-2-3-4-5 + 六元环 5-6-7-8-9-10-5）逐帧走一遍。程序最终输出 <b style="color:var(--acc)">0 1500 4100 7100 9500 10000 10300 10400 10300 10000</b>，每一步的公式都带真实数字。</div>
+
+<div class="top">
+  <button id="prev">上一步</button>
+  <button id="next">下一步</button>
+  <button id="play">自动播放</button>
+  <button id="end">跳到末尾</button>
+  <button id="home">回到开头</button>
+  <select id="speed"><option value="1300">慢</option><option value="700" selected>中</option><option value="350">快</option></select>
+  <span class="prog" id="prog"></span>
+</div>
+<div class="top">
+  <button class="tab on" data-tab="dfs1">① dfs1：建树 + 发标签 + 冒泡</button>
+  <button class="tab" data-tab="bk">② 桶：get() 分组 ct/sw</button>
+  <button class="tab" data-tab="dfs2">③ dfs2：核心，逐点算 ans</button>
+  <button class="tab" data-tab="semi">④ 语义：题 28/29/31/32/33</button>
+</div>
+
+<!-- ==================== TAB 1: dfs1 ==================== -->
+<div class="tabpane on" id="pane-dfs1">
+  <div class="row">
+    <div style="flex:0 0 460px;min-width:420px">
+      <div class="card"><h2 class="t">卷面源码（当前行高亮）</h2><pre class="src" id="src1"></pre></div>
+    </div>
+    <div>
+      <div class="card"><h2 class="t">图：树边=青色实线，反祖边=橙色虚线，黄=当前</h2>
+        <div id="svg1box"></div>
+        <div class="ginfo" id="ginfo1">点一条边或一个点可以看它的信息。</div>
+      </div>
+      <div class="card"><h2 class="t">递归栈（当前位置）</h2><div class="chips" id="stk1"></div></div>
+      <div class="card"><h2 class="t">本帧讲解</h2><div class="note" id="note1"></div></div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="card"><h2 class="t">点表：vis / dep / h</h2><div id="vtbl1"></div></div>
+    <div class="card"><h2 class="t">边表：he（随 dfs1 现场回填）</h2><div id="etbl1"></div></div>
+  </div>
+</div>
+
+<!-- ==================== TAB 2: buckets ==================== -->
+<div class="tabpane" id="pane-bk">
+  <div class="row">
+    <div style="flex:0 0 460px;min-width:420px">
+      <div class="card"><h2 class="t">卷面源码（当前行高亮）</h2><pre class="src" id="src2"></pre></div>
+    </div>
+    <div>
+      <div class="card"><h2 class="t">图（最终身份）：亮青=环上树边，灰青细=桥（割边），橙虚=反祖边，黄=当前</h2>
+        <div id="svg2box"></div>
+        <div class="ginfo" id="ginfo2">点一条边可以看它的 he/桶信息。</div>
+      </div>
+      <div class="card"><h2 class="t">每条边的 he 与它落进的桶</h2><div id="bkEdges"></div></div>
+      <div class="card"><h2 class="t">桶（链地址哈希表实时状态）</h2><div id="bkBuckets"></div></div>
+      <div class="card"><h2 class="t">本帧讲解</h2><div class="note" id="note2"></div></div>
+    </div>
+  </div>
+  <div class="card"><h2 class="t">为什么 he==0 就一定是割边？</h2>
+    <div class="note">
+      <b>he[i] = 覆盖树边 i 的所有反祖边随机标签的异或。</b>若没有任何反祖边跨过 i，异或和就是 0；反过来，只要有 ≥1 条反祖边跨过，64 位随机标签异或出一堆 0 的概率可以忽略。
+      而“有反祖边跨过 i”⇔“i 在某个基本环上”⇔“i 不在任何环上”不成立 ⇔ <b>i 不是割边</b>。
+      所以 <b class="hl">he[i]==0 ⟺ i 是割边 ⟺ i 不在任何环上</b>（RESULTS.md 对 970 个随机图实测：两条不变量各 0 次违反）。<span id="bkSampleLine">样例里 e1..e4 是链上的桥，he 全为 0；e5..e9 被反祖边 10 跨过，he 全等于 L10。</span>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TAB 3: dfs2 ==================== -->
+<div class="tabpane" id="pane-dfs2">
+  <div class="row">
+    <div style="flex:0 0 460px;min-width:420px">
+      <div class="card"><h2 class="t">卷面源码（当前行高亮）</h2><pre class="src" id="src3"></pre></div>
+    </div>
+    <div>
+      <div class="card"><h2 class="t">图：黄=当前树边，青色加粗=当前根路径</h2>
+        <div id="svg3box"></div>
+        <div class="ginfo" id="ginfo3"></div>
+      </div>
+      <div class="card"><h2 class="t">当前参数（下传到 u 的 c, b, b2）</h2>
+        <div class="row">
+          <div class="k"><div class="lab">u（当前点）</div><div class="val" id="d2u">-</div></div>
+          <div class="k"><div class="lab">c 修正项</div><div class="val" id="d2c">-</div></div>
+          <div class="k"><div class="lab">b 路径(割边)权和</div><div class="val" id="d2b">-</div></div>
+          <div class="k"><div class="lab">b2 平方和</div><div class="val" id="d2b2">-</div></div>
+        </div>
+        <div class="k"><div class="lab">桶 j 的 cur[j]（根路径上已走过的同桶边权和，回溯撤销）</div><div class="val" id="d2cur">-</div></div>
+      </div>
+      <div class="card"><h2 class="t">第 36 行逐块展开（全部真实数字）</h2><div class="formula" id="d2f">-</div></div>
+      <div class="card"><h2 class="t">本帧讲解</h2><div class="note" id="note3"></div></div>
+    </div>
+  </div>
+  <div class="card"><h2 class="t">两列对照：程序算的 vs 手推的（语义 = 第 31 题 C 选项）</h2>
+    <div id="cmpTbl"></div>
+    <div class="small" id="cmpNote"></div>
+  </div>
+  <div class="card" id="handPanel"><h2 class="t">手推三板斧：u=2 / u=3 / u=8（只有样例图才有这套“两条路线”说法）</h2>
+    <div id="handU8"></div>
+  </div>
+</div>
+
+<!-- ==================== TAB 4: semantics (static) ==================== -->
+<div class="tabpane" id="pane-semi">
+  <div class="card"><h2 class="t">先交代一件诚实的事：rnd() 被换成了定值</h2>
+    <div class="note">真程序第 13 行是 <b>mt19937_64 rnd(random_device{}())</b>：每条反祖边拿到的 64 位标签每次都不同、不可预测。
+    本页为了<b>可复现</b>，把 rnd() 换成定值 <b>splitmix64(边号)</b>。样例里那条唯一的反祖边（边 10，10-5）拿到的标签是
+    <b class="hl" id="semiLbl"></b>。
+    换标签只影响 he 的<b>数值</b>和它在哈希表里的<b>落槽</b>，不影响“哪些边进同一个桶”这一<b>划分结果</b>（忽略 64 位异或碰撞），
+    所以 ans[] 与真程序完全一致 —— 真程序 -static 编译后把样例喂进去，无论跑多少遍输出都是同一行 10 个数。</div>
+  </div>
+
+  <div class="card"><h2 class="t">第 36 行在算什么（带数字）</h2>
+    <div class="formula">ans[u] = ( c + b·sum − (b²+b2)/2 ) mod P，其中 iv2=(P+1)/2=499122177 是 2 模 P 的逆元（2·iv2 ≡ 1）</div>
+    <div class="note">
+      记树路径上“割边”的集合为 B（权都进了 b、b2）。因为 b² = Σw² + 2Σ<sub>i&lt;j</sub> w<sub>i</sub>w<sub>j</sub> = b2 + 2·(路径内两两权积和)，所以
+      <b>(b²−b2)/2 = Σ<sub>i&lt;j, i,j∈B</sub> w<sub>i</sub>w<sub>j</sub></b>。
+      而 b·sum = Σ<sub>i∈B</sub> w<sub>i</sub>·(全图权和)，它把“至少一端在 B”的配对数了<b>两遍</b>路径内部的对手，于是
+      <b class="hl">b·sum − (b²+b2)/2 = 所有“至少有一条边在树路径 B 上”的边对 (i,j) 的 w<sub>i</sub>w<sub>j</sub> 之和</b>。
+      代 u=8 的数：b=100、b2=3000、sum=160：100·160 − (10000+3000)/2 = 16000 − 6500 = 9500 —— 这就是“e1..e4 四条必经桥”贡献的全部边对。
+      <b>c</b> 再补上“桶内部跨两侧”的 9 对（900）：9500+900=10400。<br>
+      为什么树路径直接算出来就“对”了？因为树路径是 DFS 树里 1→u 的<b>其中一条具体路径</b>，割边对所有路径都必经，所以桥的贡献天然满足“每条路径至少含一条”；
+      非割边（同桶边）能不能同时被绕开，就要按桶精细修正 —— 这正是 d 公式干的事。
+    </div>
+  </div>
+
+  <div class="card"><h2 class="t">题 28（F）：种子不可预测 ⇒ 哈希表卡不成平方级</h2>
+    <div class="note">要让第 17~21 行的手写链地址哈希退化，攻击者必须造出<b>大量 key%S 相同但 key 互不相等</b>的 he 值。
+    可 he 是 mt19937_64(random_device) 出的 64 位随机标签的异或 —— 出题人写数据时<b>看不到种子</b>，算不出异或结果，更没法让它们恰好同余到同一个槽。
+    所以“攻击者无法把它卡成 O(n²)”这一说法是<b>错的（它卡不住）</b> ⇒ 判 <b>F</b>。
+    对照实验：若把第 31 行改成 he[i]=i（固定可预测），就能定向构造同余链把它卡死 —— 这就是竞赛代码爱用随机种子的原因。</div>
+  </div>
+
+  <div class="card"><h2 class="t">题 29（T）：同桶 ⇒ 存在一个环同时含这两条边</h2>
+    <div class="note">前提：he[i]=he[j]≠0，忽略 64 位碰撞。这意味着<b>跨过 i 的反祖边集合 = 跨过 j 的反祖边集合 = S ≠ ∅</b>。
+    任取 b∈S：b 的<b>基本环</b> = b 自身 + DFS 树上 b 两端之间的唯一路径；“b 跨过 i”的定义就是 i 在那条树上路径上，j 同理。
+    于是该环同时包含 i、j ⇒ <b>T</b>。样例现场：e5 与 e8 同桶（桶 1，ct=6），取 b=边10，基本环 5-6-7-8-9-10-5 同时含 e5、e8。<br>
+    “≠0”这个前提不能少：两条割边的 he 都是 0，相等但没有公共环 —— 题面写“且均不为 0”是严谨之处。</div>
+  </div>
+
+  <div class="card"><h2 class="t">题 31（C）：四个选项到底在说什么，为什么只有 C 能凑出 10400</h2>
+    <div class="note">
+      题目语义：对 1→u 的每条路径，考虑边对 (i,j) 满足某条件， ans[u] = 满足条件的边对的 w<sub>i</sub>w<sub>j</sub> 之和。四个选项是两对量词的排列：
+      <table>
+        <tr><th>选项</th><th style="text-align:left">量词</th><th style="text-align:left">以 u=8 为例（两条路线 A={e1..e7}, B={e1,e2,e3,e4,e10,e9,e8}）</th><th>该语义下的值</th></tr>
+        <tr><td>A</td><td style="text-align:left">存在一条路径，i、j 至少一条在其上</td><td style="text-align:left">太松：A∪B 覆盖全部 10 条边，45 个边对全满足</td><td>11000</td></tr>
+        <tr><td>B</td><td style="text-align:left">存在一条路径，i、j 两条都在其上</td><td style="text-align:left">对 (e5,e8)：只在 A 或只在 B 里出现，没有一条路同时含两枚 → 不满足（值偏小）</td><td>10100</td></tr>
+        <tr class="cur"><td class="ok">C</td><td style="text-align:left">对所有路径，i、j 至少一条在其上</td><td style="text-align:left">绕开方式只有两种：走 A 绕开 {e8,e9,e10}，走 B 绕开 {e5,e6,e7}。不满足的对 = 两个都在 {e8,e9,e10}(3 对) 或都在 {e5,e6,e7}(3 对)</td><td class="ok">10400</td></tr>
+        <tr><td>D</td><td style="text-align:left">对所有路径，i、j 两条都在其上</td><td style="text-align:left">要求两条边同时刻在两条路上：只剩 A∩B={e1..e4} 内部 C(4,2)=6 对：200+300+400+600+800+1200</td><td>3500</td></tr>
+      </table>
+      程序输出的第 8 个数是 <b class="hl">10400</b>，与 C 逐点吻合（本页“两列对照”10 个点全对，换输入也用暴力枚举核过）⇒ 题 31 选 <b>C</b>，题 33 选 <b>C(10400)</b>。
+      顺带拆选项的来历：A 6900 是 u=3 时被减掉的那块 (130²−3100)/2；B 9500 是 u=5 的答案；D 16900=130² —— 全是手算中间量。
+    </div>
+  </div>
+
+  <div class="card"><h2 class="t">题 32（D）：走到 ct[j]==1 分支时，当前树边 e 满足什么</h2>
+    <div class="note">
+      <b>ct[j]==1 的含义</b>（第 43~44 行）：与 e 同 he 值的边只有 e 自己 —— 即<b>跨过 e 的反祖边恰好只有 1 条</b>（桶里那条就是它自己；注意反祖边与跨过它的树边 he 相同的前提见第 29 题，桶成员包含反祖边自身时 ct≥2）。
+      程序此时把 (c,b,b2) <b>原样下传</b>：桶里凑不出“第二条边”，没有可扣的配对 ⇒ 什么都不做。
+      <table>
+        <tr><th>选项</th><th style="text-align:left">说法</th><th>970 个随机连通图实测（走到该分支的树边共 2978 条）</th></tr>
+        <tr><td>A</td><td style="text-align:left">删 e 后连通块数一定增加（e 是割边）</td><td>0 / 2978（e 被反祖边跨过，明明在环上）</td></tr>
+        <tr><td>B</td><td style="text-align:left">删 e 后必定产生新的割边</td><td>0 / 2978</td></tr>
+        <tr><td>C</td><td style="text-align:left">e 必不属于任何简单环</td><td>0 / 2978</td></tr>
+        <tr class="cur"><td class="ok">D</td><td style="text-align:left">删 e 后不会产生任何新的割边</td><td class="ok">2978 / 2978</td></tr>
+      </table>
+      直观：原本在某个环里的边 f，若删 e 后失去一切环，那个被拆掉的环必须含 e；而含 e 的环对应“又一条反祖边跨过 e”⇒ 它会出现在同一个桶里 ⇒ 与 ct[j]==1 矛盾。
+      样例图 ct=6，这个分支一次都不会走；<b>你在“换输入”里喂随机小图时它会冒出来</b>，行为就是“原样下传、什么都不扣”。
+      同时实测了两条不变量各 0 次违反：e 是割边 ⟺ he[e]==0；e 在环上 ⟺ he[e]≠0。⇒ 选 <b>D</b>。
+    </div>
+  </div>
+</div>
+
+<!-- ==================== custom input ==================== -->
+<div class="card"><h2 class="t">换输入：喂一个小图重跑三个动画（n≤8，m≤12，1≤w≤1000000）</h2>
+  <div class="row">
+    <div>
+      <textarea id="srcIn" rows="12">10 10
+1 2 10
+2 3 20
+3 4 30
+4 5 40
+5 6 10
+6 7 10
+7 8 10
+8 9 10
+9 10 10
+10 5 10</textarea>
+      <div style="margin-top:8px">
+        <button id="runBtn">载入并重新模拟</button>
+        <button id="resetBtn">恢复 33 题样例</button>
+      </div>
+      <div class="small" id="srcMsg" style="margin-top:8px"></div>
+    </div>
+    <div class="note">
+      格式：第一行 <b>n m</b>，接下来 m 行 <b>u v w</b>（边号按出现顺序 1..m，与卷面第 56~59 行一致）。
+      三个 tab 的所有帧都由页面里那份 <b>JS 复刻的 dfs1 / get / dfs2 / main</b> 现场生成，严格照抄 C++ 语义：
+      第 26 行 <b>i^p</b> 只跳过“编号等于来路边”的那条弧（在根 1 处 p=0，一条都不跳）；
+      第 38 行 <b>ll w = ::w[i]</b>（作用域遮蔽，取的是全局边权）；第 36 行按 <b>(b*b+b2)%P*iv2</b> 的结合顺序算，负数取模照 C++ 的符号走（先 %P 可能得负，再 +P 再 %P）。
+      <br><b>诚实声明</b>：对随机小图，<b>ct[j]==1 分支会出现</b>（桶里只有这条树边自己，凑不出对，(c,b,b2) 原样下传，正是题 32 的情形）；
+      “换输入”面板里“手推”列改用页面内嵌的<b>暴力枚举</b>：列出 1→u 的全部简单路径，逐对检查“每条路径至少含一条”（第 31 题 C 语义）。
+      点、边不连通时：真程序从 1 出发只遍历所在连通块，其余 ans[u] 保持全局初值 0，本页同样如此。
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==== SIM START ==== */
+'use strict';
+const P = 998244353;
+const IV2 = (P + 1) / 2;
+const SLOTS = 400037;
+const MASK = (1n << 64n) - 1n;
+function splitmix64(x) {
+  x = (x + 0x9E3779B97F4A7C15n) & MASK;
+  let z = x;
+  z = ((z ^ (z >> 30n)) * 0xBF58476D1CE4E5B9n) & MASK;
+  z = ((z ^ (z >> 27n)) * 0x94D049BB133111EBn) & MASK;
+  return (z ^ (z >> 31n)) & MASK;
+}
+const labelFor = i => splitmix64(BigInt(i));      // 替代 rnd() 的固定标签
+const BP = BigInt(P);
+function hx(x) { return x === 0n ? '0' : '0x' + x.toString(16).padStart(16, '0'); }
+
+function runSim(n, m, E) {
+  const W = new Array(m + 1).fill(0);
+  const G = Array.from({ length: n + 1 }, () => []);
+  let sum = 0;
+  for (let i = 1; i <= m; i++) {
+    const [u, v, w] = E[i - 1];
+    W[i] = w; sum = (sum + w) % P;
+    G[u].push([v, i]); G[v].push([u, i]);
+  }
+  const dep = new Array(n + 1).fill(0);
+  const parEdge = new Array(n + 1).fill(0);
+  const vis = new Array(n + 1).fill(false);
+  const h = new Array(n + 1).fill(0n);
+  const he = new Array(m + 1).fill(0n);
+  const T = Array.from({ length: n + 1 }, () => []);
+  const ans = new Array(n + 1).fill(0);
+  const ct = new Array(m + 2).fill(0);
+  const sw = new Array(m + 2).fill(0);
+  const cur = new Array(m + 2).fill(0);
+  /* ---- get(): 第 17~21 行 ---- */
+  const hd = new Array(SLOTS).fill(0);
+  const mp = [null];
+  let tot = 0;
+  let lastChain = [];
+  function get(key) {
+    lastChain = [];
+    const u = Number(key % BigInt(SLOTS));
+    lastChain.push('第 18 行：槽号 u = key % S = ' + key + ' % 400037 = ' + u);
+    for (let i = hd[u]; i; i = mp[i].nxt) {
+      lastChain.push('第 19~20 行：沿链查桶 ' + i + '，key 相等？' + (mp[i].key === key ? '相等，直接返回 ' + i : '不等，mp[' + i + '].nxt 继续'));
+      if (mp[i].key === key) return [i, u, false];
+    }
+    tot++;
+    mp[tot] = { nxt: hd[u], key };
+    lastChain.push('第 21 行：链到头也没找到 → 新建桶 ' + tot + '，mp[' + tot + '].nxt = hd[' + u + '] = ' + hd[u] + '，hd[' + u + '] = ' + tot);
+    hd[u] = tot;
+    return [tot, u, true];
+  }
+  /* ---- dfs1 ---- */
+  const F1 = [];
+  const treeIds = [], backIds = [], stack = [];
+  const s1 = act => ({ vis: vis.slice(), dep: dep.slice(), h: h.slice(), he: he.slice(),
+    parEdge: parEdge.slice(), tree: treeIds.slice(), back: backIds.slice(), stack: stack.slice(), act });
+  F1.push({ k: 'intro', lines: [4, 5, 6, 7], st: s1() });
+  function dfs1(u, p) {
+    vis[u] = true;
+    stack.push(u);
+    F1.push({ k: 'enter1', u, p, lines: [24, 25], st: s1({ u }) });
+    for (const [v, i] of G[u]) {
+      if ((i ^ p) === 0) {
+        F1.push({ k: 'edge1', u, v, i, dec: 'skip', lines: [26], st: s1({ u, v, i }) });
+        continue;
+      }
+      if (!vis[v]) {
+        dep[v] = dep[u] + 1;
+        parEdge[v] = i;
+        T[u].push([v, i]);
+        treeIds.push(i);
+        F1.push({ k: 'edge1', u, v, i, dec: 'tree', lines: [26, 27, 28], st: s1({ u, v, i }) });
+        dfs1(v, i);
+        const hPre = h[u];
+        h[u] ^= h[v];
+        he[i] = h[v];
+        F1.push({ k: 'ret1', u, v, i, hPre, hV: h[v], lines: [29], st: s1({ u, v, i }) });
+      } else if (dep[v] < dep[u]) {
+        const lbl = labelFor(i);
+        he[i] = lbl; h[u] ^= lbl; h[v] ^= lbl;
+        backIds.push(i);
+        F1.push({ k: 'edge1', u, v, i, dec: 'back', lbl, lines: [30, 31], st: s1({ u, v, i }) });
+      } else {
+        F1.push({ k: 'edge1', u, v, i, dec: 'dup', lines: [30], st: s1({ u, v, i }) });
+      }
+    }
+    F1.push({ k: 'leave1', u, lines: [32, 33], st: s1({ u }) });
+    stack.pop();
+  }  dfs1(1, 0);
+  F1.push({ k: 'done1', lines: [60], st: s1({}) });
+  /* ---- 第 61~62 行：入桶循环 ---- */
+  const F2 = [];
+  const zeroIds = [], bucketInfo = [], processed = [];
+  const s2 = act => ({ processed: processed.slice(), zero: zeroIds.slice(),
+    buckets: bucketInfo.map(b => ({ j: b.j, slot: b.slot, key: b.key, members: b.members.slice(), chain: b.chain })),
+    ct: ct.slice(), sw: sw.slice(), tot, act });
+  F2.push({ k: 'bk_intro', lines: [61], st: s2({ i: 0 }) });
+  for (let i = 1; i <= m; i++) {
+    processed.push(i);
+    if (he[i] !== 0n) {
+      const [j, slot, isNew] = get(he[i]);
+      ct[j]++;
+      sw[j] = (sw[j] + W[i]) % P;
+      let b = bucketInfo.find(x => x.j === j);
+      if (!b) { b = { j, slot, key: he[i], members: [], chain: lastChain.slice() }; bucketInfo.push(b); }
+      b.members.push(i); b.chain = lastChain.slice();
+      F2.push({ k: 'bk_edge', i, j, slot, isNew, chain: lastChain.slice(), lines: [17, 18, 19, 20, 21, 61, 62], st: s2({ i, j, chain: lastChain.slice() }) });
+    } else {
+      zeroIds.push(i);
+      F2.push({ k: 'bk_zero', i, lines: [61], st: s2({ i }) });
+    }
+  }
+  F2.push({ k: 'bk_done', lines: [62], st: s2({ i: 0 }) });
+  /* ---- dfs2 ---- */
+  const F3 = [];
+  const pathV = [], pathE = [];
+  const branchCount = { zero: 0, ct1: 0, d: 0 };
+  const doneVerts = [];
+  const s3 = act => ({ ans: ans.slice(), done: doneVerts.slice(), cur: cur.slice(),
+    stackV: pathV.slice(), stackE: pathE.slice(), act });
+  F3.push({ k: 'f3_intro', lines: [63], st: s3(null) });
+  function dfs2(u, c, b, b2) {
+    const t1 = c + b * BigInt(sum);
+    const tbb = (b * b + b2) % BP;
+    const t2 = tbb * BigInt(IV2);
+    const v1 = (t1 - t2) % BP;
+    const av = Number((v1 + BP) % BP);
+    ans[u] = av;
+    pathV.push(u);
+    doneVerts.push(u);
+    F3.push({ k: 'enter2', u, c, b, b2, t1, tbb, t2, v1, av, lines: [35, 36], st: s3({ u }) });
+    for (const [v, i] of T[u]) {
+      const w = W[i];
+      if (he[i] === 0n) {
+        branchCount.zero++;
+        pathE.push(i);
+        F3.push({ k: 'child2', u, v, i, branch: 'zero', w, pc: c, pb: b, pb2: b2,
+          pass: { c, b: (b + BigInt(w)) % BP, b2: (b2 + BigInt(w) * BigInt(w)) % BP },
+          lines: [37, 38, 39, 40, 41], st: s3({ u, v, i, branch: 'zero', w }) });
+        dfs2(v, c, (b + BigInt(w)) % BP, (b2 + BigInt(w) * BigInt(w)) % BP);
+        pathE.pop();
+      } else {
+        const [j] = get(he[i]);
+        if (ct[j] === 1) {
+          branchCount.ct1++;
+          pathE.push(i);
+          F3.push({ k: 'child2', u, v, i, branch: 'ct1', w, j, pc: c, pb: b, pb2: b2, pass: { c, b, b2 },
+            lines: [37, 38, 42, 43, 44], st: s3({ u, v, i, branch: 'ct1', j }) });
+          dfs2(v, c, b, b2);
+          pathE.pop();
+        } else {
+          branchCount.d++;
+          const curBefore = cur[j];
+          const dv = Number(((BigInt(w) * (BigInt(sw[j]) - BigInt(curBefore) * 2n - BigInt(w))) % BP + BP) % BP);
+          const raw = w * (sw[j] - curBefore * 2 - w);
+          cur[j] = (cur[j] + w) % P;
+          F3.push({ k: 'child2', u, v, i, branch: 'd', w, j, d: dv, raw, curj: cur[j],
+            curBefore, pc: c, pb: b, pb2: b2,
+            pass: { c: (c + BigInt(dv)) % BP, b, b2 },
+            lines: [37, 38, 42, 43, 45, 46, 47, 48], st: s3({ u, v, i, branch: 'd', j, d: dv, raw, curj: cur[j] }) });
+          pathE.push(i);
+          dfs2(v, (c + BigInt(dv)) % BP, b, b2);
+          pathE.pop();
+          cur[j] = (cur[j] - w + P) % P;
+          F3.push({ k: 'undo2', u, v, i, j, w, curj: cur[j], pc: c, pb: b, pb2: b2, lines: [49], st: s3({ u, v, i, branch: 'undo', j }) });
+        }
+      }
+    }
+    pathV.pop();
+  }
+  dfs2(1, 0n, 0n, 0n);
+  F3.push({ k: 'done2', lines: [63, 64], st: s3(null), bc: Object.assign({}, branchCount) });
+  /* ---- 暴力语义（C 选项）：列出 1→u 全部简单路径 ---- */
+  const hand = new Array(n + 1).fill(null);
+  for (let u = 1; u <= n; u++) {
+    const paths = [];
+    const seen = new Set([1]);
+    const accE = [];
+    (function walk(x) {
+      if (x === u) { paths.push(new Set(accE)); return; }
+      for (const [v, i] of G[x]) {
+        if (seen.has(v)) continue;
+        seen.add(v); accE.push(i);
+        walk(v);
+        accE.pop(); seen.delete(v);
+      }
+    })(1);
+    if (!paths.length) continue;
+    let acc = 0n;
+    for (let i = 1; i <= m; i++) for (let k = i + 1; k <= m; k++) {
+      if (paths.every(ps => ps.has(i) || ps.has(k))) acc += BigInt(W[i]) * BigInt(W[k]);
+    }
+    hand[u] = Number(acc % BP);
+  }
+  return { n, m, E, W, G, sum, dep, vis, h, he, T, ct, sw, cur, hd, mp, tot, ans, hand, parEdge, F1, F2, F3, branchCount,
+    label10: labelFor(10) };
+}
+/* ==== SIM END ==== */
+</script>
+
+<script>
+'use strict';
+/* ============================ UI ============================ */
+const SRC = [
+[4,'typedef long long ll;'],
+[5,'typedef unsigned long long ull;'],
+[6,'const int N = 100005, M = 200005, S = 400037;'],
+[7,'const int P = 998244353, iv2 = (P + 1) / 2;'],
+[9,'int n, m, w[M], sum, dep[N], ct[M], sw[M], cur[M], ans[N];'],
+[10,'ull h[N], he[M];'],
+[11,'bool vis[N];'],
+[12,'vector<pair<int,int> > G[N], T[N];'],
+[13,'mt19937_64 rnd(random_device{}());'],
+[15,'int tot, hd[S];'],
+[16,'struct node { int nxt; ull key; } mp[M];'],
+[17,'int get(ull key) {'],
+[18,'    int u = key % S;'],
+[19,'    for (int i = hd[u]; i; i = mp[i].nxt)'],
+[20,'        if (mp[i].key == key) return i;'],
+[21,'    return mp[++tot] = {hd[u], key}, hd[u] = tot;'],
+[22,'}'],
+[24,'void dfs1(int u, int p) {'],
+[25,'    vis[u] = 1;'],
+[26,'    for (auto [v, i] : G[u]) if (i ^ p) {'],
+[27,'        if (!vis[v])'],
+[28,'            dep[v] = dep[u] + 1, T[u].push_back({v, i}),'],
+[29,'            dfs1(v, i), h[u] ^= h[v], he[i] = h[v];'],
+[30,'        else if (dep[v] < dep[u])'],
+[31,'            he[i] = rnd(), h[u] ^= he[i], h[v] ^= he[i];'],
+[32,'    }'],
+[33,'}'],
+[35,'void dfs2(int u, ll c, ll b, ll b2) {'],
+[36,'    ans[u] = ((c + b * sum - (b * b + b2) % P * iv2) % P + P) % P;'],
+[37,'    for (auto [v, i] : T[u]) {'],
+[38,'        ll w = ::w[i];'],
+[39,'        if (!he[i]) {'],
+[40,'            dfs2(v, c, (b + w) % P, (b2 + w * w) % P);'],
+[41,'            continue;'],
+[42,'        }'],
+[43,'        int j = get(he[i]);'],
+[44,'        if (ct[j] == 1) dfs2(v, c, b, b2);'],
+[45,'        else {'],
+[46,'            int d = (w * (sw[j] - cur[j] * 2 - w) % P + P) % P;'],
+[47,'            cur[j] = (cur[j] + w) % P;'],
+[48,'            dfs2(v, (c + d) % P, b, b2);'],
+[49,'            cur[j] = (cur[j] - w + P) % P;'],
+[50,'        }'],
+[51,'    }'],
+[52,'}'],
+[54,'int main() {'],
+[56,'    cin >> n >> m;'],
+[57,'    for (int i = 1, u, v; i <= m; i++)'],
+[58,'        cin >> u >> v >> w[i], sum = (sum + w[i]) % P,'],
+[59,'        G[u].push_back({v, i}), G[v].push_back({u, i});'],
+[60,'    dfs1(1, 0);'],
+[61,'    for (int i = 1, j; i <= m; i++) if (he[i])'],
+[62,'        j = get(he[i]), ct[j]++, sw[j] = (sw[j] + w[i]) % P;'],
+[63,'    dfs2(1, 0, 0, 0);'],
+[64,'    for (int i = 1; i <= n; i++) cout << ans[i] << \' \';'],
+[65,'}']
+];
+const SAMPLE_E = [
+  [1,2,10],[2,3,20],[3,4,30],[4,5,40],[5,6,10],
+  [6,7,10],[7,8,10],[8,9,10],[9,10,10],[10,5,10]
+];
+const SAMPLE_POS = { 1:[60,120],2:[190,120],3:[320,120],4:[450,120],5:[580,120],
+  6:[652,45],7:[760,45],8:[830,120],9:[760,195],10:[652,195] };
+const HAND33 = {
+  1:  { f:'空路径：任何边对都“至少一条在路径上”不成立', v:0 },
+  2:  { f:'唯一路径 {e1}：含 e1 的对 = 10×(160−10)', v:1500 },
+  3:  { f:'11000 − (130²−3100)/2 = 11000−6900（全在 {e3..e10} 的 28 对可绕开）', v:4100 },
+  4:  { f:'11000 − (100²−2200)/2 = 11000−3900', v:7100 },
+  5:  { f:'11000 − C(6,2)×100 = 11000−1500', v:9500 },
+  6:  { f:'11000 − (C(1,2)+C(5,2))×100 = 11000−1000', v:10000 },
+  7:  { f:'11000 − (C(2,2)+C(4,2))×100 = 11000−700', v:10300 },
+  8:  { f:'11000 − (C(3,2)+C(3,2))×100 = 11000−600', v:10400 },
+  9:  { f:'11000 − (C(4,2)+C(2,2))×100 = 11000−700', v:10300 },
+  10: { f:'11000 − (C(5,2)+C(1,2))×100 = 11000−1000', v:10000 }
+};
+let sim = runSim(10, 10, SAMPLE_E);
+let isSample = true;
+
+const TABS = ['dfs1', 'bk', 'dfs2', 'semi'];
+let tab = 'dfs1';
+const idx = { dfs1: 0, bk: 0, dfs2: 0 };
+let timer = null;
+
+const $ = id => document.getElementById(id);
+const escH = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const N = () => sim.n, M = () => sim.m;
+const endpoints = i => '(' + sim.E[i-1][0] + ',' + sim.E[i-1][1] + ')';
+
+/* ---------- source panel ---------- */
+function buildSrc(elId) {
+  $(elId).innerHTML = SRC.map(([l, t]) =>
+    '<span class="ln" data-l="' + l + '"><span class="no">' + l + '</span>' + escH(t) + '</span>'
+  ).join('');
+}
+function hilite(elId, lines) {
+  $(elId).querySelectorAll('.ln').forEach(s => {
+    s.classList.toggle('on', lines && lines.includes(Number(s.dataset.l)));
+  });
+  const on = $(elId).querySelector('.ln.on');
+  if (on) on.scrollIntoView({ block: 'nearest' });
+}
+
+/* ---------- graph svg ---------- */
+function layout() {
+  if (isSample) return SAMPLE_POS;
+  const pos = {};
+  const cx = 440, cy = 120, R = Math.min(360, 90 + 18 * N());
+  for (let u = 1; u <= N(); u++) {
+    const a = -Math.PI / 2 + (u - 1) * 2 * Math.PI / N();
+    pos[u] = [Math.round(cx + R * Math.cos(a)), Math.round(cy + R * Math.sin(a) * 0.62)];
+  }
+  return pos;
+}
+function edgeClasses(st, mode, act) {
+  const cls = {};
+  for (let i = 1; i <= M(); i++) cls[i] = 'pend';
+  if (mode === 'dfs1') {
+    st.tree.forEach(i => cls[i] = 'tree');
+    st.back.forEach(i => cls[i] = 'back');
+  } else {
+    const treeSet = new Set(sim.T.reduce((a, t) => a.concat(t.map(x => x[1])), []));
+    const backSet = new Set(sim.F1[sim.F1.length - 1].st.back);
+    for (let i = 1; i <= M(); i++) {
+      if (backSet.has(i)) cls[i] = 'back';
+      else if (treeSet.has(i)) cls[i] = (mode !== 'dfs1' && sim.he[i] === 0n) ? 'bridge' : 'team';
+    }
+  }
+  return cls;
+}
+function drawGraph(box, st, mode, act) {
+  const pos = layout();
+  const W = 900, H = 240;
+  let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">';
+  const pathE = mode === 'dfs2' ? new Set(st.stackE) : new Set();
+  const pathV = mode === 'dfs2' ? new Set(st.stackV) : new Set();
+  const stk = (mode === 'dfs1') ? new Set(st.stack) : new Set();
+  const cls = edgeClasses(st, mode, act);
+  for (let i = 1; i <= M(); i++) {
+    const [u, v] = [sim.E[i-1][0], sim.E[i-1][1]];
+    const [x1, y1] = pos[u], [x2, y2] = pos[v];
+    let stroke = '#4a5580', dash = '', wdt = 2, op = 0.85;
+    if (cls[i] === 'tree') stroke = '#3e8f82';
+    if (cls[i] === 'team') stroke = '#5eead4';
+    if (cls[i] === 'bridge') { stroke = '#4a5f5b'; op = 0.8; }
+    if (cls[i] === 'back') { stroke = '#f59e6b'; dash = ' stroke-dasharray="7,5"'; }
+    if (pathE.has(i) && mode === 'dfs2') { stroke = '#5eead4'; wdt = 4.5; }
+    let hl = '';
+    if (act && act.i === i) { hl = ' stroke="#fde047" stroke-width="5"'; }
+    if (act && act.branch === 'undo' && pathE.has(i)) hl = ' stroke="#fde047" stroke-width="5"';
+    s += '<g class="eg" data-eid="' + i + '" style="cursor:pointer">' +
+      '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="' + stroke + '" stroke-width="' + wdt + '"' + dash + ' opacity="' + op + '"' + hl + '></line>';
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1;
+    const ox = -dy / L * 12, oy = dx / L * 12;
+    s += '<text x="' + (mx + ox).toFixed(1) + '" y="' + (my + oy + 5).toFixed(1) + '" font-size="14" fill="#8b93b5" text-anchor="middle">e' + i + ':' + sim.W[i] + '</text>';
+    s += '</g>';
+  }
+  for (let u = 1; u <= N(); u++) {
+    const [x, y] = pos[u];
+    let fill = '#151a33', stroke = '#3d4778', swd = 2, ink = '#e8ecff';
+    const visited = mode === 'dfs1' ? st.vis[u] : true;
+    if (visited) fill = '#232a4a';
+    if (stk.has(u)) { fill = '#1b3a38'; stroke = '#5eead4'; }
+    if (pathV.has(u)) { fill = '#1b3a38'; stroke = '#5eead4'; }
+    if (act && (act.u === u || act.v === u)) { stroke = '#fde047'; swd = 3.5; }
+    if (act && act.u === u && !act.v) { stroke = '#fde047'; swd = 3.5; }
+    s += '<g class="vg" data-vid="' + u + '" style="cursor:pointer">' +
+      '<circle cx="' + x + '" cy="' + y + '" r="16" fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + swd + '"' + (visited ? '' : ' opacity="0.55"') + '></circle>' +
+      '<text x="' + x + '" y="' + (y + 5) + '" font-size="15" fill="' + ink + '" text-anchor="middle">' + u + '</text></g>';
+  }
+  s += '</svg>';
+  $(box).innerHTML = s;
+}
+
+/* ---------- tables ---------- */
+function vertexTable(st) {
+  let s = '<table><tr><th>u</th><th>vis</th><th>dep</th><th>h[u]（64 位，十六进制）</th></tr>';
+  for (let u = 1; u <= N(); u++) {
+    const act = st.act && (st.act.u === u || st.act.v === u);
+    s += '<tr class="' + (act ? 'cur' : (st.vis[u] ? '' : 'dim')) + '"><td>' + u + '</td><td>' + (st.vis[u] ? '1' : '0') +
+      '</td><td>' + (st.vis[u] ? st.dep[u] : '·') + '</td><td>' + (st.h[u] === 0n ? (st.vis[u] ? '0' : '·') : hx(st.h[u])) + '</td></tr>';
+  }
+  return s + '</table>';
+}
+function edgeTableHe(st) {
+  let s = '<table><tr><th>i</th><th>端点</th><th>w</th><th>身份</th><th>he[i]</th></tr>';
+  for (let i = 1; i <= M(); i++) {
+    const act = st.act && st.act.i === i;
+    let role = '未定';
+    if (st.back && st.back.includes(i)) role = '<span class="or">反祖边</span>';
+    else if (st.tree && st.tree.includes(i)) role = '<span style="color:var(--acc)">树边</span>';
+    s += '<tr class="' + (act ? 'cur' : (st.he[i] === 0n && role === '未定' ? 'dim' : '')) + '"><td>e' + i + '</td><td>' +
+      endpoints(i) + '</td><td>' + sim.W[i] + '</td><td>' + role + '</td><td>' + (st.he[i] === 0n ? (role === '未定' ? '·' : '0') : hx(st.he[i])) + '</td></tr>';
+  }
+  return s + '</table>';
+}
+
+/* ---------- notes (dfs1) ---------- */
+function note1(f) {
+  const st = f.st, a = st.act || {};
+  if (f.k === 'intro') {
+    const head = isSample
+      ? '输入就是 33 题样例：10 个点、10 条边 —— 链 1-2-3-4-5（权 10/20/30/40）+ 六元环 5-6-7-8-9-10-5（权全是 10）。'
+      : '自定义输入：' + N() + ' 个点、' + M() + ' 条边：' + sim.E.map((e, k) => 'e' + (k + 1) + ':' + e[0] + '-' + e[1] + '(w=' + e[2] + ')').join('，') + '。';
+    return head + '<b>sum = 全部边权之和 mod P = ' + sim.sum + '</b>。接下来逐帧走第 24~33 行的 <b>dfs1(1, 0)</b>，它干三件事：' +
+      '①建 DFS 树 T、给每个点标 dep；②给每条<b>反祖边</b>发一个 64 位随机标签；③标签沿树自底向上<b>异或冒泡</b>，得到 ' +
+      '<span class="hl">he[树边] = 盖过它的所有反祖边标签之异或</span>。' +
+      '<br><b>诚实声明：</b>真程序第 13 行用 random_device 播种 mt19937_64，每次跑标签都不同；本页换成定值 <b>splitmix64(边号)</b> 以便复现' +
+      '（样例里唯一反祖边 e10 的标签 L10 = <span class="or">' + hx(labelFor(10)) + '</span>）。' +
+      '这只改变 he 的<b>数值</b>与哈希<b>落槽</b>，不改变“哪些边同桶”这一<b>划分</b>（忽略 64 位异或碰撞），ans[] 与真程序完全一样。';
+  }
+  if (f.k === 'enter1') {
+    return '进入 <b>dfs1(' + f.u + ', ' + f.p + ')</b>。第 25 行：<span class="hl">vis[' + f.u + '] = 1</span>。' +
+      (f.u === 1 ? '根的 dep[1]=0（全局数组默认 0），参数 p=0 —— p=0 时第 26 行的 i^p = i^0 = i 永远不为 0（边号从 1 起），所以<b>根一条邻边都不会被跳</b>。'
+        : 'dep[' + f.u + '] 已在父亲那一步被写成 ' + st.dep[f.u] + '，来路边是 e' + f.p + '（马上就会看到一条 i^p=' + f.p + '^' + f.p + '=0 的跳过帧）。') +
+      '下面沿 G[' + f.u + '] 挨个检查邻边（第 26 行）。G 是无向图：每条边在两端各存一条同编号的弧。';
+  }
+  if (f.k === 'edge1') {
+    const { u, v, i, dec: d } = f;
+    const p = st.parEdge[u];
+    if (d === 'skip')
+      return '<b>u=' + u + '</b> 的邻边弧 (v=' + v + ', i=' + i + ')：编号等于来路边 p=' + p + '。第 26 行判 <span class="hl">i^p = ' + i + '^' + p + ' = 0</span> → <b>跳过</b>，不沿来路回去。' +
+        '这是 C++ 里用异或当“不等号”的省字写法：i^p 为 0 当且仅当 i=p。';
+    if (d === 'tree')
+      return '<b>u=' + u + '</b> 的邻边 (v=' + v + ', i=' + i + ')：第 26 行 i^p = ' + i + '^' + p + ' = ' + (i ^ p) + ' ≠ 0（不是来路）；第 27 行 vis[' + v + ']=0 → <b>树边分支</b>（28~29 行前半段）：' +
+        '<span class="hl">dep[' + v + '] = dep[' + u + ']+1 = ' + st.dep[v] + '</span>，把 (v,i) 记进 T[' + u + ']，然后递归 dfs1(' + v + ', ' + i + ')。' +
+        '注意顺序：第 29 行是先 dfs1(v,i) 回来之后才做 h[ ] 异或和 he[i] 回填 —— 看后面的“返回”帧。';
+    if (d === 'back')
+      return '<b>u=' + u + '</b> 的邻边 (v=' + v + ', i=' + i + ')：vis[' + v + ']=1（访问过），且第 30 行 <span class="hl">dep[' + v + '] = ' + st.dep[v] + ' &lt; dep[' + u + '] = ' + st.dep[u] + '</span> → 这是一条<b class="or">反祖边</b>！' +
+        '第 31 行三件事：<span class="or">he[' + i + '] = ' + hx(f.lbl) + '</span>（真程序这里写 rnd()，本页是定值 L' + i + '）；' +
+        'h[' + u + '] ^= L' + i + '，h[' + v + '] ^= L' + i + ' —— <b>环的两端各打一次标记</b>，之后它盖过的每条树边冒泡时都会带上这份标签。';
+    return '<b>u=' + u + '</b> 的邻边 (v=' + v + ', i=' + i + ')：vis[' + v + ']=1，但 dep[' + v + '] = ' + st.dep[v] + ' &gt; dep[' + u + '] = ' + st.dep[u] + '，第 30 行的“&lt;”不成立 → <b>什么也不做</b>。' +
+      '同一条反祖边在环的两端各有一条弧：只有“从深的一端看浅的一端”那个方向才登记。若两端都登记，标签会被异或两遍抵消（a^a=0），哈希全废 —— 这就是“避免重复计一次”的关键一行。';
+  }
+  if (f.k === 'ret1') {
+    const { u, v, i } = f;
+    const cancel = f.hPre !== 0n && (f.hPre ^ f.hV) === 0n;
+    return 'dfs1(' + v + ', ' + i + ') <b>返回</b> u=' + u + '，执行第 29 行后半段：' +
+      '<span class="hl">h[' + u + '] ^= h[' + v + ']</span>：' + hx(f.hPre) + ' ^ ' + hx(f.hV) + ' = ' + hx(f.hPre ^ f.hV) +
+      (cancel ? ' —— 抵消成 0！h[' + u + '] 早前在第 31 行被反祖边打过一次同样的标签，这里又被异或回去：xor 自反性 a^a=0。' : '') +
+      ' 然后<b>回填</b>：<span class="hl">he[' + i + '] = h[' + v + '] = ' + hx(f.hV) + '</span>。' +
+      (f.hV === 0n ? 'h[' + v + '] 是 0 ⇒ 没有任何反祖边跨过 e' + i + ' ⇒ 它是<b>桥（割边）</b>。'
+        : '含义：盖过树边 e' + i + ' 的所有反祖边标签之异或。回填时机在“儿子子树处理完”之后 —— 此刻子树里全部反祖边已经冒泡完，h[' + v + '] 就是最终值。');
+  }
+  if (f.k === 'leave1') {
+    return 'G[' + f.u + '] 的邻边表扫完，dfs1(' + f.u + ', ·) 结束（第 32~33 行），返回父亲。';
+  }
+  const nz = [], zr = [];
+  for (let i = 1; i <= M(); i++) (st.he[i] !== 0n ? nz : zr).push(i);
+  return '<b>dfs1(1,0) 全部完成（第 60 行）。</b>树边 ' + st.tree.length + ' 条：e' + st.tree.join(',e') +
+    '；反祖边 ' + st.back.length + ' 条：' + (st.back.length ? 'e' + st.back.join(',e') : '无（图就是一棵树）') + '。' +
+    'he≠0 的边：' + (nz.length ? 'e' + nz.join(',e') + '（它们被同一组反祖边跨过，接下来会落进同一个桶）' : '无') + '；' +
+    'he=0 的边：' + (zr.length ? 'e' + zr.join(',e') + ' ⇒ 桥/割边' : '无') + '。' +
+    (isSample ? '样例的 DFS 树恰好就是整条链 1→2→…→10（9 条树边），反祖边只有 e10；h[1..5] 最终都是 0：e10 的标签在 10 处打上、冒泡到 5 又被“进出各一次”抵消，正说明 5 以下的边是桥。' : '');
+}
+
+/* ---------- notes (buckets) ---------- */
+function note2(f) {
+  const st = f.st;
+  if (f.k === 'bk_intro')
+    return 'dfs1 结束后执行第 61~62 行：对 i=1..' + M() + '，<b>凡是 he[i]≠0 的边</b>，调 get(he[i]) 找桶号 j，然后 ct[j]++、sw[j]=(sw[j]+w[i]) mod P。' +
+      'get 是卷面第 17~21 行的<b>手写链地址哈希</b>：槽号 = key % S（S=400037），hd[S] 存“该槽的桶链头”，同槽不同 key 用 mp[].nxt 串链；链上撞到同 key 就直接返回已有桶号（第 20 行）。' +
+      'he==0 意味着没有反祖边跨过 ⇒ <b>割边 ⇒ 不在任何环上</b>，这些边根本不进桶。';
+  if (f.k === 'bk_zero')
+    return '第 61 行扫到 <b>e' + f.i + '</b>（' + endpoints(f.i) + '，w=' + sim.W[f.i] + '）：he[' + f.i + ']=0 → if (he[i]) 不成立，<b>不进任何桶</b>。' +
+      '它没有被任何反祖边跨过，是桥：删掉它，图就断成两块。';
+  if (f.k === 'bk_edge') {
+    return '第 61 行：<b>e' + f.i + '</b> 的 he = ' + hx(sim.he[f.i]) + ' ≠ 0 → 调 get()：' +
+      f.chain.map(x => '<br>&nbsp;&nbsp;' + x).join('') +
+      '<br>第 62 行：桶 j=' + f.j + '，<span class="hl">ct[' + f.j + ']++ → ' + f.st.ct[f.j] + '</span>；<span class="hl">sw[' + f.j + '] += w[' + f.i + '] = ' + sim.W[f.i] + ' → ' + f.st.sw[f.j] + '</span>。' +
+      (isSample && f.i === 10 ? '最后连<b>反祖边 10 自己</b>也进了同一个桶：它的 he 就是自己的标签 L10，和它盖过的树边完全相同 —— 第 29 题说的“同桶”关系就是这么来的，所以 ct=6 = 5 条树边 + 1 条反祖边。' : '');
+  }
+  return '<b>入桶完成。</b>桶数 tot=' + st.tot + '：' + st.buckets.map(b =>
+    'j=' + b.j + '（槽 ' + b.slot + '，ct=' + st.ct[b.j] + '，sw=' + st.sw[b.j] + '，成员 e' + b.members.join(',e') + '）').join('；') + '。' +
+    (isSample
+      ? '样例只有一个桶：成员 {e5..e10}，sw=60=6×10。<b>ct=6 意味着这 6 条边两两“可以被同一条路径绕开”</b>，dfs2 里桶内配对要靠 d 公式精细修正。'
+      : '注意 ct[j]==1 的桶（如果存在）：随机小图上很常见，dfs2 第 44 行会原样下传 (c,b,b2) 什么都不扣 —— 那正是题 32 的情形。');
+}
+
+/* ---------- notes (dfs2) ---------- */
+function note3(f) {
+  const st = f.st;
+  if (f.k === 'f3_intro')
+    return '<b>dfs2 是核心：沿 DFS 树自根向下走一遍（第 63 行 dfs2(1,0,0,0)）。</b>三个下传参数：<br>' +
+      '<span class="hl">b</span> = 根路径上“割边”的权<b>和</b>、<span class="hl">b2</span> = 它们的权<b>平方和</b>（非割边不进 b/b2，它们由桶修正项处理）；' +
+      '<span class="hl">c</span> = 已累计的“必过边对”修正量。<br>' +
+      '每个点到站就用第 36 行算 ans[u]；沿树边分三种情况走（he==0 / ct==1 / 其它），下面逐帧看。';
+  if (f.k === 'enter2') {
+    return '到站 <b>u=' + f.u + '</b>：接到 (c=' + f.c + ', b=' + f.b + ', b2=' + f.b2 + ')，根路径：' + (st.stackE.length ? 'e' + st.stackE.join(',e') : '（空，就在根）') + '。' +
+      '第 36 行逐块展开在右边公式面板，算出 <span class="hl">ans[' + f.u + '] = ' + f.av + '</span>。' +
+      (isSample && HAND33[f.u] ? '手推核对：' + HAND33[f.u].f + ' = <b>' + HAND33[f.u].v + '</b>，两列一致。' : '');
+  }
+  if (f.k === 'child2') {
+    const { u, v, i, branch } = f;
+    if (branch === 'zero')
+      return 'u=' + u + ' 的树边 <b>e' + i + '（' + u + '→' + v + '，w=' + f.w + '）</b>。第 38 行 <b>ll w = ::w[i]</b>：两个 w 撞名，加作用域限定符取<b>全局</b>边权数组（卷面原文就有这个细节）。' +
+        '第 39 行 he[' + i + ']=0 → 割边分支（第 40 行）：<span class="hl">dfs2(' + v + ', c=' + f.pass.c + ', (b+' + f.w + ')%P=' + f.pass.b + ', (b2+' + f.w + '²)%P=' + f.pass.b2 + ')</span>。' +
+        '割边每条路径非过不可，所以它的权直接进 b、b2；第 41 行 continue，桶那些事一件都不做。';
+    if (branch === 'ct1')
+      return '树边 <b>e' + i + '</b>：he≠0，第 43 行查桶得 j=' + f.j + '，<b>ct[j]==1</b> → 第 44 行 <span class="hl">dfs2(' + v + ', c=' + f.pass.c + ', b=' + f.pass.b + ', b2=' + f.pass.b2 + ')</span>：三个参数<b>原样不动</b>。' +
+        '桶里只有它自己 ⇒ 凑不出“同桶配对” ⇒ 没有任何要扣的，b/b2 也不加（它不是割边，不享受“处处必经”待遇）。样例碰不到这分支，喂随机小图就会出现。';
+    const curBefore = (f.curj - f.w + P) % P;
+    return '树边 <b>e' + i + '（' + u + '→' + v + '，w=' + f.w + '）</b>：he≠0，第 43 行查桶 j=' + f.j + '（ct=' + sim.ct[f.j] + ', sw=' + sim.sw[f.j] + '），ct&gt;1 → 走第 45~48 行的 <b>d 修正分支</b>：' +
+      '<br>d = (w·(sw[j] − cur[j]·2 − w) %P +P) %P = (' + f.w + '·(' + sim.sw[f.j] + ' − ' + curBefore + '×2 − ' + f.w + ') %P + P) %P' +
+      (f.raw < 0 ? '，中括号算出来是 ' + (sim.sw[f.j] - curBefore * 2 - f.w) + '（负数），乘积 ' + f.raw + '：C++ 的 %P 保留负号，+P 把它折回 [0,P) —— 这个 d 其实是“往回扣”' : '') +
+      ' = <span class="hl">' + f.d + '</span>。' +
+      '<br>第 47 行 <span class="hl">cur[' + f.j + '] += w → ' + f.curj + '</span>（栈式记录“当前根路径上已走过的同桶边权和”）；第 48 行 dfs2(' + v + ', (c+d)%P=<b>' + f.pass.c + '</b>, b=' + f.pass.b + ', b2=' + f.pass.b2 + ' <b>不变</b>) —— 非割边不进 b/b2，配对账由桶修正项 c 来记。';
+  }
+  if (f.k === 'undo2') {
+    return 'dfs2(' + f.v + ') 返回，第 49 行 <span class="hl">cur[' + f.j + '] = (' + ((f.curj + f.w) % P) + ' − ' + f.w + ' + P) % P = ' + f.curj + '</span> —— <b>回溯撤销</b>：' +
+      'cur[j] 只描述“当前这条根路径”，离开分支必须还原，兄弟分支再进来时才是干净的。' +
+      (isSample ? '链式图上这 5 次 undo 集中在从 10 逐层返回时发生（往下看后面几帧）。' : '');
+  }
+  return '<b>dfs2 走完，全部 ans 出炉：</b>' + st.ans.slice(1).join(' ') + '。' +
+    '三个分支各走了：割边 ' + f.bc.zero + ' 次 / ct==1 ' + f.bc.ct1 + ' 次 / d 修正 ' + f.bc.d + ' 次。' +
+    (isSample ? '十个数与 -static 编译的真程序逐位一致，也与暴力语义枚举（C 选项）逐位一致 ⇒ <b>第 33 题输出第 8 个数 = 10400，选 C</b>。'
+      : '“手推”列是暴力枚举全部简单路径按 C 语义算的，两列逐位一致说明这套桶+修正机制就是“必经边对”计数。');
+}
+
+/* ---------- formula panel (dfs2) ---------- */
+function formulaHtml(f) {
+  if (f.k !== 'enter2') return '<span style="color:var(--dim)">（本帧不改 ans；“到站”帧看逐块展开，d 分支帧看 d 公式）</span>';
+  const g = f;
+  const bs = g.b * BigInt(sim.sum);
+  const sq = g.b * g.b + g.b2;
+  const t2m = g.t2 % BP;
+  return 'u = <b>' + g.u + '</b>&nbsp;&nbsp;c=' + g.c + '，b=' + g.b + '，b2=' + g.b2 + '，sum=' + sim.sum + '<br>' +
+    '① b·sum = ' + g.b + ' × ' + sim.sum + ' = <span class="hl">' + bs + '</span><br>' +
+    '② b² + b2 = ' + g.b + '² + ' + g.b2 + ' = <span class="or">' + sq + '</span>' +
+    (sq >= BP ? '，%P = ' + g.tbb : '（不足 P，%P 不变）') + '<br>' +
+    '③ × iv2：' + g.tbb + ' × 499122177 mod P = <span class="hl">' + t2m + '</span>（乘 iv2 ≡ 除以 2：' + g.tbb + (g.tbb % 2n === 0n ? ' ÷ 2 = ' + (g.tbb / 2n) : ' 是奇数 → (' + g.tbb + '+P) ÷ 2 ≡ ' + t2m) + '）<br>' +
+    '④ c + ① − ③ = ' + g.c + ' + ' + bs + ' − ' + t2m + ' = <b>' + (g.c + bs - t2m) + '</b><br>' +
+    '⑤ ((④ %P +P) %P) ⇒ <span class="hl" style="font-size:18px">ans[' + g.u + '] = ' + g.av + '</span>' +
+    (g.c + bs - t2m < 0n ? '（④ 为负：C++ %P 留负号，+P 折回）' : '');
+}
+function dFormulaHtml(f) {
+  if (f.k !== 'child2' || f.branch !== 'd') return null;
+  const j = f.j, w = f.w;
+  const curBefore = (f.curj - w + P) % P;
+  const inner = sim.sw[j] - curBefore * 2 - w;
+  return 'd = (w·(sw[j] − cur[j]·2 − w) %P +P) %P<br>' +
+    '&nbsp;&nbsp;= (' + w + ' × (' + sim.sw[j] + ' − ' + curBefore + '×2 − ' + w + ') % ' + P + ' + ' + P + ') % ' + P + '<br>' +
+    '&nbsp;&nbsp;= (' + w + ' × (' + inner + ') % ' + P + ' + ' + P + ') % ' + P + (inner < 0 ? ' <b class="or">← 中括号是负数</b>' : '') + '<br>' +
+    '&nbsp;&nbsp;= (' + (w * inner) + ' % ' + P + ' + ' + P + ') % ' + P + '<br>' +
+    '&nbsp;&nbsp;= <span class="hl" style="font-size:18px">d = ' + f.d + '</span>' +
+    '<br>下传：dfs2(' + f.v + ', (c+d)%P = <b>' + f.pass.c + '</b>, b=' + f.pass.b + ', b2=' + f.pass.b2 + ')；cur[' + j + ']: ' + curBefore + ' → +' + w + ' → <b>' + f.curj + '</b>';
+}
+
+/* ---------- render per tab ---------- */
+function frames(t) { return t === 'dfs1' ? sim.F1 : t === 'bk' ? sim.F2 : sim.F3; }
+
+function renderDfs1() {
+  const f = sim.F1[idx.dfs1], st = f.st;
+  drawGraph('svg1box', st, 'dfs1', st.act);
+  hilite('src1', f.lines);
+  $('stk1').innerHTML = st.stack.length
+    ? st.stack.map((u, k) => '<span class="chip' + (k === st.stack.length - 1 ? ' hi' : '') + '">' + u + '<span class="small">(dep ' + st.dep[u] + ')</span></span>').join('<span class="chip" style="border:none;background:none">→</span>')
+    : '<span class="small">（还没进递归）</span>';
+  $('vtbl1').innerHTML = vertexTable(st);
+  $('etbl1').innerHTML = edgeTableHe(st);
+  $('note1').innerHTML = note1(f);
+}
+function renderBk() {
+  const f = sim.F2[idx.bk], st = f.st;
+  drawGraph('svg2box', st, 'bk', st.act);
+  hilite('src2', f.lines);
+  $('bkSampleLine').style.display = isSample ? '' : 'none';
+  const treeFinal = new Set(sim.T.reduce((a, t) => a.concat(t.map(x => x[1])), []));
+  let s = '<table><tr><th>i</th><th>端点</th><th>w</th><th>he[i]</th><th>key % 400037</th><th>桶 j</th><th>身份</th></tr>';
+  for (let i = 1; i <= M(); i++) {
+    const done = st.processed.includes(i);
+    const b = st.buckets.find(x => x.members.includes(i));
+    const act = f.i === i && f.k !== 'bk_intro' && f.k !== 'bk_done';
+    s += '<tr class="' + (act ? 'cur' : (done ? '' : 'dim')) + '"><td>e' + i + '</td><td>' + endpoints(i) + '</td><td>' + sim.W[i] + '</td>' +
+      '<td>' + (!done ? '·' : hx(sim.he[i])) + '</td><td>' + (!done ? '·' : (sim.he[i] === 0n ? '—' : String(sim.he[i] % BigInt(SLOTS)))) + '</td>' +
+      '<td>' + (!done ? '·' : (b ? b.j : '不入桶')) + '</td><td>' + (!treeFinal.has(i) ? '<span class="or">反祖边</span>' : (sim.he[i] === 0n ? '树边·割边' : '树边·在环上')) + '</td></tr>';
+  }
+  s += '</table>';
+  $('bkEdges').innerHTML = s;
+  let sb = '';
+  st.buckets.forEach(b => {
+    sb += '<div class="k"><div class="lab">桶 j=' + b.j + '（槽 hd[' + b.slot + ']，key=' + hx(b.key) + '）</div><div class="val">' +
+      '成员：' + b.members.map(e => '<span class="chip' + (f.i === e ? ' hi' : '') + '">e' + e + '</span>').join(' ') +
+      '　ct[' + b.j + ']=<b>' + st.ct[b.j] + '</b>　sw[' + b.j + ']=<b>' + st.sw[b.j] + '</b></div>' +
+      (b.chain ? '<div class="small" style="margin-top:4px">get() 链查过程：' + b.chain.join(' ／ ') + '</div>' : '') + '</div>';
+  });
+  if (!st.buckets.length) sb = '<div class="small">（尚无桶）</div>';
+  $('bkBuckets').innerHTML = sb;
+  $('note2').innerHTML = note2(f);
+}
+function renderDfs2() {
+  const f = sim.F3[idx.dfs2], st = f.st;
+  drawGraph('svg3box', st, 'dfs2', st.act);
+  hilite('src3', f.lines);
+  const a = st.act;
+  const set3 = (uid, c, b, b2) => { $('d2u').textContent = uid; $('d2c').textContent = c; $('d2b').textContent = b; $('d2b2').textContent = b2; };
+  if (f.k === 'enter2') set3(String(f.u), String(f.c), String(f.b), String(f.b2));
+  else if (f.k === 'child2' || f.k === 'undo2') set3(f.u + ' → 儿子 ' + f.v, String(f.pc), String(f.pb), String(f.pb2));
+  else set3(f.k === 'done2' ? '全部走完' : '—', '—', '—', '—');
+  const curList = [];
+  for (let j = 1; j <= sim.tot; j++) if (st.cur[j] !== 0) curList.push('cur[' + j + ']=' + st.cur[j]);
+  $('d2cur').innerHTML = (curList.length ? curList.join('　') : 'cur 全为 0（还没进 d 分支 / 已撤销干净）') +
+    '　|　根路径：' + (st.stackE.length ? 'e' + st.stackE.join(',e') : '（空）');
+  const df = dFormulaHtml(f);
+  $('d2f').innerHTML = df || formulaHtml(f);
+  $('note3').innerHTML = note3(f);
+  /* compare table */
+  let s = '<table><tr><th>u</th><th>程序 ans[u]</th><th>手推（' + (isSample ? '11000 − 可绕开对' : '暴力枚举全部简单路径') + '）</th><th>一致?</th></tr>';
+  st.done.forEach(u => {
+    const hv = isSample ? HAND33[u].v : sim.hand[u];
+    const hf = isSample ? HAND33[u].f : ('语义 C 暴力 = ' + (hv === null ? '不可达（程序留 0）' : hv));
+    const ok = hv === st.ans[u];
+    s += '<tr class="' + (f.k === 'enter2' && f.u === u ? 'cur' : '') + '"><td>' + u + '</td><td>' + st.ans[u] + '</td><td style="text-align:left;white-space:normal">' + hf + '</td><td class="' + (ok ? 'ok' : 'no') + '">' + (ok ? '对' : '错') + '</td></tr>';
+  });
+  s += '</table>';
+  $('cmpTbl').innerHTML = s;
+  $('cmpNote').textContent = isSample
+    ? '手推口径：全图边对总权积 = (160² − 3600)/2 = 11000；每个 u 从 11000 里扣掉“能被某条路整个绕开”的边对（见下方三板斧）。Σw=160，Σw²=3600，m=10 → C(10,2)=45 个边对。'
+    : '换输入模式：手推列由页面内嵌暴力程序枚举 1→u 的全部简单路径，逐对检查“每条路径至少含一条”（第 31 题 C 语义）。';
+  $('handPanel').style.display = isSample ? '' : 'none';
+  if (isSample) $('handU8').innerHTML = HAND_HTML;
+}
+const HAND_HTML =
+  '<h3>u=8（第 33 题问的就是它）</h3>' +
+  '<div class="small">' +
+  '① 从 1 到 8 一共只有<b>两条</b>路线：<span class="tag g">A = {e1,e2,e3,e4,e5,e6,e7}（沿链进环，顺时针）</span><span class="tag o">B = {e1,e2,e3,e4,e10,e9,e8}（沿链，逆时针）</span>。<br>' +
+  '② 语义（题 31 的 C 选项）：边对 {i,j} 计分 ⟺ <b>两条路每条都至少踩中 i、j 之一</b>。<br>' +
+  '③ 谁能绕开谁：走 A 就整个绕开 {e8,e9,e10}，走 B 就绕开 {e5,e6,e7}。所以“不满足”的对 = 两条边<b>都在</b> {e8,e9,e10} 的 C(3,2)=3 对，或都在 {e5,e6,e7} 的 3 对，共 6 对。<br>' +
+  '④ 全图边对总权积 = (Σw² 展开)：Σ<sub>全部对</sub> w<sub>i</sub>w<sub>j</sub> = (160² − 3600)/2 = <b>11000</b>；这 6 对每对 10×10=100，共 600。<br>' +
+  '⑤ ans[8] = 11000 − 600 = <b style="color:var(--acc)">10400</b> —— 与程序输出第 8 个数一致（程序侧：c=900，b·sum−(b²+b2)/2 = 16000−6500 = 9500，9500+900=10400，两条账对得上）。</div>' +
+  '<h3>u=2</h3><div class="small">路径唯一 = {e1}。“i、j 至少一条在路径上”等价于“含 e1”：Σ = w1·(sum−w1) = 10×(160−10) = <b style="color:var(--acc)">1500</b>（程序：c=0,b=10,b2=100 ⇒ 1600−(100+100)/2=1500）</div>' +
+  '<h3>u=3</h3><div class="small">路径唯一 = {e1,e2}，可绕开的对 = 两条都不在路径上 = 全在 {e3..e10} 的 C(8,2)=28 对：这部分和 = (130²−3100)/2 = 6900。ans[3] = 11000 − 6900 = <b style="color:var(--acc)">4100</b>（程序：b=30,b2=500 ⇒ 30·160−(900+500)/2 = 4800−700=4100）</div>';
+
+/* ---------- controls ---------- */
+function render() {
+  if (tab === 'semi') {
+    $('prog').textContent = '静态页 · 无分步';
+    $('prev').disabled = $('next').disabled = $('end').disabled = $('home').disabled = true;
+    $('play').disabled = true;
+    stopPlay();
+    return;
+  }
+  const F = frames(tab), k = idx[tab];
+  if (tab === 'dfs1') renderDfs1();
+  else if (tab === 'bk') renderBk();
+  else renderDfs2();
+  $('prog').textContent = '第 ' + (k + 1) + ' / ' + F.length + ' 步';
+  $('prev').disabled = k === 0;
+  $('next').disabled = k === F.length - 1;
+  $('end').disabled = $('home').disabled = false;
+  $('play').disabled = false;
+}
+function step(d) {
+  const F = frames(tab);
+  idx[tab] = Math.min(F.length - 1, Math.max(0, idx[tab] + d));
+  render();
+}
+function stopPlay() { if (timer) { clearInterval(timer); timer = null; $('play').textContent = '自动播放'; } }
+function startPlay() {
+  if (timer) return;
+  $('play').textContent = '暂停';
+  timer = setInterval(() => {
+    const F = frames(tab);
+    if (idx[tab] >= F.length - 1) { stopPlay(); return; }
+    idx[tab]++; render();
+  }, Number($('speed').value));
+}
+$('prev').onclick = () => { stopPlay(); step(-1); };
+$('next').onclick = () => { stopPlay(); step(1); };
+$('end').onclick = () => { stopPlay(); idx[tab] = frames(tab).length - 1; render(); };
+$('home').onclick = () => { stopPlay(); idx[tab] = 0; render(); };
+$('play').onclick = () => { timer ? stopPlay() : startPlay(); };
+$('speed').onchange = () => { if (timer) { stopPlay(); startPlay(); } };
+document.querySelectorAll('button.tab').forEach(b => b.onclick = () => {
+  stopPlay();
+  tab = b.dataset.tab;
+  document.querySelectorAll('button.tab').forEach(x => x.classList.toggle('on', x === b));
+  TABS.forEach(t => $('pane-' + t).classList.toggle('on', t === tab));
+  render();
+});
+document.addEventListener('keydown', e => {
+  if (e.target === $('srcIn')) return;
+  if (e.key === 'ArrowRight') { stopPlay(); step(1); e.preventDefault(); }
+  else if (e.key === 'ArrowLeft') { stopPlay(); step(-1); e.preventDefault(); }
+  else if (e.key === ' ') { timer ? stopPlay() : startPlay(); e.preventDefault(); }
+});
+/* click-to-inspect (delegated) */
+function attachPick(boxId, infoId) {
+  $(boxId).addEventListener('click', e => {
+    const g = e.target.closest('[data-eid]'), vv = e.target.closest('[data-vid]');
+    if (g) {
+      const i = Number(g.dataset.eid);
+      const b = sim.F2[sim.F2.length - 1].st.buckets.find(x => x.members.includes(i));
+      const tree = sim.T.reduce((a, t) => a.concat(t.map(x => x[1])), []).includes(i);
+      $(infoId).innerHTML = '边 e' + i + ' ' + endpoints(i) + ' w=' + sim.W[i] + '　身份：' + (tree ? '树边' : '反祖边') +
+        '　he=' + hx(sim.he[i]) + (b ? '　桶 j=' + b.j + '（ct=' + sim.ct[b.j] + ', sw=' + sim.sw[b.j] + '）' : '　（he=0：割边，不入桶）');
+    } else if (vv) {
+      const u = Number(vv.dataset.vid);
+      $(infoId).innerHTML = '点 ' + u + '　vis=' + (sim.vis[u] ? 1 : 0) + '　dep=' + sim.dep[u] + '　h=' + hx(sim.h[u]) + '　ans=' + sim.ans[u];
+    }
+  });
+}
+/* ---------- custom input ---------- */
+function loadFrom(srcText, quiet) {
+  const toks = srcText.trim().split(/[\s,]+/).map(Number).filter(x => Number.isFinite(x));
+  if (toks.length < 2) { if (!quiet) $('srcMsg').textContent = '格式错：第一行要两个整数 n m。'; return false; }
+  const n = toks[0], m = toks[1];
+  if (!(n >= 2 && n <= 8) || !(m >= 1 && m <= 12)) { $('srcMsg').textContent = '演示限制 2≤n≤8、1≤m≤12（保证路径暴力不爆炸、画得下）。'; return false; }
+  if (toks.length !== 2 + 3 * m) { $('srcMsg').textContent = '边数不对：声明了 m=' + m + '，应当再有 3m=' + 3 * m + ' 个整数。'; return false; }
+  const E = [];
+  for (let k = 0; k < m; k++) {
+    const u = toks[2 + 3 * k], v = toks[3 + 3 * k], w = toks[4 + 3 * k];
+    if (!(u >= 1 && u <= n && v >= 1 && v <= n) || u === v) { $('srcMsg').textContent = '第 ' + (k + 1) + ' 条边端点非法（演示禁自环）。'; return false; }
+    if (!(w >= 1 && w <= 1000000)) { $('srcMsg').textContent = '第 ' + (k + 1) + ' 条边的权要在 1..1000000。'; return false; }
+    E.push([u, v, w]);
+  }
+  try {
+    sim = runSim(n, m, E);
+  } catch (err) { $('srcMsg').textContent = '模拟出错：' + err.message; return false; }
+  isSample = n === 10 && m === 10 && JSON.stringify(E) === JSON.stringify(SAMPLE_E);
+  idx.dfs1 = idx.bk = idx.dfs2 = 0;
+  $('srcMsg').innerHTML = '已重跑：' + n + ' 点 ' + m + ' 边。dfs1 共 ' + sim.F1.length + ' 帧、桶 ' + sim.F2.length +
+    ' 帧、dfs2 ' + sim.F3.length + ' 帧。程序 ans = ' + sim.ans.slice(1).join(' ') +
+    '；暴力语义(选项 C) = ' + sim.hand.slice(1).map(x => x === null ? '·' : x).join(' ') +
+    (isSample ? '（样例模式：手推面板/固定文案均可用）' : '（随机图模式：ct==1 分支可能出现 ' + sim.F3.filter(f => f.k === 'child2' && f.branch === 'ct1').length + ' 次）');
+  return true;
+}
+$('runBtn').onclick = () => { loadFrom($('srcIn').value); render(); };
+$('resetBtn').onclick = () => {
+  $('srcIn').value = '10 10\n' + SAMPLE_E.map(e => e.join(' ')).join('\n');
+  loadFrom($('srcIn').value);
+  render();
+};
+
+/* ---------- boot ---------- */
+buildSrc('src1'); buildSrc('src2'); buildSrc('src3');
+attachPick('svg1box', 'ginfo1');
+attachPick('svg2box', 'ginfo2');
+attachPick('svg3box', 'ginfo3');
+$('semiLbl').textContent = hx(sim.label10);
+render();
+</script>
+</body>
+</html>

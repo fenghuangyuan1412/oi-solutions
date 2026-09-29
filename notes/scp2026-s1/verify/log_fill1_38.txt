@@ -1,0 +1,27 @@
+blank 38 (break condition) vs brute:
+  A: n=3000 correct=True firstdiff=None | n=1e5 correct=False rc=0
+  B: n=3000 correct=True firstdiff=None | n=1e5 correct=False rc=0
+  C: n=3000 correct=True firstdiff=None | n=1e5 correct=False rc=0
+  D: n=3000 correct=True firstdiff=None | n=1e5 correct=False rc=0
+
+blank 36 (powers loop) vs brute:
+  A: n=3000 correct=True firstdiff=None
+  B: n=3000 correct=True firstdiff=None
+  C: n=3000 correct=False firstdiff=4
+  D: n=3000 correct=False firstdiff=4
+
+blank 37 (bsgs lookup) vs brute:
+  A: n=3000 correct=False firstdiff=4 rc=0 ; n=1e5 rc=3221225477
+  B: n=3000 correct=True firstdiff=None rc=0 ; n=1e5 rc=0
+  C: n=3000 correct=False firstdiff=4 rc=0 ; n=1e5 rc=0
+  D: n=3000 correct=False firstdiff=4 rc=0 ; n=1e5 rc=3221225477
+
+blank 34 (qpow) / 35 (bsgs2) first-diff:
+  Q34 A: correct=True firstdiff_i=None got=- want=-
+  Q34 B: correct=False firstdiff_i=5 got=250 want=3125
+  Q34 C: correct=False firstdiff_i=3 got=9 want=27
+  Q34 D: correct=False firstdiff_i=2 got=1 want=4
+  Q35 A: correct=False firstdiff_i=108 got=77201790 want=826157940
+  Q35 B: correct=False firstdiff_i=108 got=0 want=826157940
+  Q35 C: correct=False firstdiff_i=216 got=452789884 want=58543592
+  Q35 D: correct=True firstdiff_i=None got=- want=-

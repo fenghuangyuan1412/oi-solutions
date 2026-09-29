@@ -43,6 +43,16 @@ solutions/basic/p14358-seat/
 
 GitHub 原生渲染 Markdown 中的 Mermaid 流程图与 `$$...$$` 公式，因此题解正文在仓库页面内即可直接看图，无需额外构建。
 
+## 讲义索引（notes/）
+
+跨题的整套讲评/教案，面向"要给别人上课"的场景。每份讲义旁边配了**单文件、内联 CSS/JS、不联网**的分步可视化，双击即可在浏览器播放。
+
+| 讲义 | 覆盖 | 可视化 |
+| --- | --- | --- |
+| [notes/cspjs-round1-2026/](notes/cspjs-round1-2026) | CSP-J / CSP-S 2026 第一轮 真题风格卷（含全部答案与程序实测） | [j-trace.html](notes/cspjs-round1-2026/j-trace.html)、[s-trace.html](notes/cspjs-round1-2026/s-trace.html) |
+| [notes/scp2026-j1/](notes/scp2026-j1) | 洛谷模拟卷 SCP-J1 2026 全 42 题零基础讲评 + `verify/` 实测证据 | 孪生素数、二维 dp 填表、九连环 dfs、二分第 k 小、分层 BFS 迷宫（共 5 个，见讲义 §0.1） |
+| [notes/scp2026-s1/](notes/scp2026-s1) | 洛谷模拟卷 SCP-S1 2026 全 43 题零基础讲评 + `verify/` 实测证据 | permanent 状压 dp、Fibonacci 词 + Zeckendorf、异或哈希必经边（共 3 个，见讲义 §0.1） |
+
 ## 参考项目
 
 本仓库的组织方式参考了以下开源项目：

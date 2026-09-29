@@ -1,0 +1,31 @@
+N=10 M=10 sum=160
+EDGE 1 (1,2) w=10 he=0 backedges=0 bucket=0 ct=0 sw=0 status=0
+EDGE 2 (2,3) w=20 he=0 backedges=0 bucket=0 ct=0 sw=0 status=0
+EDGE 3 (3,4) w=30 he=0 backedges=0 bucket=0 ct=0 sw=0 status=0
+EDGE 4 (4,5) w=40 he=0 backedges=0 bucket=0 ct=0 sw=0 status=0
+EDGE 5 (5,6) w=10 he=1 backedges=1 bucket=1 ct=6 sw=60 status=2
+EDGE 6 (6,7) w=10 he=1 backedges=1 bucket=1 ct=6 sw=60 status=2
+EDGE 7 (7,8) w=10 he=1 backedges=1 bucket=1 ct=6 sw=60 status=2
+EDGE 8 (8,9) w=10 he=1 backedges=1 bucket=1 ct=6 sw=60 status=2
+EDGE 9 (9,10) w=10 he=1 backedges=1 bucket=1 ct=6 sw=60 status=2
+EDGE 10 (10,5) w=10 he=1 backedges=1 bucket=1 ct=6 sw=60 status=-1
+ANS 1 0
+ANS 2 1500
+ANS 3 4100
+ANS 4 7100
+ANS 5 9500
+ANS 6 10000
+ANS 7 10300
+ANS 8 10400
+ANS 9 10300
+ANS 10 10000
+DEP 1 0 par=0 pedge=0 h=0
+DEP 2 1 par=1 pedge=1 h=0
+DEP 3 2 par=2 pedge=2 h=0
+DEP 4 3 par=3 pedge=3 h=0
+DEP 5 4 par=4 pedge=4 h=0
+DEP 6 5 par=5 pedge=5 h=1
+DEP 7 6 par=6 pedge=6 h=1
+DEP 8 7 par=7 pedge=7 h=1
+DEP 9 8 par=8 pedge=8 h=1
+DEP 10 9 par=9 pedge=9 h=1

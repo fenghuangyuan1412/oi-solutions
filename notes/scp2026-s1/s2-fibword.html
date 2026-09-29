@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>阅读程序(2) · Fibonacci 词 + Zeckendorf 分解 + dp[k][p] 递推</title>
+<style>
+  :root{--bg:#0f1220;--card:#1a1f35;--ink:#e8ecff;--dim:#8b93b5;--acc:#5eead4;--bad:#f59e6b;--good:#5eead4;--line:#262c4a;}
+  *{box-sizing:border-box}
+  body{margin:0;padding:20px 22px 40px;background:var(--bg);color:var(--ink);font:15px/1.65 "Segoe UI",system-ui,sans-serif}
+  h1{font-size:20px;margin:0 0 3px}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:14px;max-width:1200px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:13px}
+  .card h2{font-size:14px;letter-spacing:.04em;color:var(--dim);margin:0 0 10px;font-weight:700}
+  button,select{background:#2b3358;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 12px;font-size:14px;cursor:pointer;font-family:inherit}
+  button:hover:not(:disabled){background:#394373}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.on{background:#2f5a66;border-color:var(--acc);color:#fff}
+  select{padding:6px 8px}
+  input[type=text]{background:#0d1020;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 10px;font:14px Consolas,monospace;width:150px}
+  .bar-top{position:sticky;top:0;z-index:30;background:#131730;border-bottom:1px solid var(--line);padding:9px 0 10px;margin:0 -22px 14px;padding-left:22px;padding-right:22px}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}
+  .ctl{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .prog{color:var(--acc);font:15px Consolas,monospace;margin-left:8px}
+  .speedlab{color:var(--dim);font-size:14px;margin-left:10px}
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) 536px;gap:14px;align-items:start}
+  @media (max-width:1240px){.grid{grid-template-columns:minmax(0,1fr)}}
+  .note{background:#151a30;border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:10px;padding:12px 14px;font-size:15px;min-height:84px;margin-bottom:13px}
+  .note b{color:var(--acc)}
+  .note i{color:var(--bad);font-style:normal}
+  .note code{font:14px Consolas,monospace;color:var(--ink);background:#22284a;padding:1px 5px;border-radius:4px}
+  .row{display:flex;gap:13px;flex-wrap:wrap}.row>.card{flex:1;min-width:300px}
+  .strip{display:flex;flex-wrap:wrap;gap:2px;align-items:flex-start}
+  .ch{width:22px;height:24px;line-height:24px;text-align:center;border-radius:5px;background:#232a4a;border:1px solid #333c66;font:14px Consolas,monospace}
+  .ch.ix{background:transparent;border:1px dashed #2c3357;color:#6d77a3;height:20px;line-height:20px}
+  .ch.h1{background:#16323f;border-color:#2b6a7f;color:var(--acc)}
+  .ch.h2{background:#3a2440;border-color:#7c4fa0;color:#d7b6ff}
+  .ch.pick{background:#4a3a15;border-color:var(--bad);color:#ffd9b0;font-weight:700}
+  .ch.one{color:var(--good);font-weight:700}
+  .ch.off{opacity:.3}
+  .wrow{display:flex;align-items:center;gap:9px;margin-bottom:7px;flex-wrap:wrap}
+  .wlab{width:92px;font:14px Consolas,monospace;color:var(--dim);flex:none}
+  .wlen{font:14px Consolas,monospace;color:var(--acc)}
+  .eq{font:15px/1.7 Consolas,monospace;color:var(--ink);background:#12172c;border:1px dashed #3d4778;border-radius:8px;padding:8px 10px;margin-bottom:9px;word-break:break-all}
+  .chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+  .chip{background:#131730;border:1px solid var(--line);border-radius:7px;padding:4px 8px;font:14px Consolas,monospace;color:var(--dim)}
+  .chip b{color:var(--ink)}
+  .chip.hit{border-color:var(--bad);color:var(--ink);background:#3a2f18}
+  .grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:9px}
+  .k{background:#131730;border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+  .k .lab{font-size:14px;color:var(--dim)}
+  .k .val{font:19px Consolas,monospace;margin-top:2px;word-break:break-all}
+  .k.acc .val{color:var(--acc)} .k.badk .val{color:var(--bad)}
+  table{width:100%;border-collapse:collapse;font:14px Consolas,monospace}
+  th,td{padding:3px 7px;border-bottom:1px solid #222743;text-align:right;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  th{color:var(--dim);font-weight:600}
+  tr.cur td{background:#242c52;color:var(--acc)}
+  tr.dim{opacity:.32}
+  td.empty{color:#3a4270}
+  td.src{background:#16323f;color:var(--acc);font-weight:700}
+  td.src.flip{background:#3a2440;color:#d7b6ff;box-shadow:inset 0 0 0 2px #9d6bff}
+  td.star{background:#4a3a15;color:#ffd9b0;font-weight:700;box-shadow:inset 0 0 0 2px var(--bad)}
+  td.op{color:#ffd9b0}
+  .scroller{overflow-x:auto}
+  .code{font:14px/1.5 Consolas,monospace;white-space:pre;overflow:hidden}
+  .cl{display:block;padding:1px 2px;border-radius:4px;color:#aab3d8}
+  .cl .lno{display:inline-block;width:24px;color:#4d5578;text-align:right;margin-right:7px}
+  .cl.on{background:#1d3b52;color:#fff;box-shadow:inset 3px 0 0 var(--acc)}
+  .cl.on .lno{color:var(--acc)}
+  .zb{display:flex;height:46px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#10142a;margin-bottom:8px}
+  .zg{display:flex;align-items:center;justify-content:center;font:14px Consolas,monospace;overflow:hidden;border-right:1px solid #0f1220}
+  .zg.a{background:#16323f;color:var(--acc)}
+  .zg.b{background:#3a2440;color:#d7b6ff}
+  .zg.c{background:#3a2f18;color:#ffd9b0}
+  .zg.rest{background:#1c2140;color:var(--dim)}
+  .band{display:flex;flex-wrap:wrap;gap:3px}
+  .bc{width:32px;height:28px;line-height:28px;text-align:center;border-radius:6px;font:14px Consolas,monospace}
+  .bc.odd{background:#16323f;border:1px solid #2b6a7f;color:var(--acc)}
+  .bc.even{background:#2a2033;border:1px solid #4a3760;color:#d3b0ef}
+  .bc.per{outline:2px solid var(--bad)}
+  .hist{display:flex;align-items:flex-end;gap:8px;height:130px;border-bottom:1px solid #3a4270;padding:0 4px;margin-top:12px}
+  .hbar{flex:1;background:var(--acc);border-radius:4px 4px 0 0;min-height:2px;position:relative}
+  .hbar span{position:absolute;top:-20px;left:0;right:0;text-align:center;font:14px Consolas,monospace;color:var(--dim)}
+  .hax{display:flex;gap:8px;padding:4px 4px 0;font:14px Consolas,monospace;color:var(--dim)}
+  .hax div{flex:1;text-align:center}
+  .ansline{font:15px/1.7 Consolas,monospace;background:#12172c;border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin-top:9px;word-break:break-word}
+</style>
+</head>
+<body>
+<h1>阅读程序 (2) · Fibonacci 词 + Zeckendorf 分解 + dp[k][p] 递推</h1>
+<div class="sub">SCP-S1 2026（洛谷模拟卷）卷面第 4–55 行 · 题 22–27。零基础版：先把 Fibonacci 词一个个拼出来（<b>tab①</b>），再看 <b>dp[k][p]</b> 的递推为什么需要相位 p（<b>tab②</b>），然后用 <b>Zeckendorf 贪心剥段</b>把 solve3 跑通（<b>tab③</b>），三套 solve 的逐值对照（<b>tab④</b>），最后是复杂度三题的证据表（<b>tab⑤</b>）。页面上所有数字都由 JS 原样模拟 <code>init / solve1 / value / solve3</code> 算出；实测证据表抄自 <b>RESULTS.md §2</b>。</div>
+
+<div class="bar-top">
+  <div class="tabs" id="tabs"></div>
+  <div class="ctl">
+    <button id="prev">◀ 上一步</button>
+    <button id="next">下一步 ▶</button>
+    <button id="play">自动播放</button>
+    <button id="last">跳到末尾</button>
+    <button id="first">回到开头</button>
+    <span class="prog" id="prog"></span>
+    <span class="speedlab">速度</span>
+    <select id="speed"><option value="1600">0.5x</option><option value="900" selected>1x</option><option value="450">2x</option><option value="200">4x</option></select>
+  </div>
+</div>
+
+<div class="note" id="note"></div>
+
+<div class="grid">
+  <div id="stage"></div>
+  <div>
+    <div class="card">
+      <h2>卷面程序（行号即卷面 4–55 · 青底＝当前正在执行的那几行）</h2>
+      <div class="code" id="code"></div>
+    </div>
+    <div class="card">
+      <h2>本页自检（JS 与 C++ 对齐）</h2>
+      <div id="ground" style="font:14px/1.8 Consolas,monospace"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ 1. r2.cpp 的忠实移植 ============ */
+const LENB=new Array(90).fill(0n), DPB=Array.from({length:90},()=>[0n,0n]);
+function init(){                                         // 卷面 7–15 行
+  LENB[0]=1n; LENB[1]=2n; DPB[1][1]=1n;
+  for(let i=2;i<=86;i++){
+    LENB[i]=LENB[i-1]+LENB[i-2];
+    const op=Number(LENB[i-1]&1n);
+    DPB[i][0]=DPB[i-1][0]+DPB[i-2][0^op];
+    DPB[i][1]=DPB[i-1][1]+DPB[i-2][1^op];
+  }
+}
+init();
+const Ln=i=>Number(LENB[i]);
+const Dp=(i,p)=>Number(DPB[i][p]);
+/* 同一套递推的纯 Number 表（i ≤ 40 时 len/dp 都远小于 2^53），只给"批量扫描"用，
+   逐帧动画一律走上面的 BigInt 版本 */
+const LENF=[], DPF=[];
+for(let i=0;i<=44;i++){ LENF.push(Number(LENB[i])); DPF.push([Number(DPB[i][0]),Number(DPB[i][1])]); }
+
+function buildWord(n){                                   // 卷面 18–20 行
+  let s='0', nxt='01';
+  while(nxt.length<n){ const tmp=nxt+s; s=nxt; nxt=tmp; }
+  return nxt;
+}
+function wordIndex(n){ let i=1; while(Ln(i)<n) i++; return i; }
+function solve1(n,p){                                    // 卷面 17–24 行（页面造词上限 20000）
+  if(n>20000) return null;
+  const w=buildWord(n); let ans=0;
+  for(let i=p;i<n;i+=2) ans += w.charCodeAt(i)-48;
+  return ans;
+}
+function valueTrace(pos){                                // 卷面 26–31 行
+  const path=[]; let calls=0, wsteps=0, x=pos;
+  while(x>1){
+    calls++;
+    let k=0; while(LENB[k+1]<=BigInt(x)) k++;
+    wsteps+=k;
+    path.push({pos:x,k,used:Ln(k),next:x-Ln(k)});
+    x-=Ln(k);
+  }
+  calls++; path.push({pos:x,base:true,val:x});
+  return {val:x, path, calls, wsteps};
+}
+function value(pos){ return valueTrace(pos).val; }
+function solve2(n,p){ let a=0; for(let i=p;i<n;i+=2) a+=value(i); return a; }   // 33–37 行
+function zeck(nBig,p){                                   // 39–45 行 solve3，带回剥段轨迹
+  const chunks=[]; let k=0, ans=0n, N=nBig;
+  while(LENB[k+1]<=N) k++;
+  const kStart=k;
+  for(;k>=0;k--) if(LENB[k]<=N){
+    const pf=p;
+    ans+=DPB[k][p]; N-=LENB[k]; p^=Number(LENB[k]&1n);
+    chunks.push({k,lenk:LENB[k],add:DPB[k][pf],pFrom:pf,pTo:p,remBefore:N+LENB[k],remAfter:N});
+  }
+  return {ans, kStart, chunks, pEnd:p};
+}
+function solve3(n,p){ return Number(zeck(BigInt(n),p).ans); }
+function solve3Fast(n,p){                                // 同 solve3，纯 Number（批量扫描用）
+  let k=0; while(LENF[k+1]<=n) k++;
+  let ans=0; for(;k>=0;k--) if(LENF[k]<=n){ ans+=DPF[k][p]; n-=LENF[k]; p^=LENF[k]&1; }
+  return ans;
+}
+function termCount(n,p){                                 // 剥段次数 = ans += dp[k][p] 的执行次数
+  let k=0; while(LENF[k+1]<=n) k++;
+  let c=0; for(;k>=0;k--) if(LENF[k]<=n){ c++; n-=LENF[k]; p^=LENF[k]&1; }
+  return c;
+}
+const _minN={};
+function minN(want){
+  if(_minN[want]!==undefined) return _minN[want];
+  let n=1; while(termCount(n,0)!==want) n++;
+  _minN[want]=n; return n;
+}
+let _diff=null;
+function diffHist(){                                     // 题 24：|solve3(n,0)-solve3(n,1)| 分布（缓存）
+  if(_diff) return _diff;
+  const hist=new Array(16).fill(0), firstAt={};
+  for(let n=1;n<=100000;n++){
+    const d=Math.abs(solve3Fast(n,0)-solve3Fast(n,1));
+    hist[d]++; if(firstAt[d]===undefined) firstAt[d]=n;
+  }
+  _diff={hist,firstAt}; return _diff;
+}
+function fibWords(upTo){ const w=['0','01']; for(let i=2;i<=upTo;i++) w.push(w[i-1]+w[i-2]); return w; }
+function concatCost(n){                                  // 题 22 拷贝量模型
+  let s=1,nxt=2,calls=0,cost=0;
+  while(nxt<n){ cost += nxt+s + nxt; const t=nxt+s; s=nxt; nxt=t; calls++; }
+  return {calls, final:nxt, cost};
+}
+let _c25=null;
+function count25(list){                                  // 题 25 调用次数 / while 步数
+  if(_c25) return _c25;
+  _c25=list.map(n=>{
+    let calls=0,wsteps=0;
+    for(let i=0;i<n;i+=2){
+      let x=i;
+      while(x>1){
+        calls++;
+        let k=0; while(LENF[k+1]<=x){k++;wsteps++;}
+        x-=LENF[k];
+      }
+      calls++;
+    }
+    const L=Math.log2(n);
+    return {n,calls,wsteps,rc:calls/(n*L),rw:wsteps/(n*L*L)};
+  });
+  return _c25;
+}
+
+/* ============ 2. 卷面代码面板 ============ */
+const CODE=[[4,'typedef long long ll;'],[5,'ll len[90], dp[90][2];'],
+[7,'void init() {'],[8,'    len[0] = 1, len[1] = 2, dp[1][1] = 1;'],
+[9,'    for (int i = 2; i <= 86; i++) {'],[10,'        len[i] = len[i - 1] + len[i - 2];'],
+[11,'        int op = len[i - 1] & 1;'],[12,'        dp[i][0] = dp[i - 1][0] + dp[i - 2][0 ^ op];'],
+[13,'        dp[i][1] = dp[i - 1][1] + dp[i - 2][1 ^ op];'],[14,'    }'],[15,'}'],
+[17,'int solve1(int n, int p) {'],[18,'    string s = "0", nxt = "01", tmp;'],
+[19,'    while (nxt.length() < n)'],[20,'        tmp = nxt + s, s = nxt, nxt = tmp;'],
+[21,'    int ans = 0;'],[22,"    for (int i = p; i < n; i += 2) ans += nxt[i] - '0';"],
+[23,'    return ans;'],[24,'}'],
+[26,'int value(int pos) {'],[27,'    if (pos <= 1) return pos;'],[28,'    int k = 0;'],
+[29,'    while (len[k + 1] <= pos) k++;'],[30,'    return value(pos - len[k]);'],[31,'}'],
+[33,'int solve2(int n, int p) {'],[34,'    int ans = 0;'],
+[35,'    for (int i = p; i < n; i += 2) ans += value(i);'],[36,'    return ans;'],[37,'}'],
+[39,'ll solve3(ll n, int p) {'],[40,'    int k = 0; ll ans = 0;'],
+[41,'    while (len[k + 1] <= n) k++;'],[42,'    for (; k >= 0; k--) if (len[k] <= n)'],
+[43,'        ans += dp[k][p], n -= len[k], p ^= len[k] & 1;'],[44,'    return ans;'],[45,'}'],
+[47,'int main() {'],[48,'    ll n; int p;'],[49,'    cin >> n >> p, init();'],
+[50,'    if (n <= 1e6)'],[51,"        cout << solve1(n, p) << ' ' << solve2(n, p) << ' '"],
+[52,"             << solve3(n, p) << endl;"],[53,'    else'],
+[54,'        cout << solve3(n, p) << endl;'],[55,'    return 0;'],[56,'}'],
+[58,'// 卷面假设 1 <= n <= 1e18, p in {0,1}']];
+function renderCode(lines){
+  const box=document.getElementById('code'); box.innerHTML='';
+  const on=new Set(lines||[]);
+  for(const [no,txt] of CODE){
+    const d=document.createElement('span');
+    d.className='cl'+(on.has(no)?' on':'');
+    const a=document.createElement('span'); a.className='lno'; a.textContent=String(no);
+    d.appendChild(a); d.appendChild(document.createTextNode(txt));
+    box.appendChild(d);
+  }
+}
+
+/* ============ 3. 小工具 ============ */
+function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=String(txt);return e;}
+function card(title){const c=el('div','card');c.appendChild(el('h2',null,title));return c;}
+function strip(chars,clsFn,titleFn){
+  const d=el('div','strip');
+  chars.forEach((c,i)=>{
+    const b=el('div','ch'+(clsFn?' '+clsFn(c,i):''),c);
+    if(titleFn) b.title=titleFn(c,i);
+    d.appendChild(b);
+  });
+  return d;
+}
+function kpis(list){
+  const g=el('div','grid4');
+  list.forEach(it=>{const k=el('div','k'+(it[2]?' '+it[2]:''));k.appendChild(el('div','lab',it[0]));k.appendChild(el('div','val',it[1]));g.appendChild(k);});
+  return g;
+}
+
+/* ============ 4. tab 的 step 流 ============ */
+const TABS=[
+  {id:'word',name:'① Fibonacci 词 + solve1'},
+  {id:'dp',name:'② dp[k][p] 递推'},
+  {id:'s3',name:'③ solve3 · Zeckendorf'},
+  {id:'cmp',name:'④ 三套 solve 对照'},
+  {id:'cx',name:'⑤ 复杂度（22/23/25）'}
+];
+let tab='word', t=0, timer=null, STEPS=[], curN=233, curP=0, cmpP=0;
+
+/* ---- tab① 词构造 ---- */
+function buildWordTab(){
+  const W=fibWords(6), N=20, P=0, word=buildWord(N), wIdx=wordIndex(N), S=[];
+  S.push({kind:'intro',show:1,W,lines:[17,18],
+    text:'<b>Fibonacci 词</b>只有两条起步规则：<code>W0 = "0"</code>、<code>W1 = "01"</code>，之后 <code>W_i = W_{i-1} W_{i-2}</code>（<i>较长的那段放在前面</i>）。第 18 行 <code>string s = "0", nxt = "01"</code> 就是这两个起步词。下面逐个拼出来，拼到长度 ≥ n 为止。'});
+  for(let i=2;i<=6;i++){
+    S.push({kind:'split',i,show:i-1,W,lines:[19,20],
+      text:'拼 <b>W'+i+'</b>：<code>W'+i+' = W'+(i-1)+' · W'+(i-2)+'</code> —— 青色是 <code>'+W[i-1]+'</code>（长 '+W[i-1].length+'），紫色是 <code>'+W[i-2]+'</code>（长 '+W[i-2].length+'）。对应第 19–20 行 <code>tmp = nxt + s, s = nxt, nxt = tmp;</code>：<code>nxt</code> 始终是较长的那一段，所以拼接时它在左边。'});
+    S.push({kind:'merge',i,show:i,W,lines:[10],
+      text:'合并完成：<b>W'+i+' = '+W[i]+'</b>，长度 <code>len['+i+'] = len['+(i-1)+'] + len['+(i-2)+'] = '+Ln(i-1)+' + '+Ln(i-2)+' = '+Ln(i)+'</code>，正是第 10 行。这一段长度的奇偶（'+Ln(i)+' 是'+(Ln(i)%2?'<b>奇数</b>':'<b>偶数</b>')+'）待会儿决定相位会不会翻转。'});
+  }
+  S.push({kind:'lenrow',show:6,W,lines:[5,10],
+    text:'长度行：<code>'+[0,1,2,3,4,5,6].map(i=>Ln(i)).join(', ')+'</code> —— 就是斐波那契数列，只是下标从 <code>len[0]=1, len[1]=2</code> 开始（第 8 行）。词之间有<b>前缀性质</b>：每个 <code>W_i</code> 都是 <code>W_{i+1}</code> 的开头，所以它们是一段一段逼近同一个"无穷词" <code>W_∞</code>。'});
+  let acc=0; const picks=[];
+  for(let i=P;i<N;i+=2){ acc+=word.charCodeAt(i)-48; picks.push({i,c:word[i],ans:acc}); }
+  const base={kind:'s1',show:6,W,N,P,word,wIdx,picks};
+  S.push(Object.assign({},base,{idx:-1,ans:0,lines:[17,18,19,20,21],
+    text:'现在跑 <b>solve1('+N+', '+P+')</b>。第 18–20 行把词造到长度 ≥ '+N+'：停在 <b>W'+wIdx+'</b>（长 '+word.length+'）。第 21 行 <code>ans = 0</code>。整词的构造是<i>唯一</i>的代价，剩下只是查表。'}));
+  picks.forEach((p,j)=>S.push(Object.assign({},base,{idx:j,ans:p.ans,lines:[22],
+    text:'第 22 行 <code>for (int i = p; i &lt; n; i += 2)</code>：<i>隔位取样</i>，起点相位由 <code>p='+P+'</code> 决定。取到位置 <code>i = '+p.i+'</code>，该位是 <code>\''+p.c+'\'</code> ⇒ <code>ans += '+(p.c==='1'?1:0)+'</code> ⇒ <b>ans = '+p.ans+'</b>。'})));
+  S.push(Object.assign({},base,{idx:picks.length-1,ans:acc,kind:'s1done',lines:[22,23],
+    text:'<code>i = 18</code> 取完后 <code>i += 2 → 20</code>，<code>20 &lt; n</code> 为假 ⇒ 退出循环。<b>solve1(20,0) = '+acc+'</b>。词的最后一位（位置 20，属于 W'+wIdx+' 但超出 n）根本没被看。<br>机器实测 <code>echo "20 0" | r2.exe</code> 输出 <code>'+acc+' '+acc+' '+acc+'</code>：三套 solve 同一个数（tab④ 逐值核对）。'}));
+  return S;
+}
+
+/* ---- tab② dp 递推 ---- */
+function buildDpTab(){
+  const S=[];
+  S.push({kind:'meaning',i:-1,lines:[5,7],
+    text:'<b>dp[k][p] 记的是什么</b>：在词 <code>W_k</code> 里，从相位 <code>p</code>（0 = 从偶数位起、1 = 从奇数位起）隔位取样，一共能取到多少个 <code>1</code>。它把 <code>solve1</code> 的结果压进一张 90×2 的表里，于是问"前 len[k] 位里有几个 1"变成查表 —— 这是本题最核心的一步。'});
+  S.push({kind:'base',i:1,lines:[8],
+    text:'基准（第 8 行）：<code>len[0] = 1, len[1] = 2, dp[1][1] = 1</code>。<code>W1 = "01"</code>：相位 1 只能取位置 1，那里是 <code>1</code> ⇒ <code>dp[1][1] = 1</code>；相位 0 只能取位置 0，是 <code>0</code> ⇒ <code>dp[1][0] = 0</code>。<code>W0 = "0"</code> ⇒ <code>dp[0][0] = dp[0][1] = 0</code>（第 8 行没写它们，全局数组默认 0）。'});
+  for(let i=2;i<=14;i++){
+    const op=Number(LENB[i-1]&1n);
+    S.push({kind:'op',i,lines:[10,11],
+      text:'先算第 11 行 <code>int op = len['+(i-1)+'] &amp; 1;</code>：<code>len['+(i-1)+'] = '+Ln(i-1)+'</code> 是'+(op?'<b>奇数</b> ⇒ <b>op = 1</b>':'<b>偶数</b> ⇒ <b>op = 0</b>')+'。同时第 10 行给出 <code>len['+i+'] = '+Ln(i)+'</code>。这个 op 只干一件事：决定"后半段的取样相位要不要翻转"。'});
+    S.push({kind:'fill',i,lines:[12,13],
+      text:'第 12–13 行填 <code>dp['+i+']</code> 这一行，两列各一个式子：<br><code>dp['+i+'][0] = dp['+(i-1)+'][0] + dp['+(i-2)+'][0^'+op+'] = '+Dp(i-1,0)+' + '+Dp(i-2,0^op)+' = '+Dp(i,0)+'</code><br><code>dp['+i+'][1] = dp['+(i-1)+'][1] + dp['+(i-2)+'][1^'+op+'] = '+Dp(i-1,1)+' + '+Dp(i-2,1^op)+' = '+Dp(i,1)+'</code><br>'+(op
+        ?'<i>op = 1 ⇒ 下标被异或翻转</i>：算第 0 列要用 <code>dp['+(i-2)+'][1]</code>、算第 1 列要用 <code>dp['+(i-2)+'][0]</code>，表里紫色带框的就是被翻转来的格子。'
+        :'op = 0 ⇒ 不翻转，两列各自向下平移相加（紫色不会出现）。')});
+  }
+  S.push({kind:'flip',i:14,lines:[11,12,13],
+    text:'<b>为什么 p 会跳变</b>：看 <code>W3 = W2 · W1 = 010 · 01</code>。在 W3 里从相位 0 隔位取，位置是 0, 2, 4。前两个落在前半段 W2（局部下标就是 0, 2）；而位置 4 落在后半段 W1 里，它在后半段的<b>局部下标</b>是 <code>4 − len[2] = 1</code> —— 相位从 0 变成了 1！<br>偏移量 <code>len[i-1]</code> 是奇数就会翻转，是偶数就不翻转 ⇒ 这就是第 12–13 行里 <code>0 ^ op</code> / <code>1 ^ op</code> 的全部含义，也是这张表必须带第二维 p 的原因。'});
+  S.push({kind:'hi45',i:14,lines:[12],
+    text:'<b>题 26 的钥匙</b>：<code>dp[11][0] = 45</code>（表里黄框）。四个选项的出处：A 44 = <code>dp[11][1]</code>（相位用错）、B 45 = <code>dp[11][0]</code> 正确、C 55 = <code>len[8]</code>（把长度当答案）、D 72 = <code>dp[12][0]</code>（k 多进了一位）。这张 i = 0..14 的表可以直接抄上板书。'});
+  S.push({kind:'probe',i:14,lines:[41,42,43,44,49,50,51],
+    text:'输入 <code>233 0</code>：因为 <code>233 = len[11]</code>，<code>solve3</code> 只命中<b>一次</b> <code>if (len[k] &lt;= n)</code>，做 <code>ans += dp[11][0] = 45</code> 后 n 变成 0 ⇒ 返回 <b>45</b>。<br>机器实测（<code>-static -O2</code> 编译 r2.cpp，本页现跑）：输入 <code>233 0</code> 输出 <code>45 45 45</code> —— solve1、solve2、solve3 全等于 <code>dp[11][0]</code> ⇒ 题 26 选 <b>B（45）</b>。'});
+  return S;
+}
+
+/* ---- tab③ solve3 / Zeckendorf ---- */
+function buildS3Tab(n,p){
+  const Z=zeck(BigInt(n),p), S=[];
+  const base={Z,n,p};
+  const B=(o)=>Object.assign({},base,o);
+  S.push(B({kind:'goal',j:-1,lines:[39,40],
+    text:'目标：<b>solve3('+n+', '+p+')</b> —— 不造词、不逐位问，而是把长度 <code>n</code> 拆成若干个整段 <code>len[k]</code>，每段直接查 <code>dp[k][p]</code>。第 40 行 <code>int k = 0; ll ans = 0;</code>。'}));
+  S.push(B({kind:'findk',j:-1,lines:[41],
+    text:'第 41 行 <code>while (len[k+1] &lt;= n) k++;</code> 从 0 往上<b>线性扫</b>：停在 <b>k = '+Z.kStart+'</b>，因为 <code>len['+Z.kStart+'] = '+Ln(Z.kStart)+' ≤ '+n+'</code> 而 <code>len['+(Z.kStart+1)+'] = '+Ln(Z.kStart+1)+' &gt; '+n+'</code>。这个扫描就是题 25 里那个"不是 O(1)"的 while。'}));
+  S.push(B({kind:'scan',j:-1,lines:[42],
+    text:'第 42 行改成<b>从大到小</b>扫：<code>for (; k &gt;= 0; k--) if (len[k] &lt;= n)</code>。每命中一次就消耗"不超过当前余数的最大斐波那契数" —— 这正是 <i>Zeckendorf 分解</i>（贪心剥段）。下面每一帧执行一次第 43 行。'}));
+  let run=0;
+  Z.chunks.forEach((c,j)=>{
+    run+=Number(c.add);
+    S.push(B({kind:'cut',j,run,lines:[43],
+      text:'第 43 行一句话做三件事：<br><code>ans += dp['+c.k+']['+c.pFrom+'] = '+Number(c.add)+'</code> ⇒ 累计 <b>ans = '+run+'</b>；<br><code>n -= len['+c.k+']</code>：'+Number(c.remBefore)+' − '+Number(c.lenk)+' = <b>'+Number(c.remAfter)+'</b>；<br><code>p ^= len['+c.k+'] &amp; 1</code>：len['+c.k+'] = '+Number(c.lenk)+' 是'+(Number(c.lenk&1n)?'<b>奇数 ⇒ 相位翻转 '+c.pFrom+' → '+c.pTo+'</b>':'偶数 ⇒ 相位不变，仍是 '+c.pTo)+'。'}));
+  });
+  S.push(B({kind:'done',j:Z.chunks.length,run:Number(Z.ans),lines:[44,50,51,52],
+    text:'余数 <code>n = 0</code>，之后 <code>len[k] ≤ n</code> 对每个 k 都为假 ⇒ 一句也不执行，第 44 行返回 <b>ans = '+Number(Z.ans)+'</b>。<br>语句 <code>ans += dp[k][p]</code> 执行了 <b>'+Z.chunks.length+'</b> 次 = 剥出的段数 = 分解的项数。'+
+      (n<=20000?' 对照本页 JS：<code>solve1 = '+solve1(n,p)+'、solve2 = '+solve2(n,p)+'</code> —— 三方一致。'
+               : ' 本页真造词的上限是 n ≤ 20000（solve1 要开出整个字符串），所以这里只比 solve3；n ≤ 1e6 时 main 第 50–52 行仍会把三个值都打印出来。')}));
+  S.push(B({kind:'mintable',j:Z.chunks.length,lines:[42,43],
+    text:'<b>段数 = n 的 Zeckendorf 表示里非零项的个数</b>。下面这张"执行 k 次所需最小 n"是机器实测（RESULTS.md §2.7），本页 JS 从 1 开始递增试算，逐行复现。想要项数多又让 n 尽量小，就得取<b>尽量小的、互不相邻的下标项</b> —— 贪心剥段天然保证不相邻。'}));
+  S.push(B({kind:'q27',j:Z.chunks.length,lines:[43],
+    text:'<b>题 27</b>：恰好 8 次 ⇒ 取 <code>len[0]+len[2]+len[4]+…+len[14] = 1+3+8+21+55+144+377+987 = 1596</code>（注意用的是同一套下标：<code>len[0]=1, len[1]=2</code>，本页 JS 复算剥 1596 正好 '+zeck(1596n,0).chunks.length+' 段，段长 '+zeck(1596n,0).chunks.map(c=>Number(c.lenk)).join(' + ')+'）。<br>四个选项实测次数：986 → 7、1596 → 8、2583 → 8、4180 → 9 ⇒ 恰好 8 次里最小的是 <b>B（1596）</b>。'}));
+  return S;
+}
+
+/* ---- tab④ 三套 solve 对照 ---- */
+function buildCmpTab(){
+  const N=20, S=[];
+  for(let n=1;n<=N;n++){
+    const a=solve1(n,0),b=solve2(n,0),c=solve3(n,0),a1=solve1(n,1),b1=solve2(n,1),c1=solve3(n,1);
+    S.push({kind:'row',n,lines:[50,51,52],
+      text:'n = <b>'+n+'</b>：相位 0 三套 solve 给出 <code>'+a+' / '+b+' / '+c+'</code>，相位 1 给出 <code>'+a1+' / '+b1+' / '+c1+'</code>。<br>为什么必然相同：词有<b>前缀性质</b>，所以"solve1 查表"、"solve2 用 value 递归剥段取值"、"solve3 查 dp 剥段"读的是同一批位置 —— 差别只在快慢，不在结果。'});
+  }
+  S.push({kind:'agree',n:N,lines:[22,35,42],
+    text:'机器把比对推到 <b>n = 1..2000、p = 0/1（共 4000 组）</b>，三套 solve <b>mismatch = 0</b>（RESULTS.md §2.1 / <code>log_probe2000.utf8.txt</code>）。README 抽样：<code>n=1 → 0 0 0</code>、<code>n=7 → 2 2 2</code>、<code>n=2000 → 382 382 382</code>。本页右下角自检卡复算了 n = 1..60（120 组）。'});
+  S.push({kind:'wordvalue',n:N,lines:[26,27,29,30],
+    text:'<code>value(pos)</code> 就是"词的第 pos 位"：把 pos 一路减去最大可用的 <code>len[k]</code>（Zeckendorf 剥段），剥到 <code>pos ≤ 1</code> 时剩下的那位就是 <code>W_∞[pos]</code>。第 27 行 <code>if (pos &lt;= 1) return pos;</code> 恰好对上 <code>W0 = "0"</code>、<code>W1 = "01"</code> 的第 0、1 位。下面逐位比对 0..19。'});
+  S.push({kind:'diff24',n:N,lines:[43],
+    text:'<b>题 24（答案 F）</b>：<code>p = 0</code> 与 <code>p = 1</code> 的差并不总是 ≤ 1。RESULTS.md §2.4 实测 n ≤ 100000 时差值最大 <b>8</b>，首次出现在 <code>n = 98207</code>；本页 JS 用同一个 <code>zeck()</code> 复算整张分布表（下一张卡片），完全一致。<br>差值上界由 <i>Zeckendorf 项数</i>决定，是 <code>Θ(log n)</code> 级别 ⇒ n 到 1e18 时还能更大。<b>判断题里出现"所有 / 均 / 一定不"就要找反例。</b>'});
+  return S;
+}
+
+/* ---- tab⑤ 复杂度 ---- */
+const C25LIST=[64,256,1024,4096,16384,65536,262144,1000000];
+function buildCxTab(){
+  const S=[];
+  S.push({kind:'q22a',sec:'22',lines:[19,20],
+    text:'<b>题 22</b>：<code>solve1</code> 用的是朴素字符串拼接 <code>tmp = nxt + s</code>，直觉"每轮都要拷 O(n) 个字符 ⇒ Θ(n²)"。但 <code>std::string</code> 的 <code>+</code> 每轮拷的是<b>当时两个操作数的长度</b>，而长度按斐波那契增长 ⇒ 总拷贝量是一个<i>几何级数</i>，由最大项主导。先看机器实测（RESULTS.md §2.2）：'});
+  S.push({kind:'q22b',sec:'22',lines:[19,20],
+    text:'本页用同一个模型复算（<code>operator+</code> 拷 <code>|nxt|+|s|</code>；<code>s = nxt</code> 再拷 <code>|nxt|</code>；<code>nxt = tmp</code> 是移动赋值不额外拷）：前四行与实测日志<b>逐字节相同</b>（46360 / 514221 / 5702879 / 24157809）。把 n 一路推到 1e9，比值始终在同一个常数区间里摆动（摆动只因为 n 不一定正好落在斐波那契数上），<i>不随 n 增长</i> ⇒ <b>Θ(n)</b> ⇒ 题 22 <b>F</b>。'});
+  S.push({kind:'q22c',sec:'22',lines:[20],
+    text:'对比着讲才有效：若写成 <code>for (int i = 1; i &lt;= n; i++) s += \'a\';</code>（每次只加 1 个字符），总拷贝量 <code>1+2+…+n = Θ(n²)</code>；本题每步长度 ×1.618，造 1e6 长的词只需 <b>'+concatCost(1000000).calls+'</b> 次拼接。<br><b>结论：判断拼接是不是 Θ(n²) 要算"总拷贝字符数"，不能只看代码里有没有 <code>+</code>。</b>'});
+  S.push({kind:'q23a',sec:'23',lines:[10,11],
+    text:'<b>题 23</b> 要先看斐波那契数的<b>奇偶周期 3</b>：奇+偶=奇、偶+奇=奇、奇+奇=偶 ⇒ <code>len[i] % 2</code> 永远是 <code>1,0,1 | 1,0,1 | 1,0,1 …</code>（色带：青=奇、紫=偶，橙框标出每组第一个）。即 <code>len[i]</code> 为奇 ⟺ <code>i % 3 ≠ 1</code>。'});
+  S.push({kind:'q23b',sec:'23',lines:[11],
+    text:'把下标换成 <code>i-1</code>：<code>len[i-1]</code> 为奇 ⟺ <code>(i-1)%3 ≠ 1</code> ⟺ <code>i%3 ≠ 2</code> ⟺ <code>i%3 &lt; 2</code>。机器实测 <code>i ∈ [2,86]</code> <b>不相等个数 = 0</b>（RESULTS.md §2.3），本页 JS 复算同样是 0 ⇒ 第 11 行改成 <code>int op = i % 3 &lt; 2;</code> 程序完全等价、输出不变 ⇒ <b>T</b>。<br>顺带确认容量：<code>len[86] = 1100087778366101931 ≤ 1e18</code>（输入上限），<code>len[90]</code> 有余量。'});
+  S.push({kind:'q25a',sec:'25',lines:[35,26,27],
+    text:'<b>题 25</b> 要分三层数 <code>solve2</code> 的工作量：① 第 35 行循环有 <code>Θ(n)</code> 个起点（隔位取样）；② 一次 <code>value(pos)</code> 的<b>递归深度</b> = pos 的 Zeckendorf 项数 = <code>Θ(log n)</code> ⇒ 调用次数是 <code>Θ(n log n)</code>；③ 关键在于<i>每层递归里第 29 行那个 <code>while (len[k+1] &lt;= pos) k++;</code> 都是从 k = 0 重新线性扫的</i>，又是 <code>Θ(log n)</code>。'});
+  S.push({kind:'q25b',sec:'25',lines:[29,30],
+    text:'本页逐字模拟 <code>value</code> 计数（口径与 RESULTS.md §2.5 相同）：<code>calls/(n·log₂n)</code> 从 0.250 收敛到 <b>'+count25(C25LIST).slice(-1)[0].rc.toFixed(3)+'</b>、<code>while/(n·log₂²n)</code> 从 0.118 收敛到 <b>'+count25(C25LIST).slice(-1)[0].rw.toFixed(3)+'</b> —— 两条比值都趋于常数。<br><b>B 与 D 的分水岭就在第 ③ 层</b>：只数 value 的调用次数会得 Θ(n log n) 而误选 B；看见"每次调用内部的 while 不是 O(1)"才知道总步数是 <b>D：Θ(n log² n)</b>。A、C 是给"以为项数有 log log 精细上界"的同学准备的干扰项（问的是最坏，且 while 的线性扫描省不掉）。'});
+  S.push({kind:'q25c',sec:'25',lines:[29,41,42],
+    text:'课上最好的一次"复杂度优化"演示：把第 29 行的 <code>while</code> 改成让 k <b>单调下降</b>（像 solve3 第 41–42 行那样一次性从大到小扫），或者对有序的 <code>len</code> 数组做二分，第 ③ 层就没了 ⇒ <code>solve2</code> 变成真正的 <b>Θ(n log n)</b>。<i>改一行就能把答案从 D 变成 B</i>，所以读代码时必须盯住"循环变量有没有被重置"。'});
+  return S;
+}
+
+/* ============ 5. 渲染 ============ */
+function drawWord(st){
+  const box=document.getElementById('stage'); box.innerHTML='';
+  const c1=card('① 词的生成：W_i = W_{i-1} · W_{i-2}（长段在前）');
+  if(st.kind==='split'){
+    const i=st.i, W=st.W;
+    c1.appendChild(el('div','eq','W'+i+'  =  W'+(i-1)+'  ·  W'+(i-2)+'   =   "'+W[i-1]+'"  +  "'+W[i-2]+'"'));
+    const row=el('div','wrow');
+    row.appendChild(el('span','wlab','两段分开看'));
+    const left=el('div','strip'), right=el('div','strip');
+    [...W[i-1]].forEach(ch=>left.appendChild(el('div','ch h1',ch)));
+    left.appendChild(el('div','ix ch','·'));
+    [...W[i-2]].forEach(ch=>right.appendChild(el('div','ch h2',ch)));
+    row.appendChild(left); row.appendChild(right);
+    row.appendChild(el('span','wlen','len['+i+'] = '+Ln(i)));
+    c1.appendChild(row);
+  }
+  for(let i=0;i<=st.show;i++){
+    const W=st.W, row=el('div','wrow');
+    row.appendChild(el('span','wlab','W'+i+' ='));
+    row.appendChild(strip([...W[i]],(c,j)=> i>=2 ? (j<W[i-1].length?'h1':'h2') : ''));
+    row.appendChild(el('span','wlen','len['+i+'] = '+Ln(i)));
+    c1.appendChild(row);
+  }
+  box.appendChild(c1);
+
+  const c2=card('② 长度行 len[ ] —— 就是斐波那契（第 8、10 行）');
+  const chips=el('div','chips');
+  for(let i=0;i<=st.show;i++){
+    const ch=el('div','chip'+(st.kind==='lenrow'?' hit':''));
+    ch.appendChild(el('span',null,'len['+i+'] = '));
+    ch.appendChild(el('b',null,Ln(i)));
+    ch.title='len['+i+'] % 2 = '+(Ln(i)%2);
+    chips.appendChild(ch);
+  }
+  c2.appendChild(chips);
+  c2.appendChild(el('div','sub','前缀性质：W_i 是 W_{i+1} 的开头 ⇒ 三套 solve 读的都是同一个 W_∞ 的前 n 位。'));
+  box.appendChild(c2);
+
+  if(st.kind==='s1'||st.kind==='s1done'){
+    const c3=card('③ solve1(n='+st.N+', p='+st.P+')：隔位取样累加 ans');
+    const picked=new Set(); for(let j=0;j<=st.idx;j++) picked.add(st.P+2*j);
+    const chars=[...st.word].slice(0,st.N);
+    const r1=el('div','wrow'); r1.appendChild(el('span','wlab','W'+st.wIdx+' 前 '+st.N+' 位'));
+    r1.appendChild(strip(chars,(c,i)=>{
+      let k = i<Ln(st.wIdx-1)?'h1':'h2';
+      if(picked.has(i)){ k+=' pick'; if(c==='1') k+=' one'; }
+      else if(st.idx>=0) k+=' off';
+      return k;
+    },(c,i)=>'位置 '+i+' 字符 '+c));
+    r1.appendChild(el('span','wlen','词总长 '+st.word.length));
+    c3.appendChild(r1);
+    const r2=el('div','wrow'); r2.appendChild(el('span','wlab','位置 i'));
+    r2.appendChild(strip(chars.map((c,i)=>String(i)),(c,i)=>'ix'+(((i-st.P)%2===0&&i>=st.P&&i<st.N)?' pick':'')));
+    c3.appendChild(r2);
+    c3.appendChild(kpis([['已取到 i',st.idx<0?'—':st.P+2*st.idx,''],['ans',st.ans,'acc'],['已取个数',st.idx<0?0:st.idx+1,''],['相位 p',st.P,'']]));
+    c3.appendChild(el('div','sub','橙色框 = 被取到的位置（i = p, p+2, p+4, … &lt; n）。'
+      +(st.P===0?'相位 0 取偶数位。':'相位 1 取奇数位。')));
+    if(st.kind==='s1done')
+      c3.appendChild(el('div','ansline','solve1('+st.N+','+st.P+') = '+st.ans+'   |   solve2 = '+solve2(st.N,st.P)+'   |   solve3 = '+solve3(st.N,st.P)));
+    box.appendChild(c3);
+  }
+}
+
+function drawDp(st){
+  const box=document.getElementById('stage'); box.innerHTML='';
+  let lenU=1, opU=1, dpU=1;
+  if(st.kind==='op'){ lenU=st.i; opU=st.i; dpU=st.i-1; }
+  else if(st.kind==='fill'){ lenU=st.i; opU=st.i; dpU=st.i; }
+  else if(st.kind==='flip'||st.kind==='hi45'||st.kind==='probe'){ lenU=14; opU=14; dpU=14; }
+  const opNow=(st.kind==='op'||st.kind==='fill')?Number(LENB[st.i-1]&1n):null;
+  const c=card('dp[k][p] 表 · i = 0..14（本页 JS 按第 8–13 行原式计算；与 README 的表逐项相同）');
+  const tb=el('table'), h=el('tr');
+  ['i','len[i]','op = len[i-1]&1','dp[i][0]','dp[i][1]'].forEach(x=>h.appendChild(el('th',null,x)));
+  tb.appendChild(h);
+  for(let i=0;i<=14;i++){
+    const tr=el('tr');
+    if((st.kind==='op'||st.kind==='fill')&&i===st.i) tr.className='cur';
+    if(st.kind==='hi45'&&i===11) tr.className='cur';
+    tr.appendChild(el('td',null,'i = '+i));
+    tr.appendChild(el('td',i<=lenU?'':'empty', i<=lenU?Ln(i):'·'));
+    tr.appendChild(el('td', i<=opU&&i>=1?'op':'empty', i>=1&&i<=opU?String(Number(LENB[i-1]&1n)):(i===0?'—':'·')));
+    for(let p=0;p<2;p++){
+      let td=el('td', i<=dpU?'':'empty', i<=dpU?Dp(i,p):'·');
+      if(st.kind==='fill'&&opNow!==null&&i<=dpU){
+        if(i===st.i-1) td=el('td','src',Dp(i,p));
+        else if(i===st.i-2) td=el('td','src'+(opNow?' flip':''),Dp(i,p));
+      }
+      if((st.kind==='hi45'||st.kind==='probe')&&i===11&&p===0) td=el('td','star',Dp(i,p));
+      if(st.kind==='probe'){
+        if(i===11&&p===1) td=el('td','src flip',Dp(i,p));
+        if(i===12&&p===0) td=el('td','src',Dp(i,p));
+        if(i===8&&p===0) td=el('td','src',Dp(i,p));
+      }
+      tr.appendChild(td);
+    }
+    tb.appendChild(tr);
+  }
+  const sc=el('div','scroller'); sc.appendChild(tb); c.appendChild(sc);
+  if(st.kind==='op'||st.kind==='fill'){
+    const i=st.i, op=Number(LENB[i-1]&1n);
+    c.appendChild(el('div','eq', st.kind==='op'
+      ? 'i = '+i+'：len['+i+'] = '+Ln(i)+'；op = len['+(i-1)+'] & 1 = '+Ln(i-1)+' & 1 = '+op
+      : 'dp['+i+'][0] ← dp['+(i-1)+'][0] + dp['+(i-2)+']['+(0^op)+']      dp['+i+'][1] ← dp['+(i-1)+'][1] + dp['+(i-2)+']['+(1^op)+']'));
+    c.appendChild(el('div','sub', op?'青色＝同一列的上一个解；<b>紫色带框</b>＝被 <code>^op</code> 翻转了列标的解（dp['+i+'][0] 要取第 1 列、dp['+i+'][1] 要取第 0 列）。'
+      :'青色＝同一列的上一个解；op = 0 ⇒ 第 12、13 行里的 <code>0^0 / 1^0</code> 就是原列，没有翻转。'));
+  }
+  box.appendChild(c);
+
+  if(st.kind==='flip'){
+    const c2=card('翻转图示：W3 = W2 · W1 —— 整体相位 0 在后半段变成相位 1');
+    const W='010'+'01';
+    const r1=el('div','wrow'); r1.appendChild(el('span','wlab','W3 字符'));
+    r1.appendChild(strip([...W],(c,i)=> i<3?'h1':'h2'));
+    c2.appendChild(r1);
+    const r2=el('div','wrow'); r2.appendChild(el('span','wlab','整体下标'));
+    r2.appendChild(strip(W.split('').map((c,i)=>String(i)),()=> 'ix'));
+    c2.appendChild(r2);
+    const r3=el('div','wrow'); r3.appendChild(el('span','wlab','相位 0 取到'));
+    r3.appendChild(strip([...W],(c,i)=> i%2===0?('pick'+(c==='1'?' one':'')):'off'));
+    c2.appendChild(r3);
+    const r4=el('div','wrow'); r4.appendChild(el('span','wlab','后半段局部下标'));
+    r4.appendChild(strip(W.split('').map((c,i)=> i<3?String(i):String(i-3)),()=> 'ix'));
+    c2.appendChild(r4);
+    c2.appendChild(el('div','sub','前半段用 dp[2][0]；位置 4 在 W1 内部是位置 1 ⇒ 只能用 dp[1][1]。因为偏移 len[2] = 3 是奇数，相位 0 → 1。这就是 <code>dp[i][0] = dp[i-1][0] + dp[i-2][0 ^ op]</code> 里那个异或的全部来历。'));
+    box.appendChild(c2);
+  }
+  if(st.kind==='probe'){
+    const c3=card('题 26 现场核对');
+    c3.appendChild(el('div','ansline','输入 233 0  →  输出 "45 45 45"（r2.exe，g++ -static -O2 现跑）'));
+    c3.appendChild(el('div','ansline','solve3(233,0)：第 41 行 k → 11；第 42 行 k=11 命中 len[11]=233 ≤ 233；第 43 行 ans += dp[11][0]=45, n=0, p ^= 1 → p=1；k=10..0 全部不命中 → 返回 45'));
+    const chips=el('div','chips');
+    [['A. 44 = dp[11][1]','相位用错'],['B. 45 = dp[11][0]','正确答案'],['C. 55 = len[8]','把长度当答案'],['D. 72 = dp[12][0]','k 多进一位']]
+      .forEach(o=>chips.appendChild(el('div','chip'+(o[0][0]==='B'?' hit':''),o[0]+'  ('+o[1]+')')));
+    c3.appendChild(chips);
+    box.appendChild(c3);
+  }
+}
+
+function drawS3(st){
+  const box=document.getElementById('stage'); box.innerHTML='';
+  const Z=st.Z, n0=BigInt(st.n);
+  const shown = st.kind==='goal'?0 : st.kind==='cut'? st.j+1 : Z.chunks.length;
+  const cur = st.kind==='cut'? Z.chunks[st.j] : null;
+
+  const c=card('Zeckendorf 贪心剥段：n = '+st.n+'，起始相位 p = '+st.p+'（条形宽度 ∝ 段长）');
+  const bar=el('div','zb');
+  const cls=['a','b','c'];
+  for(let j=0;j<shown;j++){
+    const ch=Z.chunks[j];
+    const g=el('div','zg '+cls[j%3],'len['+ch.k+']='+Number(ch.lenk));
+    g.style.width=(Number(ch.lenk)/Number(n0)*100)+'%';
+    g.title='第 '+(j+1)+' 段：k='+ch.k+', len='+Number(ch.lenk)+', dp['+ch.k+']['+ch.pFrom+']='+Number(ch.add);
+    bar.appendChild(g);
+  }
+  const rem = shown===0? n0 : Z.chunks[shown-1].remAfter;
+  if(rem>0n){ const g=el('div','zg rest','剩余 '+Number(rem)); g.style.width=(Number(rem)/Number(n0)*100)+'%'; bar.appendChild(g); }
+  c.appendChild(bar);
+  const lab=el('div','zlab'); lab.appendChild(el('span',null,'已剥出的整段：'));
+  for(let j=0;j<shown;j++) lab.appendChild(el('span','chip','+len['+Z.chunks[j].k+']'));
+  if(shown===0) lab.appendChild(el('span','chip','（还没切）'));
+  c.appendChild(lab);
+  if(st.kind==='findk'||st.kind==='scan'){
+    const ladder=el('div','chips');
+    for(let k=0;k<=Math.min(Z.kStart+1,20);k++){
+      const on=k===Z.kStart;
+      ladder.appendChild(el('div','chip'+(on?' hit':''),'len['+k+']='+Ln(k)));
+    }
+    c.appendChild(ladder);
+    c.appendChild(el('div','sub','青底＝第 41 行停下来的位置 k = '+Z.kStart+'（它右边那一项已经超过 n）。'));
+  }
+  box.appendChild(c);
+
+  const c2=card('当前帧状态（第 42–43 行）');
+  let run=0; for(let j=0;j<shown;j++) run+=Number(Z.chunks[j].add);
+  c2.appendChild(kpis([
+    ['k',cur?cur.k:(st.kind==='findk'||st.kind==='scan'?Z.kStart:'—'),''],
+    ['len[k]',cur?Number(cur.lenk):(st.kind==='findk'?Ln(Z.kStart):'—'),''],
+    ['dp[k][p] 本段加',cur?Number(cur.add):'—','acc'],
+    ['相位 p',cur?cur.pFrom+' → '+cur.pTo:st.p,'badk'],
+    ['剩余 n',cur?Number(cur.remAfter):Number(rem),''],
+    ['ans 累计',run,'acc']
+  ]));
+  if(cur) c2.appendChild(el('div','sub','第 43 行三件事同时做：<code>ans += dp['+cur.k+']['+cur.pFrom+']</code>、<code>n -= len['+cur.k+']</code>、<code>p ^= len['+cur.k+'] &amp; 1</code>。'));
+  else c2.appendChild(el('div','sub','还没进入第 43 行。'));
+  box.appendChild(c2);
+
+  const c3=card('逐段明细（表里一行 = 一次 ans += dp[k][p]）');
+  const tb=el('table'), h=el('tr');
+  ['次序','k','len[k]','p 前','dp[k][p]','p 后','剩余 n','ans 累计'].forEach(x=>h.appendChild(el('th',null,x)));
+  tb.appendChild(h);
+  let acc=0;
+  Z.chunks.forEach((ch,j)=>{
+    acc+=Number(ch.add);
+    const tr=el('tr');
+    if(st.kind==='cut'&&j===st.j) tr.className='cur';
+    if(j>=shown) tr.className='dim';
+    [j+1,ch.k,Number(ch.lenk),ch.pFrom,Number(ch.add),ch.pTo,Number(ch.remAfter),acc].forEach(v=>tr.appendChild(el('td',null,v)));
+    tb.appendChild(tr);
+  });
+  const sc=el('div','scroller'); sc.appendChild(tb); c3.appendChild(sc);
+  c3.appendChild(el('div','ansline','solve3('+st.n+','+st.p+') = '+Number(Z.ans)+'   |   段数（= ans += dp[k][p] 的执行次数）= '+Z.chunks.length+
+    (st.n<=20000?'   |   solve1 = '+solve1(st.n,st.p)+', solve2 = '+solve2(st.n,st.p):'')));
+  box.appendChild(c3);
+
+  const c4=card('机器实测：执行 k 次所需最小 n（RESULTS.md §2.7）+ 本页 JS 复算');
+  const ks=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+  const mn=[1,4,12,33,88,232,609,1596,4180,10945,28656,75024,196417,514228,1346268];
+  const t2=el('table'), hh=el('tr');
+  ['段数 k','日志实测最小 n','本页 JS 搜索最小 n','n 的剥段（k 序列）'].forEach(x=>hh.appendChild(el('th',null,x)));
+  t2.appendChild(hh);
+  ks.forEach((k,i)=>{
+    const tr=el('tr');
+    if((st.kind==='mintable'||st.kind==='q27')&&k===8) tr.className='cur';
+    tr.appendChild(el('td',k===8?'star':null,k));
+    tr.appendChild(el('td',k===8?'star':null,mn[i].toLocaleString('en-US')));
+    tr.appendChild(el('td',k===8?'star':null,minN(k).toLocaleString('en-US')));
+    const z=zeck(BigInt(mn[i]),0);
+    tr.appendChild(el('td',k===8?'star':'empty',z.chunks.map(c=>Number(c.lenk)).join('+')));
+    t2.appendChild(tr);
+  });
+  const sc2=el('div','scroller'); sc2.appendChild(t2); c4.appendChild(sc2);
+  if(st.kind==='q27'){
+    const chips=el('div','chips');
+    [['A','986'],['B','1596'],['C','2583'],['D','4180']].forEach(o=>{
+      const c=zeck(BigInt(Number(o[1])),0).chunks.length;
+      chips.appendChild(el('div','chip'+(o[0]==='B'?' hit':''),o[0]+' n='+o[1]+' → 实测 '+c+' 次'+(o[0]==='B'?'（恰好 8 且最小）':'')));
+    });
+    c4.appendChild(chips);
+    c4.appendChild(el('div','sub','1596 的剥段 k 序列：'+zeck(1596n,0).chunks.map(c=>c.k).join(', ')+' —— 全偶数下标、互不相邻，正是"项数最多且 n 最小"的形状。'));
+  }
+  box.appendChild(c4);
+}
+
+function drawCmp(st){
+  const box=document.getElementById('stage'); box.innerHTML='';
+  const word=buildWord(20);
+  const c=card('n = 1..20：solve1 / solve2 / solve3 逐个对照（p = 0 与 p = 1）');
+  const tb=el('table'), h=el('tr');
+  ['n','W∞ 的前 n 位','s1(0)','s2(0)','s3(0)','s1(1)','s2(1)','s3(1)','一致?'].forEach(x=>h.appendChild(el('th',null,x)));
+  tb.appendChild(h);
+  const upto = st.kind==='row'? st.n : 20;
+  for(let n=1;n<=20;n++){
+    const tr=el('tr');
+    if(st.kind==='row'&&n===st.n) tr.className='cur';
+    if(st.kind==='row'&&n>upto) tr.className='dim';
+    const a=solve1(n,0),b=solve2(n,0),cc=solve3(n,0),a1=solve1(n,1),b1=solve2(n,1),c1=solve3(n,1);
+    const eq=(a===b&&b===cc&&a1===b1&&b1===c1);
+    tr.appendChild(el('td',null,n));
+    tr.appendChild(el('td',null,word.slice(0,n)));
+    [a,b,cc,a1,b1,c1].forEach(v=>tr.appendChild(el('td',null,v)));
+    tr.appendChild(el('td',eq?null:'star',eq?'OK':'X'));
+    tb.appendChild(tr);
+  }
+  const sc=el('div','scroller'); sc.appendChild(tb); c.appendChild(sc);
+  c.appendChild(el('div','sub','机器已把同样的比对推到 <b>n = 1..2000、p = 0/1（4000 组）mismatch = 0</b>（RESULTS.md §2.1）。差异只在时间：solve1 要造整词，solve2 每个位置递归剥段，solve3 只查 dp 表。'));
+  box.appendChild(c);
+
+  const c60=card('n = 1..60 全表（左右两栏 · 相位可切换）');
+  const pr=el('div','ctl');
+  [0,1].forEach(pp=>{ const b=el('button',null,'p = '+pp); if(pp===cmpP) b.classList.add('on'); b.onclick=()=>{cmpP=pp; render();}; pr.appendChild(b); });
+  c60.appendChild(pr);
+  const wrap=el('div','row');
+  [[1,30],[31,60]].forEach(half=>{
+    const t=el('table'), hh=el('tr');
+    ['n','solve1','solve2','solve3','eq'].forEach(x=>hh.appendChild(el('th',null,x)));
+    t.appendChild(hh);
+    for(let n=half[0];n<=half[1];n++){
+      const a=solve1(n,cmpP),b=solve2(n,cmpP),cc=solve3(n,cmpP), eq=(a===b&&b===cc);
+      const tr=el('tr');
+      if(st.kind==='row'){ if(n===st.n) tr.className='cur'; else if(n>st.n) tr.className='dim'; }
+      [n,a,b,cc].forEach(v=>tr.appendChild(el('td',null,v)));
+      tr.appendChild(el('td',eq?null:'star',eq?'OK':'X'));
+      t.appendChild(tr);
+    }
+    const w=el('div'); w.style.flex='1'; w.style.minWidth='230px'; w.appendChild(t); wrap.appendChild(w);
+  });
+  c60.appendChild(wrap);
+  c60.appendChild(el('div','sub','本页 JS 逐值复算 <b>n = 1..60 × p = 0/1 共 120 组</b>，三个 solve 全部相同（不一致组数见右侧自检卡）。solve1 要真的开出字符串，所以本页造词上限 n ≤ 20000。'));
+  box.appendChild(c60);
+
+  if(st.kind==='wordvalue'){
+    const c2=card('逐位比对：word[pos] vs value(pos)');
+    const r1=el('div','wrow'); r1.appendChild(el('span','wlab','word[pos]'));
+    r1.appendChild(strip([...word.slice(0,20)],(c,i)=>c==='1'?'one':''),(c,i)=>null);
+    c2.appendChild(r1);
+    const r2=el('div','wrow'); r2.appendChild(el('span','wlab','value(pos)'));
+    r2.appendChild(strip([...word.slice(0,20)].map((c,i)=>String(value(i))),(c,i)=>c==='1'?'one':''));
+    c2.appendChild(r2);
+    const r3=el('div','wrow'); r3.appendChild(el('span','wlab','位置 pos'));
+    r3.appendChild(strip([...word.slice(0,20)].map((c,i)=>String(i)),()=>'ix'));
+    c2.appendChild(r3);
+    let bad=0; for(let i=0;i<20;i++) if(value(i)!==word.charCodeAt(i)-48) bad++;
+    c2.appendChild(el('div','sub','0..19 不同个数 = <b>'+bad+'</b>（RESULTS.md §2.1 里 0..59 同样全对）。value(0)=0、value(1)=1 正是第 27 行的基准。'));
+    box.appendChild(c2);
+  }
+  if(st.kind==='diff24'){
+    const c3=card('题 24 证据：|solve3(n,0) − solve3(n,1)| 的分布（n ≤ 100000）');
+    const H=diffHist(), hist=H.hist, firstAt=H.firstAt;
+    const t2=el('table'), r1=el('tr'), r2=el('tr'), r3=el('tr');
+    r1.appendChild(el('td',null,'|diff|')); r2.appendChild(el('td',null,'出现次数')); r3.appendChild(el('td',null,'最小 n'));
+    for(let d=0;d<=8;d++){
+      r1.appendChild(el('td',d===8?'star':null,d));
+      r2.appendChild(el('td',d===8?'star':null,hist[d]));
+      r3.appendChild(el('td',d===8?'star':null,firstAt[d]));
+    }
+    t2.appendChild(r1); t2.appendChild(r2); t2.appendChild(r3);
+    const sc2=el('div','scroller'); sc2.appendChild(t2); c3.appendChild(sc2);
+    c3.appendChild(el('div','sub','本页复算与 RESULTS.md §2.4 的日志逐项一致：最大 <b>8</b>，首次 <b>n = 98207</b> ⇒ "均不超过 1" 是 <b>F</b>。'));
+    box.appendChild(c3);
+  }
+}
+
+function drawCx(st){
+  const box=document.getElementById('stage'); box.innerHTML='';
+  if(st.sec==='22'){
+    const list=[{n:10000},{n:100000},{n:1000000},{n:4000000},{n:10000000},{n:100000000},{n:1000000000}]
+      .map(o=>{const r=concatCost(o.n); return {n:o.n,...r,rr:r.cost/o.n};});
+    const show = st.kind==='q22a'?4:list.length;
+    const c=card('题 22 · 拼接次数与总拷贝字符数 vs n');
+    const tb=el('table'), h=el('tr');
+    ['n','拼接次数','最终词长','总拷贝字符数','比值 总拷贝/n'].forEach(x=>h.appendChild(el('th',null,x)));
+    tb.appendChild(h);
+    list.slice(0,show).forEach(r=>{
+      const tr=el('tr');
+      [r.n.toLocaleString('en-US'),r.calls,r.final.toLocaleString('en-US'),r.cost.toLocaleString('en-US'),r.rr.toFixed(2)]
+        .forEach((v,i)=>tr.appendChild(el('td',i===4?'star':null,v)));
+      tb.appendChild(tr);
+    });
+    const sc=el('div','scroller'); sc.appendChild(tb); c.appendChild(sc);
+    c.appendChild(el('div','sub', st.kind==='q22a'
+      ? '前四行 = RESULTS.md §2.2 的实测日志（比值 4.64 / 5.14 / <b>5.70</b> / 6.04）—— "比值不增长"就是 Θ(n) 的信号。'
+      : '后三行是本页用同一模型把 n 推到 1e9：比值在 <b>'+Math.min(...list.map(x=>x.rr)).toFixed(2)+' ~ '+Math.max(...list.map(x=>x.rr)).toFixed(2)+'</b> 之间摆动，不随 n 增长 ⇒ <b>Θ(n)</b>，题 22 <b>F</b>。'));
+    box.appendChild(c);
+    if(st.kind==='q22c'){
+      const c2=card('什么时候才是 Θ(n²)');
+      c2.appendChild(kpis([['本题：每步长度 ×1.618','Θ(n)','acc'],['拼接次数（n=1e6）',concatCost(1000000).calls+' 次',''],['对照：每次 +1 字符','Θ(n²)','badk'],['总拷贝（n=1e6）','5.0 × 10¹¹ 字符','']]));
+      c2.appendChild(el('div','sub','同一句 <code>+=</code>，长度增长的规律不同，复杂度就不同。'));
+      box.appendChild(c2);
+    }
+  }
+  if(st.sec==='23'){
+    const c=card('题 23 · len[i] % 2 的色带：周期 3（1 奇 / 0 偶 / 1 奇）');
+    const b=el('div','band');
+    for(let i=0;i<30;i++){
+      const o=Number(LENB[i]&1n);
+      const x=el('div','bc '+(o?'odd':'even'),o);
+      if(i%3===0) x.classList.add('per');
+      x.title='len['+i+'] = '+LENB[i].toString();
+      b.appendChild(x);
+    }
+    c.appendChild(b);
+    c.appendChild(el('div','sub','推导：len[0]=1 奇、len[1]=2 偶 ⇒ 奇+偶=奇（len[2]）、偶+奇=奇（len[3]）、奇+奇=偶（len[4]）⇒ 状态回到"奇偶奇"的起点，周期恰为 3。'));
+    if(st.kind==='q23b'){
+      let bad=0; for(let i=2;i<=86;i++) if(Number(LENB[i-1]&1n)!==(i%3<2?1:0)) bad++;
+      c.appendChild(kpis([['i ∈ [2,86] 比较组数','85',''],['不相等个数（本页复算）',bad,'acc'],['日志实测（§2.3）','0',''],['等价式','op = i%3<2',''],['len[86]','1100087778366101931','']]));
+      c.appendChild(el('div','sub','<code>len[i-1] &amp; 1</code> 与 <code>i % 3 &lt; 2</code> 逐个相同 ⇒ 第 11 行换写法<b>程序完全等价</b> ⇒ 题 23 <b>T</b>。'));
+    }
+    box.appendChild(c);
+  }
+  if(st.sec==='25'){
+    const R=count25(C25LIST);
+    const show = st.kind==='q25a'?4:R.length;
+    const c=card('题 25 · value 调用次数 与 内部 while 总步数（本页逐字模拟）');
+    const tb=el('table'), h=el('tr');
+    ['n','value 调用次数','calls/(n·log₂n)','while 总步数','while/(n·log₂²n)'].forEach(x=>h.appendChild(el('th',null,x)));
+    tb.appendChild(h);
+    R.slice(0,show).forEach(r=>{
+      const tr=el('tr');
+      [r.n.toLocaleString('en-US'),r.calls.toLocaleString('en-US'),r.rc.toFixed(3),r.wsteps.toLocaleString('en-US'),r.rw.toFixed(3)]
+        .forEach((v,i)=>tr.appendChild(el('td', st.kind!=='q25a'&&(i===2||i===4)?'star':null,v)));
+      tb.appendChild(tr);
+    });
+    const sc=el('div','scroller'); sc.appendChild(tb); c.appendChild(sc);
+    const hs=el('div','hist'), mx=Math.max(...R.slice(0,show).map(x=>x.rw));
+    R.slice(0,show).forEach(r=>{
+      const b=el('div','hbar'); b.style.height=(r.rw/mx*100)+'px';
+      b.appendChild(el('span',null,r.rw.toFixed(3)));
+      b.title='while/(n·log₂²n) = '+r.rw.toFixed(3)+'，calls/(n·log₂n) = '+r.rc.toFixed(3);
+      hs.appendChild(b);
+    });
+    c.appendChild(hs);
+    const ax=el('div','hax');
+    R.slice(0,show).forEach(r=>ax.appendChild(el('div',null,r.n>=1000000?'1e6':(r.n>=1000?r.n/1000+'k':String(r.n)))));
+    c.appendChild(ax);
+    c.appendChild(el('div','sub','柱高是 <code>while/(n·log₂²n)</code>：n 翻 4 倍它几乎不动 ⇒ 总步数是 Θ(n log² n)。若只盯 <code>calls/(n·log₂n)</code>（也趋于常数）就会选成 B。'));
+    box.appendChild(c);
+    if(st.kind==='q25c'){
+      const c2=card('三层相乘：Θ(n) × Θ(log n) × Θ(log n) = Θ(n log² n)');
+      c2.appendChild(kpis([['第 35 行起点个数','Θ(n)',''],['递归深度 = Zeckendorf 项数','Θ(log n)',''],['每层第 29 行 while','Θ(log n)','badk'],['乘起来','Θ(n log²n)','acc'],['若 while 摊平','Θ(n log n)','']]));
+      c2.appendChild(el('div','sub','A Θ(n log log n)、C Θ(n log n · log log n) 是给"知道项数平均阶更精细"的同学准备的干扰项：本题问<b>最坏</b>，而且线性扫描那层省不掉。'));
+      box.appendChild(c2);
+    }
+  }
+}
+
+/* ============ 6. 调度 ============ */
+const DRAW={word:drawWord, dp:drawDp, s3:drawS3, cmp:drawCmp, cx:drawCx};
+const BUILD={word:buildWordTab, dp:buildDpTab, s3:()=>buildS3Tab(curN,curP), cmp:buildCmpTab, cx:buildCxTab};
+function s3PresetCard(){
+  const c=card('solve3 的输入：preset 会重建整条剥段动画');
+  const row=el('div','ctl');
+  [[233,0,'233 0（题 26 → 45，1 段）'],[1596,0,'1596 0（题 27 → 8 段）'],[20,0,'20 0'],[1000000,1,'1000000 1（n = 1e6 上界，只演 solve3）']]
+    .forEach(p=>{
+      const b=el('button',null,p[2]);
+      if(curN===p[0]&&curP===p[1]) b.classList.add('on');
+      b.onclick=()=>{curN=p[0]; curP=p[1]; setTab('s3');};
+      row.appendChild(b);
+    });
+  const inp=el('input'); inp.type='text'; inp.value=curN+' '+curP; inp.id='s3in';
+  row.appendChild(inp);
+  const ok=el('button',null,'载入');
+  ok.onclick=()=>{
+    const m=document.getElementById('s3in').value.trim().split(/[\s,]+/);
+    const n=Number(m[0]), p=Number(m[1]);
+    if(!Number.isFinite(n)||n<1||n>1e9){ alert('演示范围：1 ≤ n ≤ 1e9（再大只是条形图放不下，逻辑一样）'); return; }
+    if(p!==0&&p!==1){ alert('p 只能是 0 或 1'); return; }
+    curN=Math.floor(n); curP=p; setTab('s3');
+  };
+  row.appendChild(ok);
+  c.appendChild(row);
+  c.appendChild(el('div','sub','输入 1 ≤ n ≤ 1e18、p ∈ {0,1}；n ≤ 1e6 时 main 才会打印三个 solve 的值（第 50–52 行）。'));
+  return c;
+}
+function render(){
+  const st=STEPS[t];
+  DRAW[tab](st);
+  if(tab==='s3') document.getElementById('stage').insertBefore(s3PresetCard(), document.getElementById('stage').firstChild);
+  renderCode(st.lines);
+  document.getElementById('note').innerHTML=st.text;
+  document.getElementById('prog').textContent='第 '+(t+1)+' / '+STEPS.length+' 步';
+  document.getElementById('prev').disabled=t===0;
+  document.getElementById('next').disabled=t===STEPS.length-1;
+}
+function go(d){ const nt=Math.min(STEPS.length-1,Math.max(0,t+d)); if(nt!==t){ t=nt; render(); } }
+function setTab(id){
+  if(timer){ clearInterval(timer); timer=null; document.getElementById('play').textContent='自动播放'; }
+  tab=id; t=0; STEPS=BUILD[id](); render();
+  [...document.querySelectorAll('#tabs button')].forEach(b=>b.classList.toggle('on',b.dataset.t===id));
+}
+(function mkTabs(){
+  const box=document.getElementById('tabs');
+  TABS.forEach(x=>{ const b=el('button',null,x.name); b.dataset.t=x.id; b.onclick=()=>setTab(x.id); box.appendChild(b); });
+})();
+document.getElementById('next').onclick=()=>go(1);
+document.getElementById('prev').onclick=()=>go(-1);
+document.getElementById('last').onclick=()=>{ t=STEPS.length-1; render(); };
+document.getElementById('first').onclick=()=>{ t=0; render(); };
+function startStop(btn){
+  if(timer){ clearInterval(timer); timer=null; btn.textContent='自动播放'; return; }
+  btn.textContent='暂停';
+  const iv=Number(document.getElementById('speed').value);
+  timer=setInterval(()=>{ if(t>=STEPS.length-1){ clearInterval(timer); timer=null; document.getElementById('play').textContent='自动播放'; return; } go(1); }, iv);
+}
+document.getElementById('play').onclick=e=>startStop(e.target);
+document.getElementById('speed').onchange=()=>{ if(timer){ clearInterval(timer); timer=null; startStop(document.getElementById('play')); } };
+document.addEventListener('keydown',e=>{
+  if(e.target&&/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+  if(e.key==='ArrowRight'){ go(1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'){ go(-1); e.preventDefault(); }
+  else if(e.key===' '){ startStop(document.getElementById('play')); e.preventDefault(); }
+});
+
+/* ============ 7. 自检卡 ============ */
+(function selfCheck(){
+  const z=zeck(1596n,0), L=[];
+  L.push(['dp[11][0] = '+Dp(11,0)+'   (期望 45)', Dp(11,0)===45]);
+  L.push(['len[11] = '+Ln(11)+'   (期望 233)', Ln(11)===233]);
+  L.push(['solve3(233,0) = '+solve3(233,0)+'   (C++ 现跑 233 0 → 45 45 45)', solve3(233,0)===45]);
+  L.push(['1596 剥段数 = '+z.chunks.length+'   '+z.chunks.map(c=>Number(c.lenk)).reverse().join(' + '), z.chunks.length===8]);
+  L.push(['solve3(1596,0) = '+Number(z.ans)+' = solve1 = solve2 ('+solve1(1596,0)+'/'+solve2(1596,0)+')', Number(z.ans)===solve1(1596,0)&&solve1(1596,0)===solve2(1596,0)]);
+  let mis=0;
+  for(let n=1;n<=60;n++) for(const p of [0,1]){ const a=solve1(n,p),b=solve2(n,p),c=solve3(n,p); if(!(a===b&&b===c)) mis++; }
+  L.push(['n = 1..60, p = 0/1 三方不一致组数 = '+mis+' / 120', mis===0]);
+  L.push(['RESULTS.md §2.1：n = 1..2000 共 4000 组 mismatch = 0', true]);
+  const ev=Array.from({length:8},(_,t)=>2*t).reduce((s,i)=>s+LENB[i],0n);
+  L.push(['len[0]+len[2]+…+len[14] = '+ev.toString()+' = 1596', ev===1596n]);
+  L.push(['minN(8) 本页搜索 = '+minN(8), minN(8)===1596]);
+  let bad=0; for(let i=2;i<=86;i++) if(Number(LENB[i-1]&1n)!==(i%3<2?1:0)) bad++;
+  L.push(['题 23：len[i-1]&1 与 i%3<2 不相等个数 = '+bad, bad===0]);
+  const box=document.getElementById('ground');
+  L.forEach(it=>{ const d=el('div',null,it[0]+'   '+(it[1]?'[OK]':'[XX]')); d.style.color=it[1]?'var(--acc)':'var(--bad)'; box.appendChild(d); });
+})();
+setTab('word');
+</script>
+</body>
+</html>

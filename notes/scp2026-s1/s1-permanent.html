@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>阅读程序(1) · 矩阵 permanent 的状压 DP · 逐帧演示</title>
+<style>
+  :root{--bg:#0f1220;--card:#1a1f35;--ink:#e8ecff;--dim:#8b93b5;--acc:#5eead4;--bad:#f59e6b;--good:#5eead4;--line:#262c4a;}
+  *{box-sizing:border-box}
+  body{margin:0;padding:22px;background:var(--bg);color:var(--ink);font:15px/1.6 "Segoe UI",system-ui,sans-serif}
+  h1{font-size:20px;margin:0 0 2px}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px;max-width:100%}
+  .card h2{font-size:14px;letter-spacing:.05em;color:var(--dim);margin:0 0 10px;font-weight:600}
+  button{background:#2b3358;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 12px;font-size:14px;cursor:pointer;margin-right:6px;margin-bottom:6px}
+  button:hover:not(:disabled){background:#394373}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.on{background:#16323f;border-color:var(--acc);color:var(--acc);font-weight:600}
+  input[type=text]{background:#0d1020;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 10px;font:14px Consolas,monospace}
+  #inpN{width:66px}
+  #inpA{width:246px}
+  label.tg{font-size:14px;color:var(--ink);margin-left:4px}
+  .top{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+  .prog{color:var(--acc);font-size:14px;font-family:Consolas,monospace;margin-left:auto}
+  .row{display:flex;gap:14px;flex-wrap:wrap}
+  .row>div{flex:1;min-width:420px}
+  .mono{font-family:Consolas,monospace}
+  .cl{display:flex;gap:10px;padding:1px 6px;border-radius:6px}
+  .cl .ln{width:24px;text-align:right;color:#5b6488;font:14px Consolas,monospace;flex:none}
+  .cl code{font:14px Consolas,monospace;white-space:pre-wrap;color:#cdd6f4}
+  .cl.hl{background:#242c52}
+  .cl.hl .ln{color:var(--acc)}
+  .cl.hl code{color:var(--ink);font-weight:600}
+  .note{color:var(--dim);font-size:14px;overflow-wrap:break-word}
+  .note b{color:var(--ink)}
+  .note em{color:var(--acc);font-style:normal;font-weight:600}
+  .warn{color:var(--bad);font-weight:600}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+  .k{background:#131730;border:1px solid var(--line);border-radius:9px;padding:8px 10px;overflow-wrap:break-word}
+  .k .lab{font-size:14px;color:var(--dim)}
+  .k .val{font:15px Consolas,monospace;margin-top:2px}
+  .k.badk .val{color:var(--bad)} .k.goodk .val{color:var(--good)} .k.ans .val{color:#c4a6ff}
+  .eq{background:#0d1020;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:14px Consolas,monospace;margin-top:10px;white-space:pre-wrap;overflow-wrap:break-word}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:3px 6px;border-bottom:1px solid #222743;text-align:left;font:14px Consolas,monospace;overflow-wrap:break-word}
+  th{color:var(--dim);font-family:"Segoe UI",sans-serif}
+  tr.cur td{background:#242c52;color:var(--acc)}
+  tr.fut td{color:#4d5578}
+  #ftbl table,#permbox table{table-layout:fixed}
+  #ftbl th.c1{width:32px}#ftbl th.c2{width:54px}#ftbl th.c3{width:32px}#ftbl th.c4{width:62px}
+  .lattice{position:relative;padding-top:4px}
+  .edges{position:absolute;left:0;top:0;width:100%;height:100%;z-index:0;pointer-events:none}
+  .layers{display:flex;gap:22px;align-items:flex-start;position:relative;z-index:1}
+  .layer{display:flex;flex-direction:column;gap:11px;align-items:center}
+  .lh{font:14px Consolas,monospace;color:var(--dim);text-align:center;line-height:1.3}
+  .nd{width:126px;padding:5px 6px;border-radius:8px;background:#232a4a;border:1px solid #333c66;text-align:center;font:14px Consolas,monospace;line-height:1.4}
+  .nd .t2{color:var(--dim)}
+  .nd.fut{opacity:.38}
+  .nd.done{background:#16323f;border-color:#2b6a7f}
+  .nd.prev{border-color:var(--bad);box-shadow:0 0 0 2px #f59e6b55}
+  .nd.cur{border-color:#9d6bff;background:#3d2b58;box-shadow:0 0 0 2px #9d6bff55;font-weight:700}
+  .bit{display:inline-block;width:16px;text-align:center}
+  .bit.on{color:var(--acc);font-weight:700}
+  .bit.j{background:#8a5a2b;color:#fff;border-radius:4px}
+  table.mat td.c{border:1px solid #2b3358;background:#0d1020;padding:5px 8px;text-align:center;width:56px}
+  table.mat td.hi{background:#3d2b58;border-color:#9d6bff;color:#fff;font-weight:700}
+  table.mat td.rowon{background:#16323f;border-color:#2b6a7f}
+  table.mat th{color:var(--dim);text-align:center}
+  tr.pvcur td{background:#242c52;color:var(--acc)}
+  tr.pvdim td{color:#4d5578}
+  .pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:14px;font-family:Consolas,monospace}
+  .pill.t{background:#16323f;color:var(--good);border:1px solid #2b6a7f}
+  .pill.f{background:#3a2340;color:var(--bad);border:1px solid #6c3f7a}
+  .split{display:flex;gap:12px;flex-wrap:wrap}
+  .split>div{flex:1;min-width:250px}
+  pre.flow{background:#0d1020;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font:14px Consolas,monospace;color:#cdd6f4;margin:8px 0 0;white-space:pre-wrap;overflow-wrap:break-word}
+  .kbd{color:var(--dim);font-size:14px;margin-bottom:12px}
+  .lgd{display:inline-block;width:22px;border-top:3px solid #9d6bff;vertical-align:middle;margin:0 4px}
+  .lgd.c{border-top-color:#2b6a7f}
+</style>
+</head>
+<body>
+<h1>阅读程序 (1)：矩阵 permanent 的状压 DP —— 一行一行、一帧一帧</h1>
+<div class="sub">CSP-S 风格 · 题 16~21。<span class="mono">2ⁿ</span> 个"列占用子集"画成格点，<span class="mono">f[i]</span> 沿着边走一层、填一个数。默认是题 19 的样例 <span class="mono">n=3, A=[[1,2,3],[2,3,1],[3,1,2]]</span>，答案 <b class="mono">54</b>。<b>第 15 行的判定为假时也会出一帧</b>（判定照样被执行了），这正是题 20 / 题 21 的考点。</div>
+
+<div class="top">
+  <button id="prev">上一步</button>
+  <button id="next">下一步</button>
+  <button id="play">自动播放</button>
+  <button id="end">跳到末尾</button>
+  <button id="home">回到开头</button>
+  <button class="spd on" data-s="1">1x</button>
+  <button class="spd" data-s="2">2x</button>
+  <button class="spd" data-s="4">4x</button>
+  <span class="prog" id="prog"></span>
+</div>
+<div class="kbd">键盘：<b>←</b> 上一步 · <b>→</b> 下一步 · <b>空格</b> 播放 / 暂停　｜　图例：<span class="lgd"></span>本帧刚用的转移 <span class="lgd c"></span>之前用过的转移</div>
+
+<div class="card">
+  <h2>数据</h2>
+  <button class="pre" data-p="s3">题 19 样例 n=3（答案 54）</button>
+  <button class="pre" data-p="n1">n=1</button>
+  <button class="pre" data-p="n2">n=2</button>
+  <button class="pre" data-p="n4">n=4（16 个格点，演示上限）</button>
+  <button class="pre" data-p="q17">题 17 反例：输出 0</button>
+  <button class="pre" data-p="q18">题 18 反例：全 100000</button>
+  <div style="margin-top:8px">
+    n = <input type="text" id="inpN" value="3">
+    矩阵（逐行、空格分隔） <input type="text" id="inpA" value="1 2 3 2 3 1 3 1 2">
+    <button id="load">载入</button>
+    <label><input type="checkbox" id="tonly"> <span class="tg">只播放为真的转移</span></label>
+  </div>
+  <div class="note" id="inote" style="margin-top:6px"></div>
+</div>
+
+<div class="row">
+  <div class="card">
+    <h2>① 卷面代码（卷面行号 4~20；第 1~3 行是 include / using namespace / 空行，按惯例省略）</h2>
+    <div id="code"></div>
+    <div class="note" style="margin-top:8px">高亮 = 本帧所在的行。<b>第 15 行每一帧都被求值</b>；只有它为真，第 16~17 行才执行。</div>
+  </div>
+  <div class="card">
+    <h2>② 本帧在做什么</h2>
+    <div class="grid" id="facts"></div>
+    <div class="eq" id="eq"></div>
+    <div class="note" id="fnote" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>③ 子集格：一条边 = "把某一行交给某一列"的一次转移</h2>
+  <div class="lattice" id="lattice"><svg class="edges" id="edges"></svg><div class="layers" id="layers"></div></div>
+  <div class="note" id="lnote" style="margin-top:8px"></div>
+</div>
+
+<div class="row">
+  <div class="card">
+    <h2>④ 矩阵 a：本帧取到哪一格</h2>
+    <div id="amat"></div>
+    <div class="note" id="anote" style="margin-top:8px"></div>
+  </div>
+  <div class="card">
+    <h2>⑤ f 表：f[0..2ⁿ−1] 一格格被填出来</h2>
+    <div id="ftbl"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="card">
+    <h2>⑥ 两个计数器：第 15 行"被求值" vs "为真"（题 20 / 题 21）</h2>
+    <div class="split">
+      <div class="k"><div class="lab">第 15 行被<b>求值</b>的次数</div><div class="val" id="c1"></div><div class="lab">n·2ⁿ = <span id="e1"></span></div></div>
+      <div class="k"><div class="lab">第 15 行<b>为真</b>的次数（真的进了第 16 行）</div><div class="val" id="c2"></div><div class="lab">n·2ⁿ⁻¹ = <span id="e2"></span></div></div>
+    </div>
+    <div class="note" id="cntnote" style="margin-top:10px"></div>
+    <div id="cnttbl" style="margin-top:10px"></div>
+    <div class="note" id="optnote" style="margin-top:10px"></div>
+  </div>
+  <div class="card">
+    <h2>⑦ 它在算什么：n! 个排列的乘积之和（permanent，不做 ±）</h2>
+    <div id="permbox"></div>
+    <div class="note" style="margin-top:10px"><b>一行对比：</b>行列式 = 同样的 <span class="mono">n!</span> 项，只是奇排列前要乘 <span class="mono">−1</span>，正负能相消才有多项式算法（高斯消元）；permanent 全带 <b>+</b> 号、无法相消，是 #P 完全问题，只能 <span class="mono">n·2ⁿ</span> 状压 —— 这就是本程序存在的理由。</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>⑧ 三个陷阱：题 16 / 题 17 / 题 18</h2>
+  <div class="split">
+    <div>
+      <div class="note"><b>题 16　n=20 会数组越界吗？　答案 T（本题 1 分）</b></div>
+      <div class="note" style="margin-top:6px"><span class="mono">f</span> 声明成 <span class="mono">int f[1 &lt;&lt; N]</span>，N=20 ⇒ 容量 <span class="mono">1&lt;&lt;20 = 1048576</span>，合法下标 0..1048575。程序里 <span class="mono">i</span> 最大取 <span class="mono">(1&lt;&lt;n)−1 = 1048575</span> ⇒ <em>正好压线，不越界</em>。<span class="mono">a[20][20]</span> 的下标 0..19 也刚好够用。</div>
+      <div class="note" style="margin-top:6px">学生最爱怀疑的一处：<span class="mono">__builtin_popcount(i)−1</span> 在 <span class="mono">i=0</span> 时是 <span class="mono">−1</span>！但 i=0 时第 15 行 <span class="mono">0&gt;&gt;j&amp;1</span> <b>全为假</b>，第 16 行一次都不执行，所以 <b>−1 这个下标永远不被使用</b>（演示里就是开头 i=0 的那几帧"为假"判定）。实测 n=20 随机矩阵 exit=0。</div>
+      <div class="note" id="b16" style="margin-top:6px"></div>
+    </div>
+    <div>
+      <div class="note"><b>题 17　"无论输入什么，输出都是正整数"？　答案 F</b></div>
+      <div class="note" style="margin-top:6px">输出是<b>对 998244353 取模</b>之后的值，范围 0..998244352，取到 0 就不是正整数。</div>
+      <div class="note" style="margin-top:6px">反例（点上面"题 17 反例"按钮逐帧看）：<br><span class="mono">n=2, A=[[1,1],[998244352,1]]</span><br><span class="mono">per(A) = 1·1 + 1·998244352 = 998244353 ≡ 0</span> ⇒ 输出 <em>0</em>。<br>另一组 <span class="mono">[[1,119],[8388608,1]]</span>：1 + 119×8388608 = 998244353 ≡ 0，同理。</div>
+      <div class="note" style="margin-top:6px">判断题里出现"无论…都"这种<em>全称命题</em> ⇒ 只需要<b>一个</b>反例；带 mod 的题里"能不能取到 0"永远是第一件要试的事。</div>
+    </div>
+    <div>
+      <div class="note"><b>题 18　删掉第 16 行的 <span class="mono">1ll*</span> 有没有影响？　答案 F</b></div>
+      <div class="note" style="margin-top:6px"><span class="warn">两个都可能接近 10⁹ 的数相乘 ≈ 10¹⁸，而 int 只有 2.1×10⁹。</span>第 16~17 行的类型流动：</div>
+      <pre class="flow">1ll * f[i ^ (1&lt;&lt;j)]      -&gt; long long    (&lt; 998244353)
+      * a[|i|-1][j]        -&gt; long long    乘积可达 9.96e17，64 位装得下
+      % mod                -&gt; long long    &lt; 998244353
+f[i] += ...                -&gt; int   两边都 &lt; mod，和 &lt; 1.996e9 &lt; 2^31，安全
+       %= mod              -&gt; int
+
+去掉 1ll* 之后，第一步就变成 int * int  -&gt;  32 位有符号溢出（UB），实际按 mod 2^32 回绕</pre>
+      <div class="note" style="margin-top:6px">本机实测：n=2,3 共 401 组随机矩阵里 <em>277 组结果不同</em>。最干净的一组：<span class="mono">n=2 全 100000</span> ⇒ 正确 <span class="mono">35112940</span>；去掉 <span class="mono">1ll*</span> 得 <span class="mono">823642110</span>（100000×100000 = 10¹⁰ 回绕成 1410065408，再 % mod = 411821055，两列各一份相加）。</div>
+      <div class="note" id="b18" style="margin-top:6px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const MOD = 998244353n, MODN = 998244353;
+const CODE = [
+  [4, 'const int N = 20, mod = 998244353;'],
+  [5, 'int n, a[N][N], f[1 << N];'],
+  [6, ''],
+  [7, 'int main() {'],
+  [8, '    cin >> n;'],
+  [9, '    for (int i = 0; i < n; i++)'],
+  [10, '        for (int j = 0; j < n; j++)'],
+  [11, '            cin >> a[i][j];'],
+  [12, '    f[0] = 1;'],
+  [13, '    for (int i = 0; i < (1 << n); i++)'],
+  [14, '        for (int j = 0; j < n; j++)'],
+  [15, '            if (i >> j & 1)'],
+  [16, '                (f[i] += 1ll * f[i ^ (1 << j)] *'],
+  [17, '                          a[__builtin_popcount(i) - 1][j] % mod) %= mod;'],
+  [18, '    cout << f[(1 << n) - 1];'],
+  [19, '    return 0;'],
+  [20, '}']
+];
+const PRE = {
+  s3:  {n:3, a:'1 2 3 2 3 1 3 1 2'},
+  n1:  {n:1, a:'7'},
+  n2:  {n:2, a:'1 2 3 4'},
+  n4:  {n:4, a:'1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16'},
+  q17: {n:2, a:'1 1 998244352 1'},
+  q18: {n:2, a:'100000 100000 100000 100000'}
+};
+let n = 3, A = [[1,2,3],[2,3,1],[3,1,2]];
+let frames = [], edges = [], perms = [], products = [], permSum = 0n, permSumExact = 0n, detVal = 0n;
+let fEnd = [], dpOut = 0n, nollOut = 0;
+let vis = [], t = 0, timer = null, speed = 1, trueOnly = false;
+
+function popc(x){ let c = 0; while(x){ x &= x - 1; c++; } return c; }
+function bitList(i, nn){ const r = []; for(let b = nn - 1; b >= 0; b--) r.push((i >> b) & 1); return r; }
+function bitStr(i, nn){ return bitList(i, nn).join(''); }
+function colsOf(i){ const r = []; for(let b = 0; b < 20; b++) if((i >> b) & 1) r.push(b); return r; }
+function s(x){ return (typeof x === 'bigint') ? x.toString() : String(x); }
+function el(tag, cls, txt){ const e = document.createElement(tag); if(cls) e.className = cls; if(txt != null) e.textContent = txt; return e; }
+
+/* ---------- 逐帧模拟：每个 (i,j) 判定都记一帧，真假都记 ---------- */
+function simulate(){
+  const total = 1 << n;
+  const f = new Array(total).fill(0n); f[0] = 1n;
+  const fr = [], ed = [], terms = [];
+  for(let q = 0; q < total; q++) terms.push([]);
+  let checks = 0, trues = 0;
+  const snap = () => f.slice();
+  fr.push({kind:'init', checks, trues, f:snap(), ne:0, i:0});
+  for(let i = 0; i < total; i++){
+    const k = popc(i);
+    fr.push({kind:'outer', i, k, checks, trues, f:snap(), ne:ed.length});
+    for(let j = 0; j < n; j++){
+      checks++;
+      const v = (i >> j) & 1;
+      const o = {kind:'eval', i, j, k, val:v, checks, trues};
+      if(v){
+        trues++;
+        const prev = i ^ (1 << j), row = k - 1;
+        const fPrev = f[prev], aV = BigInt(A[row][j]);
+        const prod = fPrev * aV, term = prod % MOD;
+        const before = f[i];
+        f[i] = (before + term) % MOD;
+        ed.push({from:prev, to:i, j});
+        terms[i].push({j, prev, fPrev, aV, prod, term});
+        Object.assign(o, {prev, row, fPrev, aV, prod, term, before, after:f[i]});
+      }
+      o.ne = ed.length; o.f = snap();
+      fr.push(o);
+    }
+    fr.push({kind:'close', i, k, checks, trues, f:snap(), ne:ed.length, fi:f[i], terms:terms[i].slice()});
+  }
+  fr.push({kind:'final', checks, trues, f:snap(), ne:ed.length, i:total - 1, ans:f[total - 1]});
+  // 按定义枚举 n! 个排列（字典序，与讲义的 6 项顺序一致）
+  const ps = [];
+  (function gen(cur, rest){
+    if(!rest.length){ ps.push(cur.slice()); return; }
+    for(let q = 0; q < rest.length; q++){
+      cur.push(rest[q]); gen(cur, rest.slice(0, q).concat(rest.slice(q + 1))); cur.pop();
+    }
+  })([], Array.from({length:n}, (_, x) => x));
+  const pd = ps.map(p => { let pr = 1n; for(let r = 0; r < n; r++) pr *= BigInt(A[r][p[r]]); return pr; });
+  const base = {checks, trues, f:snap(), ne:ed.length, i:total - 1};
+  let run = 0n;
+  ps.forEach((p, idx) => {
+    run += pd[idx];
+    fr.push(Object.assign({kind:'perm', idx, perm:p, product:pd[idx], run}, base));
+  });
+  fr.push(Object.assign({kind:'permsum'}, base));
+  frames = fr; edges = ed; perms = ps; products = pd;
+  permSumExact = run; permSum = run % MOD;
+  detVal = pd.reduce((x, y, idx) => {
+    const p = ps[idx]; let inv = 0;
+    for(let u = 0; u < n; u++) for(let w = u + 1; w < n; w++) if(p[u] > p[w]) inv++;
+    return x + (inv % 2 ? -y : y);
+  }, 0n) % MOD;
+  fEnd = snap(); dpOut = fEnd[total - 1];
+  nollOut = simulateNoll();
+}
+
+/* 去掉 1ll* 的版本：int * int 按 32 位有符号回绕（Math.imul 就是这条指令） */
+function simulateNoll(){
+  const total = 1 << n, f = new Array(total).fill(0); f[0] = 1;
+  for(let i = 0; i < total; i++){
+    const row = popc(i) - 1;
+    if(row < 0) continue;
+    for(let j = 0; j < n; j++) if((i >> j) & 1){
+      const prev = i ^ (1 << j);
+      f[i] = (f[i] + Math.imul(f[prev], A[row][j]) % MODN) % MODN;
+    }
+  }
+  return f[total - 1];
+}
+
+function buildVis(){
+  vis = [];
+  frames.forEach((fr, k) => {
+    if(trueOnly && fr.kind === 'eval' && fr.val === 0) return;
+    vis.push(k);
+  });
+}
+
+function totalN(){ return 1 << n; }
+function settledOf(fr){
+  if(fr.kind === 'init') return 1;
+  if(fr.kind === 'outer' || fr.kind === 'eval') return Math.max(1, fr.i);
+  if(fr.kind === 'close') return fr.i + 1;
+  return totalN();
+}
+function curOf(fr){ return (fr.kind === 'outer' || fr.kind === 'eval') ? fr.i : null; }
+function fvOf(fr){ return fr.f || fEnd; }
+
+/* f[i] 的展开式：前驱都比 i 小，早已定型，可以直接用终值 */
+function expand(i, maxJ){
+  if(i === 0) return '第 12 行 f[0] = 1（写死）';
+  const row = popc(i) - 1, js = [];
+  for(let j = 0; j < n; j++) if(((i >> j) & 1) && j <= maxJ) js.push(j);
+  if(!js.length) return maxJ < 0 ? '还没进内层' : '本列判定为假，暂无新项';
+  const sym = js.map(j => 'f[' + (i ^ (1 << j)) + ']*a[' + row + '][' + j + ']').join(' + ');
+  const num = js.map(j => s(fEnd[i ^ (1 << j)]) + '·' + A[row][j]).join(' + ');
+  return sym + ' = ' + num;
+}
+
+/* ---------- 渲染 ---------- */
+function renderCode(hl){
+  const box = document.getElementById('code'); box.innerHTML = '';
+  CODE.forEach(pair => {
+    const ln = pair[0], txt = pair[1];
+    const d = el('div', 'cl' + (hl.indexOf(ln) >= 0 ? ' hl' : ''));
+    d.appendChild(el('span', 'ln', String(ln)));
+    d.appendChild(el('code', null, txt === '' ? ' ' : txt));
+    box.appendChild(d);
+  });
+}
+
+function renderLattice(fr){
+  const total = totalN(), layers = document.getElementById('layers');
+  layers.innerHTML = '';
+  const ne = fr.ne === undefined ? edges.length : fr.ne;
+  const used = edges.slice(0, ne);
+  const fv = fvOf(fr), settled = settledOf(fr), cur = curOf(fr);
+  const curPrev = (fr.kind === 'eval' && fr.val) ? fr.prev : null;
+  const curJ = (fr.kind === 'eval') ? fr.j : null;
+  const nodes = {};
+  for(let k = 0; k <= n; k++){
+    const col = el('div', 'layer');
+    col.appendChild(el('div', 'lh', '|i| = ' + k));
+    col.appendChild(el('div', 'lh', k === 0 ? '一行未安排' : '行 0..' + (k - 1) + ' 已排'));
+    for(let i = 0; i < total; i++) if(popc(i) === k){
+      const nd = el('div', 'nd');
+      const cls = (i === cur) ? ' cur' : (i === curPrev ? ' prev' : (i < settled ? ' done' : ' fut'));
+      nd.className = 'nd' + cls;
+      nd.id = 'nd' + i;
+      const l1 = el('div');
+      l1.appendChild(el('span', null, 'i=' + i + '  f=' + (i < settled || i === cur ? s(fv[i]) : '?')));
+      nd.appendChild(l1);
+      const l2 = el('div', 't2');
+      bitList(i, n).forEach((b, x) => {
+        const colIdx = n - 1 - x;
+        l2.appendChild(el('span', 'bit' + (b ? ' on' : '') + (colIdx === curJ ? ' j' : ''), b ? '1' : '0'));
+      });
+      nd.appendChild(l2);
+      const cs = colsOf(i);
+      nd.appendChild(el('div', 't2', cs.length ? '占用列 ' + cs.join(',') : '空集'));
+      col.appendChild(nd);
+      nodes[i] = nd;
+    }
+    layers.appendChild(col);
+  }
+  const curEdge = (fr.kind === 'eval' && fr.val) ? {from:fr.prev, to:fr.i, j:fr.j} : null;
+  requestAnimationFrame(() => drawEdges(used, curEdge, nodes));
+  document.getElementById('lnote').innerHTML =
+    '节点按 <b>|i|</b> 分层：同一层的子集占用同样多的列，也就是"同样前若干行已经排完"；<b>相邻两层之间的一条边</b>就是一次"把第 |i|−1 行交给某一列 j"的转移 <span class="mono">f[i^(1&lt;&lt;j)] → f[i]</span>。<br>'
+    + '芯片第一行是 <span class="mono">i</span> 和它当前的 <span class="mono">f</span> 值；第二行是 <span class="mono">i</span> 的二进制（从左到右 = 列 ' + (n - 1) + ' … 列 0，<span class="mono">1</span> 表示该列已被占用，橙色底就是本帧正在判定的那一位 j）；第三行把占用的列写成人话。'
+    + '到这里为止已点亮 <b>' + used.length + '</b> 条边（= 到本帧为止真正进过第 16 行的次数）。'
+    + (trueOnly ? ' <span class="warn">现在是"只播放为真"模式：为假的帧被隐藏，但"求值"计数器照样一路 +1。</span>' : '');
+}
+
+function drawEdges(used, curEdge, nodes){
+  const lat = document.getElementById('lattice'), svg = document.getElementById('edges');
+  const W = lat.clientWidth, H = lat.clientHeight;
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('width', W); svg.setAttribute('height', H);
+  svg.innerHTML = '';
+  const NS = 'http://www.w3.org/2000/svg';
+  const geo = i => {
+    const e = nodes[i]; if(!e) return null;
+    return {x1:e.offsetLeft, x2:e.offsetLeft + e.offsetWidth, y:e.offsetTop + e.offsetHeight / 2};
+  };
+  used.forEach(u => {
+    const a = geo(u.from), b = geo(u.to); if(!a || !b) return;
+    const isCur = curEdge && curEdge.from === u.from && curEdge.to === u.to && curEdge.j === u.j;
+    const dy = u.j * 6;
+    const p = document.createElementNS(NS, 'line');
+    p.setAttribute('x1', a.x2); p.setAttribute('y1', a.y - 10 + dy);
+    p.setAttribute('x2', b.x1); p.setAttribute('y2', b.y - 10 + dy);
+    p.setAttribute('stroke', isCur ? '#9d6bff' : '#2b6a7f');
+    p.setAttribute('stroke-width', isCur ? 3.5 : 1.6);
+    svg.appendChild(p);
+    const m = document.createElementNS(NS, 'text');
+    m.setAttribute('x', (a.x2 + b.x1) / 2); m.setAttribute('y', (a.y + b.y) / 2 - 16 + dy);
+    m.setAttribute('fill', isCur ? '#c4a6ff' : '#3f6f83');
+    m.setAttribute('font-size', '14'); m.setAttribute('font-family', 'Consolas,monospace');
+    m.setAttribute('text-anchor', 'middle'); m.textContent = 'j=' + u.j;
+    svg.appendChild(m);
+  });
+}
+
+function renderMat(fr){
+  const box = document.getElementById('amat'); box.innerHTML = '';
+  const isDP = (fr.kind === 'init' || fr.kind === 'outer' || fr.kind === 'eval' || fr.kind === 'close');
+  let row = -1;
+  if(fr.kind === 'eval' && fr.val) row = fr.row;
+  else if(isDP && typeof fr.i === 'number') row = popc(fr.i) - 1;
+  const picked = {}; // permanent 验算帧：第 r 行选中的列
+  if(fr.kind === 'perm') fr.perm.forEach((c, r) => picked[r + '_' + c] = 1);
+  const tb = el('table', 'mat');
+  const tr0 = el('tr'); tr0.appendChild(el('th'));
+  for(let j = 0; j < n; j++) tr0.appendChild(el('th', null, '列' + j));
+  tb.appendChild(tr0);
+  for(let r = 0; r < n; r++){
+    const tr = el('tr');
+    tr.appendChild(el('th', null, '行' + r));
+    for(let j = 0; j < n; j++){
+      const use = (fr.kind === 'eval' && fr.val && r === row && j === fr.j) || picked[r + '_' + j];
+      tr.appendChild(el('td', 'c' + (use ? ' hi' : (r === row ? ' rowon' : '')), s(A[r][j])));
+    }
+    tb.appendChild(tr);
+  }
+  box.appendChild(tb);
+  const an = document.getElementById('anote');
+  if(fr.kind === 'eval' && fr.val){
+    an.innerHTML = '本帧取 <b>a[' + row + '][' + fr.j + ']</b> = <em>' + s(fr.aV) + '</em>。<b>|i| = ' + fr.k + '</b> 说明前 ' + fr.k + ' 行已经安排完，这一次是把<b>第 ' + row + ' 行</b>（下标从 0 数）指派给列 ' + fr.j + ' —— 行号由子集大小唯一决定，所以状态里不必再写"行"，这是状压 DP 省掉一维的关键。';
+  } else if(isDP && row === -1){
+    an.innerHTML = '<b>i=0</b>：|i|=0 ⇒ "行号 = −1"？第 15 行对它全为假，第 16 行根本不执行，所以 −1 这个下标永远用不到（题 16 的关键）。';
+  } else if(isDP){
+    an.innerHTML = '当前 <b>i=' + fr.i + '</b>，<b>|i|=' + popc(fr.i) + '</b> ⇒ 内层只会用到<b>第 ' + row + ' 行</b>（高亮那一横排）。';
+  } else if(fr.kind === 'perm'){
+    an.innerHTML = '紫色格就是这一项 <span class="mono">(' + fr.perm.join(',') + ')</span> 选中的 n 个格子：第 r 行取列 <span class="mono">sigma(r)</span>，它们相乘。';
+  } else an.innerHTML = '转移式里唯一的矩阵元素是 <b>a[|i|−1][j]</b>：行由子集大小决定、列由 j 决定。把它写反成 <b>a[j][|i|−1]</b> 是常见错误；<span class="warn">顺带一提，本例矩阵恰好转置对称（A = Aᵀ），写反了也看不出差别</span> —— 想验证行列表述，得自己换一组不对称的数据。';
+}
+
+function renderF(fr){
+  const total = totalN(), fv = fvOf(fr), settled = settledOf(fr), cur = curOf(fr);
+  const maxJ = fr.kind === 'eval' ? (fr.val ? fr.j : fr.j - 1) : (fr.kind === 'outer' ? -1 : n - 1);
+  let html = '<table><tr><th class="c1">i</th><th class="c2">二进制</th><th class="c3">|i|</th><th class="c4">f[i]</th><th>转移展开</th></tr>';
+  for(let i = 0; i < total; i++){
+    const isCur = (i === cur);
+    const cls = isCur ? 'cur' : (i < settled ? '' : 'fut');
+    html += '<tr class="' + cls + '"><td>' + i + '</td><td>' + bitStr(i, n) + '</td><td>' + popc(i) + '</td><td>'
+      + (isCur || i < settled ? s(fv[i]) : '0') + '</td><td>'
+      + (isCur ? expand(i, maxJ) : (i < settled ? expand(i, n - 1) : '')) + '</td></tr>';
+  }
+  html += '</table><div class="note" style="margin-top:6px">最后一帧这张表就是讲义里手推的那张：i 从小到大扫，<span class="mono">f[i]</span> 只依赖更小的下标。</div>';
+  document.getElementById('ftbl').innerHTML = html;
+}
+
+function addFact(box, lab, val, cls){
+  const k = el('div', 'k' + (cls || ''));
+  k.appendChild(el('div', 'lab', lab)); k.appendChild(el('div', 'val', val));
+  box.appendChild(k);
+}
+
+function renderFacts(fr){
+  const box = document.getElementById('facts'); box.innerHTML = '';
+  const eq = document.getElementById('eq'), note = document.getElementById('fnote');
+  if(fr.kind === 'init'){
+    addFact(box, '阶段', '第 8~12 行：读入 + f[0]=1');
+    addFact(box, '第 15 行已求值', '0 次');
+    eq.textContent = 'cin >> n;   cin >> a[i][j] (共 n*n 个);   f[0] = 1;';
+    note.innerHTML = '<b>f[0]=1</b> 是唯一的"空安排"：一列没占、一行没排，方案数记作 1，后面所有 <span class="mono">f[i]</span> 都从它长出来。<span class="mono">f[1..2ⁿ−1]</span> 是全局数组，初值 <b>0</b>（这就是第 16 行敢直接 <span class="mono">+=</span> 的原因）。';
+    return;
+  }
+  if(fr.kind === 'final'){
+    addFact(box, '输出 f[' + ((1 << n) - 1) + ']', s(fr.ans), 'ans');
+    addFact(box, '第 15 行求值次数', s(fr.checks), 'goodk');
+    addFact(box, '第 15 行为真次数', s(fr.trues), 'goodk');
+    addFact(box, '两个计数器之比', fr.checks ? (fr.trues / fr.checks).toFixed(3) : '—');
+    eq.textContent = 'cout << f[(1 << ' + n + ') - 1];    //  f[' + ((1 << n) - 1) + '] = ' + s(fr.ans);
+    note.innerHTML = '全集 <span class="mono">' + bitStr((1 << n) - 1, n) + '</span> = "n 行全部安排完、n 列全部占用"，所以 <b>f[全集] = 矩阵的 permanent（对 mod 取模）</b>。后面 ' + (perms.length + 1) + ' 帧按定义把 ' + n + '! 个排列逐个乘加一遍，和第 ⑦ 块对齐答案。';
+    return;
+  }
+  if(fr.kind === 'perm' || fr.kind === 'permsum'){ renderPermFacts(fr); return; }
+  if(fr.kind === 'outer'){
+    addFact(box, 'i', fr.i + ' = ' + bitStr(fr.i, n) + 'b');
+    addFact(box, 'popcount(i)', fr.k + ' → 行 ' + (fr.k - 1));
+    addFact(box, '进内层之前 f[i]', s(fr.f[fr.i]));
+    addFact(box, '求值 / 为真 至今', fr.checks + ' / ' + fr.trues);
+    eq.textContent = 'for (int i = 0; i < (1 << n); i++)    //  i = ' + fr.i + ', 二进制 ' + bitStr(fr.i, n) + ', |i| = ' + fr.k;
+    note.innerHTML = '开始处理子集 <b>' + bitStr(fr.i, n) + '</b>（含义：这些列已经被占用）。' + (fr.k
+      ? '前 <b>' + fr.k + '</b> 行已经塞进这些列，本子集要枚举"<b>第 ' + (fr.k - 1) + ' 行</b>给了哪一列"。'
+      : '它是<b>空集</b>，对任何 j 都有 <span class="mono">0&gt;&gt;j&amp;1 = 0</span> ⇒ 内层 <b>' + n + ' 次判定全为假</b>，第 16 行一次也不执行。')
+      + '<br>内层 <b>j = 0..' + (n - 1) + '</b> ⇒ 接下来 <b>' + n + ' 帧判定</b>（<span class="warn">为假的也出帧</span>）+ 1 帧收尾。';
+    return;
+  }
+  if(fr.kind === 'close'){
+    addFact(box, 'i', fr.i + ' = ' + bitStr(fr.i, n) + 'b');
+    addFact(box, 'f[' + fr.i + '] 定型', s(fr.fi), 'goodk');
+    addFact(box, '这个子集用了几次转移', (fr.terms || []).length + ' / ' + n);
+    addFact(box, '求值 / 为真 至今', fr.checks + ' / ' + fr.trues);
+    eq.textContent = 'f[' + fr.i + '] = ' + s(fr.fi) + '    //  ' + ((fr.terms || []).length
+      ? fr.terms.map(x => s(x.fPrev) + '*' + s(x.aV) + '=' + s(x.term)).join(' + ')
+      : '没有任何转移落进来');
+    note.innerHTML = (fr.i === 0)
+      ? '<b>f[0]=1</b> 保持不变（内层 ' + n + ' 帧全是"为假"）。这正是题 16 里 <span class="mono">popcount(0)-1 = -1</span> 不出事的原因。'
+      : '<b>f[' + fr.i + ']</b> 从此不再改变：它的前驱 <span class="mono">i^(1&lt;&lt;j)</span> 一定比 <span class="mono">i</span> 小（少一个 1 位），早就算完了 —— 所以外层只要<b>按 i 从小到大</b>扫就能递推（注意 i 递增并不等于 |i| 递增，例如 ' + (n === 3 ? 'i=3 排在 i=4 前面' : 'i=8 的 |i|=1 比 i=7 的 |i|=3 晚') + '）。';
+    return;
+  }
+  /* eval 帧 */
+  addFact(box, 'i', fr.i + ' = ' + bitStr(fr.i, n) + 'b');
+  addFact(box, 'j', String(fr.j));
+  addFact(box, '第 15 行 i>>j&1', fr.val ? '1　为真' : '0　为假', fr.val ? 'goodk' : 'badk');
+  addFact(box, 'popcount(i) → 行', fr.k + ' → ' + (fr.k - 1));
+  if(fr.val){
+    addFact(box, '前驱 i^(1<<j)', fr.prev + ' = ' + bitStr(fr.prev, n) + 'b');
+    addFact(box, 'f[前驱] · a[行][列]', s(fr.fPrev) + ' · ' + s(fr.aV));
+    addFact(box, '本帧之前 f[i]', s(fr.before));
+    addFact(box, '本帧之后 f[i]', s(fr.after), 'goodk');
+    eq.textContent = 'f[' + fr.i + '] = ( f[' + fr.i + '] + 1ll * f[' + fr.prev + '] * a[' + fr.row + '][' + fr.j + '] % mod ) % mod\n'
+      + '        = ( ' + s(fr.before) + ' + ' + s(fr.fPrev) + '*' + s(fr.aV)
+      + (fr.prod >= MOD ? '=' + s(fr.prod) + ' % mod=' + s(fr.term) : '=' + s(fr.prod))
+      + ' ) % mod = ' + s(fr.after);
+    note.innerHTML = '<em>为真</em>：列 <b>' + fr.j + '</b> 在子集 <b>' + bitStr(fr.i, n) + '</b> 里，"第 ' + fr.row + ' 行交给列 ' + fr.j + '"这种安排是可行的；上一步是抹掉这一列的 <b>' + fr.prev + '(' + bitStr(fr.prev, n) + ')</b>，方案数乘上格子费用 <b>a[' + fr.row + '][' + fr.j + ']=' + s(fr.aV) + '</b>。'
+      + (fr.prod >= MOD ? '乘积 <b>' + s(fr.prod) + '</b> 已超过 mod，先 % mod 得 <b>' + s(fr.term) + '</b>；' : '')
+      + '<b>f[' + fr.i + ']</b>：' + s(fr.before) + ' → <b>' + s(fr.after) + '</b>。第 15、16、17 行在这帧各执行 1 次。';
+  } else {
+    addFact(box, '第 16~17 行', '一次也没执行', 'badk');
+    addFact(box, 'f[' + fr.i + ']', '保持 ' + s(fr.f[fr.i]));
+    addFact(box, '求值 / 为真 至今', fr.checks + ' / ' + fr.trues);
+    addFact(box, '下一帧', fr.j + 1 < n ? 'j=' + (fr.j + 1) : '内层结束，收 f[' + fr.i + ']');
+    eq.textContent = 'if ( i >> j & 1 )    //  ' + fr.i + ' >> ' + fr.j + ' & 1 = ' + fr.val + '   ->   条件为假，第 16~17 行整块跳过';
+    note.innerHTML = '<span class="warn">这是全卷最想考的一帧。</span>列 <b>' + fr.j + '</b> 不在子集 <b>' + bitStr(fr.i, n) + '</b> 里 ⇒ <b>第 16 行没执行</b>；可是 <b>第 15 行的判定本身已经执行了</b>（第 14 行的循环体走进这一圈，就必须求值一次）。<br>所以"<b>执行到第 15 行</b>"= n·2ⁿ 次，"<b>条件成立进第 16 行</b>"= n·2ⁿ⁻¹ 次；此刻两个计数器是 <b>' + fr.checks + '</b> 和 <b>' + fr.trues + '</b>。题 20 问的是前者，题 21 问的是后者。';
+  }
+}
+
+function renderPermFacts(fr){
+  const box = document.getElementById('facts'); box.innerHTML = '';
+  const eq = document.getElementById('eq'), note = document.getElementById('fnote');
+  if(fr.kind === 'perm'){
+    addFact(box, '第 ' + (fr.idx + 1) + ' / ' + perms.length + ' 个排列', '(' + fr.perm.join(',') + ')');
+    addFact(box, '这一项的值', s(fr.product));
+    addFact(box, '按定义累计和', s(fr.run));
+    addFact(box, '状压 DP 的答案', s(dpOut), 'goodk');
+    eq.textContent = 'sigma = (' + fr.perm.join(',') + ') :  ' + fr.perm.map((c, r) => 'a[' + r + '][' + c + ']=' + A[r][c]).join('  ·  ') + '  =  ' + fr.perm.map((c, r) => A[r][c]).join('×') + ' = ' + s(fr.product);
+    note.innerHTML = '这就是 permanent 的定义式：第 r 行指派到列 <span class="mono">sigma(r)</span>，把选中的 n 个格子<b>相乘</b>；' + n + '! 个排列之间<b>只做加法</b>。左边那些边上的乘积，DP 是按"列占用子集"这批边分摊着加的，最后必然得到同一个和。';
+    return;
+  }
+  addFact(box, n + '! 项之和', s(permSumExact));
+  addFact(box, '对 mod 取模', s(permSum), 'ans');
+  addFact(box, 'DP 的 f[全集]', s(dpOut), 'goodk');
+  addFact(box, '行列式（对照）', s(detVal), 'badk');
+  eq.textContent = 'per(A) = ' + products.map(x => s(x)).join(' + ') + ' = ' + s(permSumExact) + '  ≡  ' + s(permSum) + '  (mod 998244353)';
+  note.innerHTML = (permSum === dpOut)
+    ? '<em>两条路同一个数</em>：按定义枚举 ' + n + '! 个排列得 <b>' + s(permSum) + '</b>，状压 DP 得 <b>' + s(dpOut) + '</b> ⇒ 程序算的确实是 permanent（题 19 选 C）。<br>第 ⑦ 块"±"那一列告诉你：如果按行列式给奇排列加负号，结果会是 <b>' + s(detVal) + '</b>，和程序输出毫无关系 —— 程序里<b>从头到尾没有符号位</b>。'
+    : '两个数应当相同；若不同请检查模拟实现。';
+}
+
+function renderCounters(fr){
+  const checks = fr.checks || 0, trues = fr.trues || 0;
+  document.getElementById('c1').textContent = '已求值 ' + checks + ' 次　/　终值 ' + (n * (1 << n));
+  document.getElementById('c2').textContent = '已为真 ' + trues + ' 次　/　终值 ' + (n * (1 << (n - 1)));
+  document.getElementById('e1').textContent = n + '·2^' + n + ' = ' + (n * (1 << n));
+  document.getElementById('e2').textContent = n + '·2^' + (n - 1) + ' = ' + (n * (1 << (n - 1)));
+  document.getElementById('cntnote').innerHTML = '此刻比例 <b>' + (checks ? (trues / checks).toFixed(3) : '—') + '</b>，全部子集扫完后正好 <b>0.500</b>：固定列 j，<span class="mono">2ⁿ</span> 个子集里恰好 <span class="mono">2ⁿ⁻¹</span> 个包含 j ⇒ "为真"恰是"求值"的一半。'
+    + (trueOnly ? ' <span class="warn">"只播放为真"时"求值"数会一次跳好几格，因为为假的帧被隐藏了，但它们的求值照样发生。</span>' : '');
+  document.getElementById('cnttbl').innerHTML = '<table><tr><th>计数口径</th><th>表达式</th><th>n=3</th><th>n=14</th><th>n=20（实测）</th></tr>'
+    + '<tr><td>第 14 行循环体次数</td><td>n·2ⁿ</td><td>24</td><td>229376</td><td>20971520</td></tr>'
+    + '<tr><td>第 15 行被<b>求值</b></td><td>n·2ⁿ</td><td>24</td><td>229376</td><td>20971520</td></tr>'
+    + '<tr><td>第 15 行<b>为真</b></td><td>n·2ⁿ⁻¹</td><td>12</td><td><b>114688</b></td><td>10485760</td></tr></table>';
+  document.getElementById('optnote').innerHTML = '<b>题 20</b>：外层 2ⁿ 个子集 × 内层 n 次判定，判定内部 O(1) ⇒ <em>选 C（Θ(n·2ⁿ)）</em>。B 说"只有 1 位为真才转移，均摊 O(1)"，忘了<b>判定本身要跑 n·2ⁿ 次</b>；D 把 <span class="mono">__builtin_popcount</span> 当 O(n)，它是一条 CPU 指令。<br>'
+    + '<b>题 21</b>：n=14 时"为真"次数 = 14·2¹³ = <em>114688 ⇒ 选 A</em>（n=20 实测 10485760，正好是 20971520 的一半）。D 229376 恰是 n·2ⁿ（求值次数，口径错），B 229176 是接近求值次数的乱数，C 114588 是把 6、8 写颠倒。';
+}
+
+function renderPerm(fr){
+  const upto = fr.kind === 'perm' ? fr.idx : (fr.kind === 'permsum' ? perms.length - 1 : -1);
+  let html = '<table><tr><th style="width:84px">sigma</th><th>乘积</th><th style="width:74px">值</th><th style="width:70px">±</th><th style="width:86px">累计</th></tr>';
+  let run = 0n;
+  for(let k = 0; k < perms.length; k++){
+    const p = perms[k];
+    run += products[k];
+    let inv = 0; for(let u = 0; u < n; u++) for(let w = u + 1; w < n; w++) if(p[u] > p[w]) inv++;
+    html += '<tr class="' + (k <= upto ? (k === upto ? 'pvcur' : '') : 'pvdim') + '">'
+      + '<td>(' + p.join(',') + ')</td>'
+      + '<td>' + p.map((c, r) => A[r][c]).join('·') + '</td>'
+      + '<td>' + s(products[k]) + '</td>'
+      + '<td>' + (inv % 2 ? '− 奇' : '+ 偶') + '</td>'
+      + '<td>' + (k <= upto ? s(run) : '…') + '</td></tr>';
+  }
+  html += '</table>';
+  if(upto < 0){
+    html += '<div class="note" style="margin-top:8px">先按下不表。等 DP 跑到 <span class="mono">f[全集]</span>（第 ⑤ 块最后一行），后面 <b>' + (perms.length + 1) + '</b> 帧会按定义把这些乘积逐个加出来，再和状压结果对齐。</div>';
+  } else {
+    html += '<div class="note" style="margin-top:8px">加起来的 <b>permanent</b> = ' + s(permSumExact) + ' ≡ <em>' + s(permSum) + '</em>（mod 998244353）　｜　状压 DP 的 <span class="mono">f[全集]</span> = <em>' + s(dpOut) + '</em> '
+      + (permSum === dpOut ? '<span class="pill t">完全相同</span>' : '<span class="pill f">不同？</span>')
+      + '　｜　若按行列式把奇排列变号，得到 <span class="pill f">' + s(detVal) + '</span>（程序从不带符号）。</div>';
+  }
+  document.getElementById('permbox').innerHTML = html;
+}
+
+function renderTraps(){
+  const maxIdx = (1 << n) - 1;
+  document.getElementById('b16').innerHTML = '现场核对：当前 n=' + n + '，用到的最大下标 <span class="mono">(1&lt;&lt;' + n + ')−1 = ' + maxIdx + '</span>，而数组容量按 N=20 固定为 <span class="mono">1&lt;&lt;20 = 1048576</span> ⇒ 余量巨大；只有 n=20 时才<em>正好压线</em>，n=21 立刻越界。';
+  document.getElementById('b18').innerHTML = '用当前输入现场对拍：带 <span class="mono">1ll*</span> = <b>' + s(dpOut) + '</b>　｜　去掉 <span class="mono">1ll*</span>（32 位回绕）= <b>' + nollOut + '</b>　'
+    + (s(dpOut) === String(nollOut) ? '<span class="pill f">这一组看不出差别（乘积没超过 2³¹）—— 请点"题 18 反例"按钮</span>' : '<span class="pill t">结果不同，题 18 的反例拿到了</span>');
+}
+
+function render(){
+  const fr = frames[vis[t]];
+  const hl = fr.kind === 'init' ? [12]
+    : fr.kind === 'outer' ? [13]
+    : fr.kind === 'close' ? [13, 14]
+    : fr.kind === 'final' ? [18]
+    : (fr.kind === 'perm' || fr.kind === 'permsum') ? [18]
+    : (fr.val ? [15, 16, 17] : [15]);
+  renderCode(hl);
+  renderLattice(fr);
+  renderMat(fr);
+  renderF(fr);
+  renderFacts(fr);
+  renderCounters(fr);
+  renderPerm(fr);
+  renderTraps();
+  document.getElementById('prog').textContent = '第 ' + (t + 1) + ' / ' + vis.length + ' 步';
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === vis.length - 1;
+  document.getElementById('inote').innerHTML = '正在演示 <b>n=' + n + '</b>：<b>' + (1 << n) + '</b> 个子集、共 <b>' + frames.length + '</b> 帧'
+    + '（第 12 行 1 帧 + 每个子集"进内层 / n 次判定 / 收 f" = ' + ((1 << n) * (n + 2)) + ' 帧 + 输出 1 帧 + 定义验算 ' + (perms.length + 1) + ' 帧）。'
+    + '其中第 15 行的判定帧共 <b>' + n * (1 << n) + '</b> 个：为真 <b>' + n * (1 << (n - 1)) + '</b>、为假 <b>' + n * (1 << (n - 1)) + '</b>。当前模式：' + (trueOnly ? '<b>只播放为真的转移</b>' : '播放全部判定') + '。';
+}
+
+function load(nv, av){
+  n = nv; A = av;
+  simulate(); buildVis(); t = 0; render();
+}
+
+function parseInput(){
+  const nv = parseInt(document.getElementById('inpN').value.trim(), 10);
+  if(!(nv >= 1 && nv <= 4)){ alert('演示上限 n ≤ 4（再多格点画不下；n=14 / n=20 的结论写在第 ⑥、⑧ 块里）'); return; }
+  const xs = document.getElementById('inpA').value.trim().split(/[\s,]+/).map(Number);
+  if(xs.length !== nv * nv){ alert('矩阵需要 ' + nv * nv + ' 个数，现在给了 ' + xs.length + ' 个'); return; }
+  if(xs.some(x => !Number.isFinite(x) || x < 0 || x > MODN - 1)){ alert('每个元素要求在 0 ~ 998244352 之间'); return; }
+  const av = [];
+  for(let r = 0; r < nv; r++) av.push(xs.slice(r * nv, r * nv + nv));
+  load(nv, av);
+}
+
+document.getElementById('load').onclick = parseInput;
+document.querySelectorAll('.pre').forEach(b => {
+  b.onclick = () => {
+    const p = PRE[b.dataset.p];
+    document.getElementById('inpN').value = p.n;
+    document.getElementById('inpA').value = p.a;
+    parseInput();
+  };
+});
+document.getElementById('tonly').onchange = e => {
+  const keep = frames[vis[t]];
+  trueOnly = e.target.checked;
+  buildVis();
+  let k = vis.map(x => frames[x]).indexOf(keep);
+  if(k < 0){
+    const want = frames.indexOf(keep);
+    k = 0;
+    vis.forEach((x, i) => { if(x <= want) k = i; });
+  }
+  t = k; render();
+};
+document.getElementById('next').onclick = () => { if(t < vis.length - 1){ t++; render(); } };
+document.getElementById('prev').onclick = () => { if(t > 0){ t--; render(); } };
+document.getElementById('end').onclick = () => { stop(); t = vis.length - 1; render(); };
+document.getElementById('home').onclick = () => { stop(); t = 0; render(); };
+document.querySelectorAll('.spd').forEach(b => {
+  b.onclick = () => {
+    speed = +b.dataset.s;
+    document.querySelectorAll('.spd').forEach(x => x.classList.toggle('on', x === b));
+    if(timer){ stop(); start(); }
+  };
+});
+function stop(){ if(timer){ clearInterval(timer); timer = null; } document.getElementById('play').textContent = '自动播放'; }
+function start(){
+  document.getElementById('play').textContent = '暂停';
+  timer = setInterval(() => {
+    if(t >= vis.length - 1){ stop(); return; }
+    t++; render();
+  }, 1200 / speed);
+}
+document.getElementById('play').onclick = () => { if(timer) stop(); else start(); };
+document.addEventListener('keydown', e => {
+  if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+  if(e.key === 'ArrowRight'){ e.preventDefault(); if(t < vis.length - 1){ t++; render(); } }
+  else if(e.key === 'ArrowLeft'){ e.preventDefault(); if(t > 0){ t--; render(); } }
+  else if(e.key === ' '){ e.preventDefault(); if(timer) stop(); else start(); }
+});
+load(3, [[1,2,3],[2,3,1],[3,1,2]]);
+</script>
+</body>
+</html>

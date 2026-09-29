@@ -1,0 +1,6 @@
+--- official(B5C) ---
+5
+exit=0
+--- B5D ---
+exit=124
+-rw-r--r-- 1 admin 197609 0 Sep 29 12:57 f2_B5D_out.txt
