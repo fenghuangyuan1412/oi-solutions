@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SCP-J1 2026 阅读程序(3) · 带剪枝的 DFS 求九连环最少操作数 · 分步演示</title>
+<style>
+  :root{--bg:#0f1220;--card:#1a1f35;--ink:#e8ecff;--dim:#8b93b5;--acc:#5eead4;--bad:#f59e6b;--good:#5eead4;--line:#262c4a;}
+  *{box-sizing:border-box}
+  body{margin:0;padding:22px;background:var(--bg);color:var(--ink);font:15px/1.65 "Segoe UI",system-ui,sans-serif}
+  h1{font-size:20px;margin:0 0 3px}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:16px}
+  .sub code{font:14px Consolas,monospace;color:#ffd9a8}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px;min-width:0}
+  .card h2{font-size:14px;letter-spacing:.04em;color:var(--dim);margin:0 0 10px;font-weight:600}
+  button{background:#2b3358;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 12px;font-size:14px;cursor:pointer;margin:0 6px 6px 0}
+  button:hover:not(:disabled){background:#394373}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.on{background:#14514a;border-color:var(--acc);color:#d5fff8}
+  button.pre{background:#232a4a}
+  input[type=text]{background:#0d1020;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 10px;font:14px Consolas,monospace;width:250px}
+  .wrap{display:grid;grid-template-columns:minmax(0,1fr) 392px;gap:14px;align-items:start}
+  .col{min-width:0}
+  .bar{display:flex;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+  .lab{font-size:14px;color:var(--dim);margin:0 8px 6px 0}
+  .prog{color:var(--ink);font:15px Consolas,monospace;margin-left:6px}
+  .notice{border:1px solid #4a3a20;background:#2a2013;color:var(--bad);border-radius:10px;padding:8px 12px;font-size:14px;margin-bottom:12px}
+  .notice.hide{display:none}
+  .code{font:14px/1.55 Consolas,monospace;background:#0d1020;border:1px solid var(--line);border-radius:9px;padding:8px 6px;overflow-x:auto}
+  .cl{display:flex;gap:8px;padding:1px 6px;border-radius:5px;white-space:pre}
+  .cl .no{color:#4d5578;width:22px;text-align:right;flex:none}
+  .cl.cur{background:#154440;box-shadow:inset 3px 0 0 var(--acc)}
+  .cl.cur .tx{color:#d9fff6}
+  .ladder{max-height:430px;overflow-y:auto;overflow-x:hidden;border:1px solid var(--line);border-radius:9px;background:#10142a;padding:6px}
+  .lr{display:flex;align-items:center;gap:8px;padding:2px 0;flex-wrap:nowrap}
+  .lr.ghost{border-left:3px solid #4a5580;background:#171c33}
+  .lr.hot{border-left:3px solid var(--acc);background:#14283a}
+  .lr .d{width:104px;flex:none;font:14px Consolas,monospace;color:var(--dim);white-space:nowrap;overflow:hidden}
+  .lr .tag{font:14px Consolas,monospace;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 auto;min-width:0}
+  .cells{display:flex;flex:none}
+  .bx{width:23px;height:23px;line-height:23px;margin-right:3px;border-radius:5px;text-align:center;font:14px Consolas,monospace;flex:none;border:1px solid #333c66;background:#232a4a;color:#9aa4cc}
+  .bx.one{background:#14514a;border-color:var(--acc);color:#d8fff7;font-weight:700}
+  .bx.hi{box-shadow:0 0 0 2px var(--bad)}
+  .bx.hiok{box-shadow:0 0 0 2px #9d6bff}
+  .bx.mark{background:#3d2b58;border-color:#9d6bff;color:#f0e6ff;font-weight:700}
+  .bx.mark2{background:#14514a;border-color:var(--acc);color:#d8fff7;font-weight:700}
+  .ruler{border-bottom:1px solid var(--line);margin-bottom:4px;padding-bottom:3px}
+  .ruler .bx{background:transparent;border:1px dashed #2c3355;color:#55608a;font-weight:400}
+  .kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .k{background:#131730;border:1px solid var(--line);border-radius:9px;padding:8px 10px;min-width:0}
+  .k .lk{font-size:14px;color:var(--dim)}
+  .k .vv{font:15px Consolas,monospace;margin-top:2px;white-space:nowrap;overflow-x:auto}
+  .k.warn .vv{color:var(--bad)}
+  .k.answ{border-color:#5b4a86;background:#1b1836}
+  .k.answ .vv{color:#c4a6ff;font-size:24px}
+  .note{background:#131730;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:15px;min-height:100px}
+  .note b{color:var(--acc)}
+  .note i{color:var(--bad);font-style:normal}
+  .note code,.dim code,.minbox code{font:14px Consolas,monospace;color:#ffd9a8;background:#0d1020;padding:1px 5px;border-radius:4px}
+  table{width:100%;border-collapse:collapse;font:14px Consolas,monospace}
+  th,td{padding:4px 6px;border-bottom:1px solid #222743;text-align:left;vertical-align:top;word-break:break-all}
+  th{color:var(--dim);font-weight:600}
+  .stk{font:14px Consolas,monospace;max-height:184px;overflow-y:auto}
+  .stk div{padding:3px 6px;border-bottom:1px solid #222743;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .stk div.cur{background:#154440;color:#d9fff6}
+  .minbox{font:14px/1.6 Consolas,monospace;background:#0d1020;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:8px}
+  .dim{color:var(--dim);font-size:14px}
+  ul{margin:6px 0 0;padding-left:20px}
+  li{margin-bottom:5px}
+  .arrow{color:var(--acc);font-weight:700}
+</style>
+</head>
+<body>
+<h1>阅读程序(3)：带剪枝的 DFS 求"九连环式"最少操作数</h1>
+<div class="sub">SCP-J1 2026 模拟卷 第 27-32 题 · 程序逐字复制自 <code>verify/r3.cpp</code> · 每一帧都由 JS 逐字复刻的同一段递推生成：调用次数、答案与 C++ 实测逐个相同</div>
+
+<div class="bar">
+  <span class="lab">预设输入</span>
+  <button class="pre" data-s="0">0</button>
+  <button class="pre" data-s="01">01</button>
+  <button class="pre" data-s="001">001</button>
+  <button class="pre" data-s="00000001">00000001（题 30 · 完整）</button>
+  <button class="pre" data-s="110111011110111110">110111011110111110（题 31 · 节选）</button>
+  <button class="pre" data-s="001000100001000001">001000100001000001（题 32 · 节选）</button>
+</div>
+<div class="bar">
+  <span class="lab">自定义（只写 0 / 1）</span>
+  <input type="text" id="src" value="00011" spellcheck="false">
+  <button id="load">载入</button>
+  <span class="dim">长度 &le; 8 完整逐帧播放；长度 &gt; 8 自动转节选模式（只放前 60 层）</span>
+</div>
+<div class="bar">
+  <button id="home">回到开头</button>
+  <button id="prev">上一步</button>
+  <button id="next">下一步</button>
+  <button id="play">自动播放</button>
+  <button id="end">跳到末尾</button>
+  <span class="lab" style="margin-left:10px">速度</span>
+  <button class="spd on" data-v="1">1x</button>
+  <button class="spd" data-v="2">2x</button>
+  <button class="spd" data-v="4">4x</button>
+  <span class="prog" id="prog"></span>
+  <span class="dim" style="margin-left:10px">快捷键：&larr; 上一步 &middot; &rarr; 下一步 &middot; 空格 播放/暂停</span>
+</div>
+<div class="notice hide" id="notice"></div>
+
+<div class="wrap">
+  <div class="col">
+    <div class="card"><h2>① 程序原文（逐字 = verify/r3.cpp；青色 = 当前执行到的行）</h2><div class="code" id="code"></div></div>
+
+    <div class="card"><h2>② 状态阶梯：一行 = 一次 dfs 调用（向下展开 = 递归加深，消失 = 该层 return）</h2>
+      <div class="dim" style="margin-bottom:6px">方格是长度 <b>n+1</b> 的状态串 <b>t</b>（下标 0..n，两处循环都写 <b>i &lt;= n</b> 而不是 i &lt; n）。深青 = 1，灰 = 0。虚线框是下标标尺，最后一格下标 = n。</div>
+      <div class="ladder" id="ladder"></div>
+    </div>
+
+    <div class="card"><h2>③ 第 14 行到底在比什么：两段 substr 对齐画出来</h2><div id="cmp"></div></div>
+
+    <div class="card"><h2>④ 这一步在干什么</h2><div class="note" id="note"></div></div>
+  </div>
+
+  <div class="col">
+    <div class="card"><h2>⑤ 当前递归栈（dfs(t,lst) 链）+ 本层进度</h2>
+      <div class="stk" id="stk"></div>
+      <div class="kv" style="margin-top:10px">
+        <div class="k"><div class="lk">本层已发起子调用数</div><div class="vv" id="kids">-</div></div>
+        <div class="k"><div class="lk">候选 i 扫到</div><div class="vv" id="scan">-</div></div>
+      </div>
+      <div class="minbox" id="minbox">第 17 行的 <b>min</b> 还没执行过：ret 仍是 1e9。</div>
+    </div>
+
+    <div class="card"><h2>⑥ 本层关键量</h2>
+      <div class="kv">
+        <div class="k"><div class="lk">t（本层私有拷贝）</div><div class="vv" id="kt"></div></div>
+        <div class="k"><div class="lk">lst</div><div class="vv" id="klst"></div></div>
+        <div class="k" id="kretbox"><div class="lk">ret（当前最优 / 哨兵）</div><div class="vv" id="kret"></div></div>
+        <div class="k"><div class="lk">刚返回的值</div><div class="vv" id="kv"></div></div>
+      </div>
+    </div>
+
+    <div class="card"><h2>⑦ 程序输出</h2>
+      <div class="k answ"><div class="lk">cout &lt;&lt; dfs(t0, -1); 打印的内容（无换行）</div><div class="vv" id="fans">-</div></div>
+      <div class="kv" style="margin-top:8px">
+        <div class="k"><div class="lk">dfs 调用次数</div><div class="vv" id="fcalls">-</div></div>
+        <div class="k"><div class="lk">最大递归深度</div><div class="vv" id="fdepth">-</div></div>
+      </div>
+      <div class="dim" id="fmode" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card"><h2>⑧ 机器实测对照（verify/RESULTS.md）</h2>
+      <table>
+        <tr><th>输入</th><th>输出</th><th>dfs 调用次数</th><th>最大深度</th></tr>
+        <tr><td>0</td><td>2</td><td>4</td><td>2</td></tr>
+        <tr><td>01</td><td>5</td><td>6</td><td>5</td></tr>
+        <tr><td>001</td><td>10</td><td>11</td><td>10</td></tr>
+        <tr><td>00000001（题 30）</td><td>341</td><td>342</td><td>341</td></tr>
+        <tr><td>110111011110111110（题 31）</td><td>289745</td><td>524288 = 2^19</td><td>289745</td></tr>
+        <tr><td>001000100001000001（题 32）</td><td>289745</td><td>349526</td><td>289745</td></tr>
+      </table>
+      <div class="dim" style="margin-top:8px">
+        题 30 选 <b>A(341)</b>（342 是"把起点也算一步"）；题 31 选 <b>B(2^19)</b> —— 卷面上的"218 / 219 / 220"是 PDF 转文本丢了上标，实测对任何长度 1..18 的输入，调用次数都不可能等于 219；
+        题 32 选 <b>D</b>：真值 289745 不在 {21, 289746, 525739} 里，其中 289746 = 真值 + 1。
+        两个 18 位输入在默认 8MB 栈下<b>直接崩溃、一行输出都没有</b>，表里的数字是栈开到 1GB 后实测、并由独立的位压缩 BFS 复核过的理论值。
+      </div>
+    </div>
+
+    <div class="card"><h2>⑨ 静态侧栏：为什么 18 位输入会爆栈</h2>
+      <table>
+        <tr><th>链接栈大小</th><th>运行 110111011110111110</th></tr>
+        <tr><td>8 MB（评测机默认）</td><td>崩溃，无任何输出</td></tr>
+        <tr><td>16 MB / 32 MB</td><td>崩溃，无任何输出</td></tr>
+        <tr><td>64 MB</td><td>正常输出 289745，约 1 s</td></tr>
+        <tr><td>1 GB</td><td>正常输出 289745，1~2 s</td></tr>
+      </table>
+      <div class="dim" style="margin-top:8px">
+        递归深度实测 289745 层，每层帧里有两个 <code>std::string</code>：值传递进来的形参 <b>t</b> 的拷贝 + 局部 <b>cur</b> 的拷贝，约 120 字节/帧 → 需要约 35MB 栈，远超 8MB。
+        而调用次数上界只有 2^19 ≈ 5&times;10^5，时间完全够：<b>不会 TLE，只会 RE</b>。
+      </div>
+    </div>
+
+    <div class="card"><h2>⑩ 人话版：这段程序在算什么</h2>
+      <ul class="dim">
+        <li>状态 <b>t</b> 是长 <b>n+1</b> 的 01 串（下标 0..n），初值全 0，目标全 1。</li>
+        <li><b>"能翻第 i 位" &hArr; "t 的前 i 个字符" == "s 的最后 i 个字符"</b>；i = 0 时两边都是空串，<b>恒成立</b>。</li>
+        <li><b>lst</b> 记住上一步翻的是哪一位，本层禁止立刻再动同一位 —— 题 28 把它删掉，任何输入都会无限递归爆栈。</li>
+        <li><code>cur[i] ^= 1</code> 是字符的 <b>ASCII 异或</b>：48 ^ 1 = 49、49 ^ 1 = 48，即 0 &harr; 1 取反（所以改成 <code>'a'-cur[i]</code> 输出不变）。</li>
+        <li><b>1e9 是哨兵</b>，含义是"这一层往下走不到全 1"。没有任何合法转移时原样返回；上层拿到 1e9 + 1，仍然远大于真解，被 <b>min</b> 淘汰（所以换成 1234567 也一样）。</li>
+        <li>漂亮的性质（实测证实）：合法且不回头的转移恰好把 2^(n+1) 个状态串成<b>一条链</b>（Gray 码式的 Hamilton 路径），DFS 其实是一条道走到底，答案 = 全 1 状态在链上的下标。题 31 的 calls = 2^19 正是这条链的长度。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================= 程序原文（逐字 = verify/r3.cpp，行号对齐）=================
+var SRC = [
+  '#include <iostream>',
+  '#include <string>',
+  '#include <algorithm>',
+  'using namespace std;',
+  'int n;',
+  'string s;',
+  'int dfs(string t, int lst) {',
+  '    int ret = 0;',
+  '    for (int i = 0; i <= n; i++)',
+  "        if (t[i] != '1')",
+  '            ret = 1e9;',
+  '    if (ret == 0)return 0;',
+  '    for (int i = 0; i <= n; i++)',
+  '        if (i != lst && s.substr(n - i, i) == t.substr(0, i)) {',
+  '            string cur = t;',
+  '            cur[i] ^= 1;',
+  '            ret = min(ret, dfs(cur, i) +1);',
+  '        }',
+  '    return ret;',
+  '}',
+  'int main() {',
+  '    cin >> s;',
+  '    n = s.size();',
+  "    string t0(n + 1, '0');",
+  '    cout << dfs(t0, -1);',
+  '    return 0;',
+  '}'
+];
+var INF = 1000000000;
+
+function flipAt(t, i) {
+  return t.slice(0, i) + String.fromCharCode(t.charCodeAt(i) ^ 1) + t.slice(i + 1);
+}
+
+// ============ (A) 事件流：JS 逐字复刻这段递归，记录 进入 / 每个候选 / min / 退出 ============
+// enter=第 7 行  term=第 9-12 行  cand=第 13-14 行  call=第 15-17 行  min=第 17 行  exit=第 19 行
+function genEvents(s, cap, maxDepthStop) {
+  var n = s.length, ev = [], calls = 0, ids = 0, maxDeep = 0, AB = { abort: 1 };
+  function dfs(t, lst, depth) {
+    calls++;
+    if (depth > maxDeep) maxDeep = depth;
+    var id = ++ids, i, allOne = true;
+    ev.push({ ev: 'enter', id: id, depth: depth, t: t, lst: lst });
+    for (i = 0; i <= n; i++) if (t[i] !== '1') { allOne = false; break; }
+    ev.push({ ev: 'term', id: id, depth: depth, allOne: allOne });
+    if (allOne) { ev.push({ ev: 'exit', id: id, depth: depth, t: t, lst: lst, ret: 0, via: 12 }); return 0; }
+    var ret = INF;
+    for (i = 0; i <= n; i++) {
+      var okLst = (i !== lst);
+      var segS = s.substr(n - i, i), segT = t.substr(0, i);
+      ev.push({ ev: 'cand', id: id, depth: depth, i: i, lst: lst, t: t, okLst: okLst,
+                segS: segS, segT: segT, pass: okLst && segS === segT, cur: flipAt(t, i) });
+      if (!okLst || segS !== segT) continue;
+      if (maxDepthStop !== undefined && depth + 1 > maxDepthStop) { ev.push({ ev: 'cut', depth: depth, i: i }); throw AB; }
+      ev.push({ ev: 'call', id: id, depth: depth, i: i, cur: flipAt(t, i) });
+      var cv = dfs(flipAt(t, i), i, depth + 1);
+      var old = ret;
+      if (cv + 1 < ret) ret = cv + 1;
+      ev.push({ ev: 'min', id: id, depth: depth, i: i, child: cv, old: old, ret: ret, updated: (cv + 1 < old) });
+      if (ev.length > cap) { ev.push({ ev: 'cut', depth: depth, i: i }); throw AB; }
+    }
+    ev.push({ ev: 'exit', id: id, depth: depth, t: t, lst: lst, ret: ret, via: 19 });
+    return ret;
+  }
+  var answer = null, complete = true;
+  try { answer = dfs(new Array(n + 2).join('0'), -1, 0); }
+  catch (e) { if (e !== AB) throw e; complete = false; }
+  return { ev: ev, calls: calls, complete: complete, answer: answer, maxDeep: maxDeep, logged: ids };
+}
+
+// ============ (B) 同一套语义的非递归版：用来统计 18 位输入的总量（不受 JS 调用栈限制）============
+function runStats(s, callLimit) {
+  var n = s.length, calls = 0, maxdeep = 0, ret = 0, answer = null, limited = false;
+  function mk(t, lst, deep) {
+    calls++;
+    if (deep > maxdeep) maxdeep = deep;
+    var allOne = true;
+    for (var q = 0; q <= n; q++) if (t[q] !== '1') { allOne = false; break; }
+    return { t: t, lst: lst, deep: deep, ret: allOne ? 0 : INF, done: allOne, i: 0 };
+  }
+  var stack = [mk(new Array(n + 2).join('0'), -1, 0)];
+  while (stack.length) {
+    if (callLimit && calls >= callLimit) { limited = true; break; }
+    var f = stack[stack.length - 1];
+    if (f.done) {
+      stack.pop(); ret = f.ret;
+      if (stack.length) { var p = stack[stack.length - 1]; if (ret + 1 < p.ret) p.ret = ret + 1; }
+      else answer = ret;
+      continue;
+    }
+    var found = -1;
+    while (f.i <= n) {
+      var i2 = f.i; f.i = i2 + 1;
+      if (i2 === f.lst) continue;
+      if (s.substr(n - i2, i2) === f.t.substr(0, i2)) { found = i2; break; }
+    }
+    if (found < 0) { f.done = true; continue; }
+    stack.push(mk(flipAt(f.t, found), found, f.deep + 1));
+  }
+  return { answer: answer, calls: calls, maxdeep: maxdeep, limited: limited };
+}
+
+// ================= 页面状态 =================
+var S = '', N = 0, EV = [], K = 0, timer = null, speed = 1, GEN = null, STAT = null, SUMMARY = false;
+var statCache = {};
+
+function setNotice(t) {
+  var e = document.getElementById('notice');
+  e.textContent = t;
+  e.className = 'notice' + (t ? '' : ' hide');
+}
+
+function build(s) {
+  S = s; N = s.length;
+  SUMMARY = N > 8;
+  GEN = genEvents(s, 20000, SUMMARY ? 60 : undefined);
+  EV = [{ ev: 'start' }].concat(GEN.ev);
+  EV.push({ ev: 'final' });
+  var notice = '';
+  if (SUMMARY) {
+    notice = '节选模式：这个输入长 ' + N + '，完整搜索有几十万次调用（题 31 = 524288 = 2^19 次），不适合逐帧播放。'
+           + '下面只逐帧播放前 60 层递归（' + GEN.logged + ' 次调用 / ' + EV.length + ' 步），⑦ 里的输出与总调用次数用同一套语义的非递归版本跑完整棵树得到，与 ⑧ 的 C++ 实测逐个相同。';
+  } else if (!GEN.complete) {
+    notice = '节选：事件数撞到上限 20000，后面的递归没有逐帧播放（⑦ 的数字仍来自完整统计）。';
+  }
+  if (GEN.complete && !SUMMARY) STAT = { answer: GEN.answer, calls: GEN.calls, maxdeep: GEN.maxDeep, limited: false };
+  else if (N <= 18) { if (!statCache[s]) statCache[s] = runStats(s, 6000000); STAT = statCache[s]; }
+  else { STAT = null; notice += ' 长度 > 18 的输入本页不做完整统计（要跑满约 2^(n+1) 次调用）。'; }
+  if (notice) notice += ' 已核对：JS 复刻在 0 / 01 / 001 / 00000001 / 题 31 / 题 32 上与 C++ 的答案和调用次数完全一致。';
+  setNotice(notice);
+  K = 0;
+  render();
+}
+
+// ============ 事件回放成某一帧的画面（回看不必存快照，重放一次只要几毫秒）============
+function stateAt(k) {
+  var st = { frames: [], cand: null, lastMin: null, lastExit: null, line: 22, ev: null, doneAt: null };
+  for (var j = 0; j <= k; j++) {
+    var e = EV[j];
+    st.ev = e;
+    if (e.ev === 'enter') {
+      st.frames.length = e.depth;
+      st.frames.push({ id: e.id, depth: e.depth, t: e.t, lst: e.lst, ret: null, kids: 0, tried: -1, waiting: null, allOne: null });
+      st.line = 7; st.lastExit = null; st.cand = null;
+    } else if (e.ev === 'term') {
+      var a = st.frames[e.depth]; if (a) a.allOne = e.allOne;
+      st.line = e.allOne ? 12 : 11;
+    } else if (e.ev === 'cand') {
+      var b = st.frames[e.depth]; if (b) b.tried = e.i;
+      st.cand = e; st.line = 14;
+    } else if (e.ev === 'call') {
+      var c = st.frames[e.depth]; if (c) { c.kids++; c.waiting = e.i; }
+      st.line = 17;
+    } else if (e.ev === 'min') {
+      var d = st.frames[e.depth]; if (d) { d.ret = e.ret; d.waiting = null; }
+      st.lastMin = e; st.line = 17;
+    } else if (e.ev === 'exit') {
+      st.lastExit = { depth: e.depth, id: e.id, t: e.t, lst: e.lst, ret: e.ret, via: e.via };
+      st.frames.length = e.depth;
+      if (e.depth === 0) st.doneAt = e.ret;
+      st.line = e.via;
+    } else if (e.ev === 'final') st.line = 25;
+    else if (e.ev === 'start') { st.line = 22; st.ev = null; }
+  }
+  st.cur = st.frames.length ? st.frames[st.frames.length - 1] : null;
+  return st;
+}
+
+function el(tag, cls, txt) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (txt != null) e.textContent = txt;
+  return e;
+}
+function fmt(v) { return v === INF ? '1e9' : String(v); }
+function fmtBig(v) { return v === INF ? '1e9（哨兵）' : (v === INF + 1 ? '1e9 + 1（被淘汰）' : String(v)); }
+
+// ---- ① 代码面板 ----
+(function () {
+  var box = document.getElementById('code');
+  for (var i = 0; i < SRC.length; i++) {
+    var row = el('div', 'cl');
+    row.appendChild(el('span', 'no', String(i + 1)));
+    row.appendChild(el('span', 'tx', SRC[i]));
+    box.appendChild(row);
+  }
+})();
+function markLine(no) {
+  var rows = document.getElementById('code').children;
+  for (var i = 0; i < rows.length; i++) rows[i].className = 'cl' + (i + 1 === no ? ' cur' : '');
+}
+
+// ---- ② 状态阶梯 ----
+var ladderRows = [], rulerEl = null, ladderEl = document.getElementById('ladder');
+function cellsOf(str, hi, hiOk) {
+  var w = el('div', 'cells');
+  for (var i = 0; i < str.length; i++) {
+    var c = el('div', 'bx' + (str[i] === '1' ? ' one' : ''), str[i]);
+    if (hi != null && i === hi) c.className = 'bx' + (str[i] === '1' ? ' one' : '') + (hiOk ? ' hiok' : ' hi');
+    w.appendChild(c);
+  }
+  return w;
+}
+function makeRuler() {
+  var r = el('div', 'lr ruler');
+  r.appendChild(el('div', 'd', '下标 i'));
+  var cs = el('div', 'cells');
+  for (var i = 0; i <= N; i++) cs.appendChild(el('div', 'bx', String(i)));
+  r.appendChild(cs);
+  r.appendChild(el('div', 'tag', 't 长 n+1 = ' + (N + 1) + '，所以两处循环都要扫到 i = n'));
+  return r;
+}
+function drawLadder(st) {
+  if (!rulerEl || ladderEl.dataset.n !== String(N)) {
+    ladderEl.innerHTML = ''; rulerEl = makeRuler(); ladderEl.appendChild(rulerEl); ladderRows = [];
+    ladderEl.dataset.n = String(N);
+  }
+  var order = [rulerEl];
+  for (var d = 0; d < st.frames.length; d++) {
+    var f = st.frames[d], ent = ladderRows[d];
+    if (!ent || ent.id !== f.id) {
+      var row = el('div', 'lr');
+      row.appendChild(el('div', 'd', 'd=' + d + '  #' + f.id));
+      row.appendChild(cellsOf(f.t, null));
+      row.appendChild(el('div', 'tag', ''));
+      ent = { id: f.id, el: row, sig: '' };
+      ladderRows[d] = ent;
+    }
+    var isCur = st.cur && f.id === st.cur.id;
+    ent.el.className = 'lr' + (isCur ? ' hot' : '');
+    var hi = (st.cand && st.cand.depth === d) ? st.cand.i : null;
+    var hiOk = !!(st.cand && st.cand.depth === d && st.cand.pass);
+    var sig = f.t + '|' + hi + '|' + hiOk;
+    if (ent.sig !== sig) { ent.sig = sig; ent.el.replaceChild(cellsOf(f.t, hi, hiOk), ent.el.children[1]); }
+    var txt = '第7行进入 · lst=' + f.lst;
+    txt += f.allOne === true ? ' · 全 1' : ' · ret=' + fmt(f.ret === null ? INF : f.ret);
+    txt += ' · 扫描 i=0..' + (f.tried < 0 ? '尚未开始' : f.tried) + ' · 子调用 ' + f.kids + ' 个';
+    if (f.waiting !== null && f.waiting !== undefined) txt += ' · 正在等第 ' + f.waiting + ' 位的子调用';
+    ent.el.children[2].textContent = txt;
+    order.push(ent.el);
+  }
+  ladderRows.length = st.frames.length;
+  if (st.lastExit && EV[K].ev === 'exit') {
+    var g = st.lastExit;
+    var grow = el('div', 'lr ghost');
+    grow.appendChild(el('div', 'd', 'd=' + g.depth + ' 出栈'));
+    grow.appendChild(cellsOf(g.t, null));
+    grow.appendChild(el('div', 'tag', '第 ' + g.via + ' 行 return ' + fmtBig(g.ret) + ' · lst=' + g.lst + ' · 已返回给上一层'));
+    order.push(grow);
+  }
+  while (ladderEl.childElementCount > 1) ladderEl.removeChild(ladderEl.lastElementChild);
+  for (var q = 0; q < order.length; q++) ladderEl.appendChild(order[q]);
+  var cur = st.cur ? ladderRows[st.cur.depth].el : null;
+  if (cur) {
+    var r2 = cur.offsetTop, h = ladderEl.clientHeight;
+    if (r2 > ladderEl.scrollTop + h - 34) ladderEl.scrollTop = r2 - h + 52;
+    else if (r2 < ladderEl.scrollTop) ladderEl.scrollTop = Math.max(0, r2 - 6);
+  }
+}
+
+// ---- ③ substr 对齐 ----
+function drawCmp(st) {
+  var box = document.getElementById('cmp'); box.innerHTML = '';
+  var c = st.cand;
+  if (!c) {
+    box.appendChild(el('div', 'dim', '本层还没扫到第 13-14 行：现在在做全 1 检查（第 9-11 行）或刚被调用（第 7 行）。'));
+    return;
+  }
+  var head = el('div', 'dim');
+  head.innerHTML = '本层扫到 <b style="color:#e8ecff">i = ' + c.i + '</b>，第 14 行要判断：<code>i != lst &&amp;&amp; s.substr(n-i, i) == t.substr(0, i)</code>。两段<b style="color:#e8ecff">长度都是 i</b>，比的是"t 的前缀 == s 的后缀"：';
+  box.appendChild(head);
+  var r1 = el('div', 'lr');
+  r1.appendChild(el('div', 'd', 's 的后 i 位'));
+  var cs = el('div', 'cells');
+  for (var i = 0; i < N; i++) {
+    var b = el('div', 'bx' + (S[i] === '1' ? ' one' : ''), S[i]);
+    if (i >= N - c.i) b.className += ' mark';
+    cs.appendChild(b);
+  }
+  r1.appendChild(cs);
+  r1.appendChild(el('div', 'tag', 's.substr(' + (N - c.i) + ', ' + c.i + ') = "' + S.substr(N - c.i, c.i) + '"'));
+  box.appendChild(r1);
+  var r2 = el('div', 'lr');
+  r2.appendChild(el('div', 'd', 't 的前 i 位'));
+  var cs2 = el('div', 'cells'), tv = c.t;
+  for (var j = 0; j <= N; j++) {
+    var b2 = el('div', 'bx' + (tv[j] === '1' ? ' one' : ''), tv[j]);
+    if (j < c.i) b2.className += ' mark2';
+    if (j === c.i) b2.className += c.pass ? ' hiok' : ' hi';
+    cs2.appendChild(b2);
+  }
+  r2.appendChild(cs2);
+  r2.appendChild(el('div', 'tag', 't.substr(0, ' + c.i + ') = "' + tv.substr(0, c.i) + '"'));
+  box.appendChild(r2);
+  var v = el('div', 'minbox');
+  if (!c.okLst) {
+    v.innerHTML = '<b style="color:#f59e6b">i = ' + c.i + ' = lst，被挡住。</b>因为上一步刚动过第 ' + c.lst + ' 位，本层禁止立刻动同一位（&& 短路，两段 substr 根本不会执行）。';
+  } else if (c.pass) {
+    v.innerHTML = 'i = ' + c.i + '：i != lst 通过，两段<b style="color:#5eead4">相等</b> → 允许翻第 ' + c.i + ' 位。'
+      + (c.i === 0 ? ' <b>i=0 时两边都是空串，空串 == 空串 恒成立</b>：第 0 位任何时候都能翻。' : '')
+      + ' 第 15-16 行：cur = t 的拷贝，cur[' + c.i + "] ^= 1 把 '" + tv[c.i] + "'（ASCII " + tv.charCodeAt(c.i) + '）变成 '
+      + "'" + c.cur[c.i] + "'（ASCII " + c.cur.charCodeAt(c.i) + '）→ cur = ' + c.cur;
+  } else {
+    v.innerHTML = 'i = ' + c.i + '：i != lst 通过，但两段<b style="color:#f59e6b">不相等</b>："' + c.segS + '" ≠ "' + c.segT
+      + '" → 第 ' + c.i + ' 位此刻锁着，翻不动。s 就是钥匙串：它规定解锁第 i 位需要当前构型长什么样。';
+  }
+  box.appendChild(v);
+}
+
+// ---- ⑤ 递归栈 + min ----
+function drawStack(st) {
+  var box = document.getElementById('stk'); box.innerHTML = '';
+  if (!st.frames.length) box.appendChild(el('div', null, '（栈空：dfs 还没进入，或整棵树已经返回）'));
+  for (var d = st.frames.length - 1; d >= 0; d--) {
+    var f = st.frames[d];
+    box.appendChild(el('div', d === st.frames.length - 1 ? 'cur' : '',
+      'dfs("' + f.t + '", ' + f.lst + ')  d=' + f.depth + '  子调用 ' + f.kids + ' 个  ret=' + fmt(f.ret === null ? INF : f.ret)));
+  }
+  document.getElementById('kids').textContent = st.cur ? String(st.cur.kids) : '-';
+  document.getElementById('scan').textContent = st.cur ? (st.cur.tried < 0 ? '尚未开始' : st.cur.tried + ' / ' + N) : '-';
+  var mb = document.getElementById('minbox'), m = st.lastMin;
+  if (!m) mb.innerHTML = '第 17 行的 <b>min</b> 还没执行过：本层 ret 仍是 1e9（"暂时到不了"）。';
+  else if (m.updated) mb.innerHTML = '第 17 行：子调用返回 ' + fmtBig(m.child) + '，+1 = ' + (m.child + 1) + ' < ' + fmtBig(m.old)
+    + ' → <span class="arrow">ret: ' + fmtBig(m.old) + ' &rarr; ' + fmtBig(m.ret) + '</span>';
+  else mb.innerHTML = '第 17 行：子调用返回 ' + fmtBig(m.child) + '，+1 = ' + (m.child + 1) + ' 不比旧 ret ' + fmtBig(m.old)
+    + ' 小 → <b style="color:#f59e6b">min 淘汰它</b>，ret 保持 ' + fmtBig(m.ret) + '。';
+}
+
+// ---- ⑥ 本层关键量 ----
+function drawVars(st) {
+  var f = st.cur;
+  document.getElementById('kt').textContent = f ? f.t : '-';
+  document.getElementById('klst').textContent = f ? String(f.lst) : '-';
+  var rv = f ? (f.allOne === true ? '0' : fmt(f.ret === null ? INF : f.ret)) : '-';
+  document.getElementById('kret').textContent = rv;
+  document.getElementById('kretbox').className = 'k' + (f && f.allOne !== true && f.ret === null ? ' warn' : '');
+  var v = '-';
+  if (st.doneAt !== null && !st.frames.length) v = fmtBig(st.doneAt) + '（根层）';
+  else if (st.lastExit && EV[K].ev === 'exit') v = fmtBig(st.lastExit.ret) + '（d=' + st.lastExit.depth + '）';
+  document.getElementById('kv').textContent = v;
+}
+
+// ---- ④ 讲解 ----
+function narrate(st) {
+  var e = st.ev, note = document.getElementById('note');
+  if (!e) {
+    note.innerHTML = '输入 <code>s = ' + S + '</code>，n = ' + N + '。第 24 行造出长 n+1 = ' + (N + 1) + ' 的全 0 串 t0，'
+      + '第 25 行调用 <code>dfs(t0, -1)</code>：lst = -1 表示"上一步什么都没翻"，所以没有任何位被 lst 拦住。'
+      + '目标：把 t 变成全 1，问最少翻几次。跟着 ①的当前行、②的阶梯、③的两段对齐一起看。';
+    return;
+  }
+  if (e.ev === 'enter') {
+    note.innerHTML = '<b>第 7 行：进入 dfs(t = "' + e.t + '", lst = ' + e.lst + ')，深度 d = ' + e.depth + '</b>。'
+      + '形参写成 <code>string t</code> 是<b>值传递</b>：这一层拿到的是一份独立拷贝，子调用里怎么翻都改不动父层的 t —— '
+      + '所以"回溯不需要撤销"，代价是每帧都多背一个字符串（这正是 ⑨ 里爆栈的原因）。';
+  } else if (e.ev === 'term') {
+    if (e.allOne) note.innerHTML = '<b>第 9-11 行：逐位检查 t[i] != \'1\'</b>，每一位都是 1 → ret 从没被改成 1e9，还是 0 → '
+      + '<b>第 12 行 return 0</b>：已经站在目标状态上，还差 0 步。这是整个递归唯一的终点，父层拿到它会算成 0 + 1 = 1 步。';
+    else note.innerHTML = '<b>第 9-11 行</b>：只要有一位不是 1，就把 <code>ret = 1e9</code>。'
+      + '这里的 1e9 <b>不是答案，是哨兵</b>："这一层还不是全 1，暂时当作到不了"。它随后会被第 17 行的 min 换成真实步数；'
+      + '如果一个合法转移都没有，就原样返回。循环写成 <code>i &lt;= n</code> 是有意的：t 长 n+1，最后一格下标 n 也得查。';
+  } else if (e.ev === 'cand') {
+    if (!e.okLst) note.innerHTML = '<b>第 13-14 行：i = ' + e.i + '，但 i == lst（lst = ' + e.lst + '）</b>。'
+      + '含义：<b>因为上一步刚动过第 ' + e.lst + ' 位，本层禁止立刻动同一位</b> —— 翻过去再翻回来只是原地打转，剪枝就剪在这里。'
+      + '&& 短路，两段 substr 完全不会执行。第 28 题把这个守卫删掉，任何输入都会无限递归爆栈。';
+    else if (e.pass) note.innerHTML = '<b>第 13-14 行：i = ' + e.i + '</b>，i != lst 成立，且 <code>s.substr(' + (N - e.i) + ', ' + e.i
+      + ') == t.substr(0, ' + e.i + ')</code> 成立'
+      + (e.i === 0 ? '（<b>两边都是空串，恒成立</b> —— 第 0 位随时可以翻，只被 i != lst 拦一下）' : '（两段长度都是 ' + e.i + '，比的是"t 的前缀 == s 的后缀"）')
+      + ' → 第 15-16 行复制出 cur 并 <code>cur[' + e.i + "] ^= 1</code>：把 '" + e.t[e.i] + "' 变成 '" + e.cur[e.i]
+      + "'（ASCII " + e.t.charCodeAt(e.i) + ' ^ 1 = ' + e.cur.charCodeAt(e.i) + '）。';
+    else note.innerHTML = '<b>第 13-14 行：i = ' + e.i + '</b>，i != lst 成立，但两段不相等：s 的后 ' + e.i + ' 位是 "' + e.segS
+      + '"，t 的前 ' + e.i + ' 位是 "' + e.segT + '" → 第 ' + e.i + ' 位现在被锁住，翻不了。';
+  } else if (e.ev === 'call') {
+    note.innerHTML = '<b>第 17 行：发起子调用 <code>dfs("' + e.cur + '", ' + e.i + ')</code></b>，深度变成 d = ' + (e.depth + 1)
+      + '。父层停在这一行等返回值；等到的那个数会先 <b>+1</b>（本层确实翻了 1 下），再和 ret 比大小。';
+  } else if (e.ev === 'min') {
+    if (e.child === INF) note.innerHTML = '<b>第 17 行：子调用返回 1e9</b>（那棵子树里没有任何通路能到全 1），+1 = <b>1000000001</b>，'
+      + '而 min 取小的那个 → ret 保持 ' + fmtBig(e.ret) + '。<b>这就是哨兵的用法</b>：n ≤ 18 时真解最多 2^19 = 524288，'
+      + '1e9 加几个 1 也照样被 min 淘汰，所以第 27 题把它换成 1234567 输出也不变（524287 < 1234567 < 1e9）。';
+    else if (e.updated) note.innerHTML = '<b>第 17 行：子调用返回 ' + e.child + '</b>，+1 = <b>' + (e.child + 1) + '</b> &lt; ' + fmtBig(e.old)
+      + ' → <span class="arrow">ret 更新：' + fmtBig(e.old) + ' &rarr; ' + e.ret + '</span>。'
+      + '"先一路走到底，再在返回途中逐层 +1"，所以本层最优 = 各儿子最优 + 这一步里的最小值。';
+    else note.innerHTML = '<b>第 17 行：子调用返回 ' + e.child + '</b>，+1 = <b>' + (e.child + 1) + '</b> ≥ 当前 ret ' + fmtBig(e.old)
+      + ' → min <b>不更新</b>，ret 仍是 ' + fmtBig(e.ret) + '：已经有更短的路，这条分支被剪掉。';
+  } else if (e.ev === 'exit') {
+    if (e.via === 12) note.innerHTML = '<b>第 12 行 return 0</b>：d = ' + e.depth + ' 这层就是终点，父亲的 +1 会让它贡献 1 步。阶梯上这一行消失（该层出栈）。';
+    else if (e.ret === INF) note.innerHTML = '<b>第 19 行 return 1e9</b>：i 从 0 扫到 n（共 n+1 = ' + (N + 1) + ' 个候选）都没能走通'
+      + '（可能压根没有合法转移），把"到不了"原样上报 → 父层拿到 1e9 + 1，被 min 淘汰。这一层出栈。';
+    else note.innerHTML = '<b>第 19 行 return ' + e.ret + '</b>：i 已扫完 0..' + N + '，把本层最优交给父亲（父亲 +1 之后再 min）。这一层出栈，阶梯塌回去。';
+  } else if (e.ev === 'cut') {
+    note.innerHTML = '<b style="color:#f59e6b">节选截断</b>：画面在这里被截断（只逐帧播放前 60 层 / 事件数上限 20000）。'
+      + '后面的递归规则和前面完全一样，只是太长不适合一帧一帧放；总量数字见 ⑦ 与 ⑧。';
+  } else if (e.ev === 'final') {
+    var t1 = (STAT && STAT.answer != null) ? String(STAT.answer) : (GEN.complete ? String(GEN.answer) : '（见 ⑧ 实测值）');
+    note.innerHTML = '<b>第 25 行 cout 打印：' + t1 + '</b>（没有换行，程序就这一个数）。'
+      + (STAT ? 'dfs 总共被调用 <b>' + STAT.calls + '</b> 次，最大递归深度 ' + STAT.maxdeep + ' 层。' : '')
+      + ' 由于合法无回头的转移把状态串成一条链，这里的"调用次数"约等于走过链的长度：题 31 恰好是 2^19 = 524288，'
+      + '也就是全部 2^(n+1) 个状态各访问一次。';
+  }
+}
+
+// ---- ⑦ 输出面板 ----
+function drawFinal() {
+  var ans = STAT && STAT.answer != null ? STAT.answer : (GEN.complete ? GEN.answer : null);
+  var calls = STAT ? STAT.calls : (GEN.complete ? GEN.calls : null);
+  var dep = STAT ? STAT.maxdeep : (GEN.complete ? GEN.maxDeep : null);
+  document.getElementById('fans').textContent = ans == null ? '（未统计，见 ⑧）' : String(ans);
+  document.getElementById('fcalls').textContent = calls == null ? '-' : String(calls);
+  document.getElementById('fdepth').textContent = dep == null ? '-' : String(dep);
+  var txt;
+  if (STAT && STAT.limited) txt = '完整统计撞到安全上限，数字是下界。';
+  else if (SUMMARY) txt = '节选：逐帧只放了前 60 层（' + GEN.logged + ' 次调用 / ' + EV.length + ' 步画面）。'
+    + '⑦ 的输出与调用次数是把整棵搜索树跑完得到的（非递归版，规则与 ① 逐字对应），与 ⑧ 的 C++ 实测相同。'
+    + '另外提醒：默认 8MB 栈下这个输入根本跑不出输出（见 ⑨）。';
+  else if (GEN.complete) txt = '完整逐帧播放：' + GEN.logged + ' 次调用全部展开，共 ' + EV.length + ' 步。JS 复刻的调用次数 = C++ 实测 = ' + calls + '。';
+  else txt = '事件数撞到 20000 上限，逐帧只放了前 ' + GEN.logged + ' 次调用；总量按完整统计显示。';
+  document.getElementById('fmode').innerHTML = txt;
+}
+
+// ================= 渲染 =================
+function render() {
+  var st = stateAt(K);
+  markLine(st.line);
+  drawLadder(st);
+  drawCmp(st);
+  drawStack(st);
+  drawVars(st);
+  narrate(st);
+  drawFinal();
+  document.getElementById('prog').textContent = '第 ' + (K + 1) + ' / ' + EV.length + ' 步';
+  document.getElementById('prev').disabled = K === 0;
+  document.getElementById('next').disabled = K >= EV.length - 1;
+  if (K >= EV.length - 1 && timer) togglePlay();
+}
+
+// ================= 控制 =================
+function step(d) {
+  var nk = K + d;
+  if (nk < 0) nk = 0;
+  if (nk > EV.length - 1) nk = EV.length - 1;
+  K = nk; render();
+}
+function togglePlay() {
+  var b = document.getElementById('play');
+  if (timer) { clearInterval(timer); timer = null; b.textContent = '自动播放'; return; }
+  b.textContent = '暂停';
+  timer = setInterval(function () {
+    if (K >= EV.length - 1) { togglePlay(); return; }
+    step(1);
+  }, Math.round(700 / speed));
+}
+document.getElementById('next').onclick = function () { step(1); };
+document.getElementById('prev').onclick = function () { step(-1); };
+document.getElementById('end').onclick = function () { if (timer) togglePlay(); K = EV.length - 1; render(); };
+document.getElementById('home').onclick = function () { if (timer) togglePlay(); K = 0; render(); };
+document.getElementById('play').onclick = togglePlay;
+var spds = document.querySelectorAll('.spd');
+function setSpeed(btn) {
+  speed = Number(btn.dataset.v);
+  for (var z = 0; z < spds.length; z++) spds[z].className = 'spd' + (spds[z] === btn ? ' on' : '');
+  if (timer) { togglePlay(); togglePlay(); }
+}
+for (var si = 0; si < spds.length; si++) spds[si].onclick = function (ev2) { setSpeed(ev2.currentTarget); };
+document.onkeydown = function (ev2) {
+  var tag = (ev2.target && ev2.target.tagName) || '';
+  if (tag === 'INPUT') return;
+  if (ev2.key === 'ArrowRight') { step(1); ev2.preventDefault(); }
+  else if (ev2.key === 'ArrowLeft') { step(-1); ev2.preventDefault(); }
+  else if (ev2.key === ' ') { togglePlay(); ev2.preventDefault(); }
+};
+function loadFrom(s) {
+  if (!/^[01]+$/.test(s)) { alert('只允许 0 和 1'); return; }
+  if (s.length > 20) { alert('演示上限 20 位（真实数据 n ≤ 18；再长本页画不动也统计不动）'); return; }
+  ladderRows = []; rulerEl = null; ladderEl.dataset.n = '';
+  build(s);
+}
+var pres = document.querySelectorAll('.pre');
+for (var pi = 0; pi < pres.length; pi++) pres[pi].onclick = function (ev2) {
+  var s = ev2.currentTarget.dataset.s;
+  document.getElementById('src').value = s;
+  for (var z = 0; z < pres.length; z++) pres[z].className = 'pre' + (pres[z] === ev2.currentTarget ? ' on' : '');
+  loadFrom(s);
+};
+document.getElementById('load').onclick = function () { loadFrom(document.getElementById('src').value.trim()); };
+document.querySelector('.pre[data-s="00000001"]').className = 'pre on';
+loadFrom('00000001');
+</script>
+</body>
+</html>

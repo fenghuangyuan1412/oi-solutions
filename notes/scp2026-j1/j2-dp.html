@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SCP-J1 2026 阅读程序(2) · 四不像二维 dp 逐格演示</title>
+<style>
+  :root{--bg:#0f1220;--card:#1a1f35;--ink:#e8ecff;--dim:#8b93b5;--acc:#5eead4;--bad:#f59e6b;--good:#5eead4;--line:#262c4a;}
+  *{box-sizing:border-box}
+  body{margin:0;padding:22px;background:var(--bg);color:var(--ink);font:15px/1.65 "Segoe UI",system-ui,sans-serif}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:16px}
+  .sub b{color:var(--ink)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+  .card h2{font-size:14px;letter-spacing:.05em;color:var(--dim);margin:0 0 10px;font-weight:600}
+  button{background:#2b3358;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 12px;font-size:14px;cursor:pointer;margin:0 6px 6px 0}
+  button:hover:not(:disabled){background:#394373}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.on{background:#3d2b58;border-color:#9d6bff}
+  button.pre{background:#232a4a;border-color:#333c66}
+  button.pre.sel{background:#16323f;border-color:var(--acc);font-weight:700}
+  input[type=text]{background:#0d1020;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 10px;font:14px Consolas,monospace;width:130px}
+  .warn{color:var(--bad);font-size:14px;margin-top:8px;min-height:20px}
+  .top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .prog{color:var(--dim);font-size:14px;margin-left:auto;white-space:nowrap}
+  .main{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
+  .main>div{min-width:0}
+  #colL{flex:1.2 1 540px}
+  #colR{flex:1 1 420px}
+  #gridwrap{position:relative;overflow:hidden}
+  table{border-collapse:collapse;font:14px Consolas,monospace}
+  #grid th{background:#131730;color:var(--dim);font-weight:600;font-size:14px;padding:3px 4px;line-height:1.25;border:1px solid var(--line);text-align:center}
+  #grid th .ch{display:block;font-size:17px;font-weight:700;line-height:1.2}
+  #grid th .ix{display:block;font-size:14px;color:var(--dim)}
+  #grid th.ha .ch{color:var(--acc)}
+  #grid th.hb .ch{color:var(--bad)}
+  #grid td{border:1px solid var(--line);text-align:center;width:52px;height:38px;font-size:17px;font-weight:700;color:#cfe6e1;background:#10142a}
+  #grid td.empty{color:#3a4270;font-weight:400}
+  #grid td.b-i0,#grid td.b-j0{background:#131730;color:var(--dim)}
+  #grid td.b-eq{background:#16323f;color:var(--acc)}
+  #grid td.b-ne{background:#37271c;color:var(--bad)}
+  #grid td.cur{outline:3px solid #9d6bff;outline-offset:-3px;color:#fff;background:#3d2b58}
+  #grid td.src{outline:2px dashed var(--acc);outline-offset:-2px}
+  #grid td.tgtok{outline:3px solid var(--good);outline-offset:-3px;color:#fff}
+  .legend{font-size:14px;color:var(--dim);margin-top:8px}
+  .legend b.ta{color:var(--acc)} .legend b.tb{color:var(--bad)}
+  .legend i{display:inline-block;width:14px;height:14px;border-radius:3px;margin:0 4px 0 10px;vertical-align:-2px}
+  #arrows{position:absolute;left:0;top:0}
+  #expr{font:16px/1.5 Consolas,monospace;background:#0d1020;border:1px solid #3d4778;border-radius:9px;padding:9px 11px;min-height:46px;color:var(--acc)}
+  #note{color:var(--dim);font-size:14px;min-height:104px}
+  #note b{color:var(--ink)}
+  #note .te{color:var(--acc);font-weight:700}
+  #note .og{color:var(--bad);font-weight:700}
+  #code{font:14px/1.45 Consolas,monospace;background:#0d1020;border:1px solid var(--line);border-radius:9px;padding:8px 6px;overflow:auto}
+  #code .ln{display:flex;gap:8px;padding:1px 4px;border-radius:5px;white-space:pre}
+  #code .ln .n{color:#4a5480;flex:0 0 24px;text-align:right}
+  #code .ln.hot{background:#242c52;color:var(--acc)}
+  table.vars{width:100%;border-collapse:collapse;font:14px Consolas,monospace;margin-top:2px}
+  table.vars th,table.vars td{border:1px solid var(--line);padding:3px 7px;text-align:left;background:#10142a}
+  table.vars th{color:var(--dim);font-weight:600;background:#131730;width:88px}
+  table.vars td.hot{color:var(--acc);font-weight:700}
+  .bar{height:12px;background:#10142a;border:1px solid #3d4778;border-radius:7px;overflow:hidden;margin:4px 0 2px}
+  .bar>span{display:block;height:100%;background:var(--acc);width:0}
+  .k{background:#131730;border:1px solid var(--line);border-radius:9px;padding:9px 11px}
+  .k .lab{font-size:14px;color:var(--dim)}
+  .k .val{font:22px Consolas,monospace;margin-top:2px}
+  .k.badk .val{color:var(--bad)} .k.ans .val{color:#c4a6ff}
+  .cmp{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}
+  .out{font:20px Consolas,monospace;background:#0d1020;border:1px solid #9d6bff;border-radius:9px;padding:9px 12px;color:#c4a6ff}
+  table.cmp{width:100%;border-collapse:collapse;font:14px Consolas,monospace}
+  table.cmp th,table.cmp td{border:1px solid var(--line);padding:4px 7px;text-align:left}
+  table.cmp th{color:var(--dim);background:#131730;font-weight:600}
+  .hide{display:none}
+  ul.tight{margin:6px 0 0;padding-left:20px;font-size:14px;color:var(--dim)}
+  ul.tight li{margin-bottom:5px}
+  ul.tight b{color:var(--ink)}
+</style>
+</head>
+<body>
+<h1>阅读程序(2)：一个"四不像"的二维 dp —— 逐格填表</h1>
+<div class="sub">它看着像编辑距离、又看着像 LCS，其实两个都不是：<b>相等时取左上 <span style="color:var(--acc)">+1</span>（像 LCS），不等时取 min(上,左) <span style="color:var(--bad)">+1</span>（像编辑距离）</b>。两个分支都加 1，数值只会一路往上涨，靠直觉必错，只能老实填表。下面按代码里 <b>i 外层 / j 内层</b> 的真实顺序一格一格算，表上每个数字都是现场模拟出来的（和编译运行 r2.cpp 的结果一致）。</div>
+
+<div class="top">
+  <button id="p0" class="pre">aba / bab</button>
+  <button id="p1" class="pre">abcddd / acbded</button>
+  <button id="p2" class="pre">abcd / abcd</button>
+  <button id="p3" class="pre">a / a</button>
+  <button id="p4" class="pre">bab / aba</button>
+  <span style="flex:1"></span>
+  <button id="cmpBtn">对照 LCS / 编辑距离</button>
+  <button id="gistBtn">卷面结论 题 21–26</button>
+</div>
+
+<div class="top">
+  <button id="prev">上一步</button>
+  <button id="next">下一步</button>
+  <button id="play">自动播放</button>
+  <button id="end">跳到末尾</button>
+  <button id="home">回到开头</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="card">
+  <h2>自定义输入（老师现场改数据；键盘 ← → 单步，空格 播放/暂停）</h2>
+  <label style="font-size:14px;color:var(--acc)">a =</label>
+  <input type="text" id="ina" value="aba" maxlength="24">
+  <label style="font-size:14px;color:var(--bad);margin-left:8px">b =</label>
+  <input type="text" id="inb" value="bab" maxlength="24">
+  <button id="load" style="margin-left:8px">载入并重新模拟</button>
+  <div class="warn" id="warn"></div>
+</div>
+
+<div class="main">
+  <div id="colL">
+    <div class="card">
+      <h2>本格算式（把真实数字代进去）</h2>
+      <div id="expr"></div>
+    </div>
+    <div class="card">
+      <h2>① dp 表：行 = a 的前缀，列 = b 的前缀</h2>
+      <div id="gridwrap">
+        <table id="grid"></table>
+        <svg id="arrows"></svg>
+      </div>
+      <div class="legend">
+        下标含义（最容易搞反的地方）：<b class="ta">i</b> 指 <b class="ta">a</b> 的前 i 个字符，对齐在<b class="ta">行</b>（行头那个字符就是这一行的末位 a[i-1]）；
+        <b class="tb">j</b> 指 <b class="tb">b</b> 的前 j 个字符，对齐在<b class="tb">列</b>（列头那个字符就是这一列的末位 b[j-1]）。
+        i = 0 / j = 0 表示"空串前缀"，所以表要开 (n+1)×(m+1) = <span id="sz"></span>。
+        <div style="margin-top:6px">
+          <i style="background:#131730"></i>第 0 行 / 第 0 列（边界 = 行号或列号）
+          <i style="background:#16323f"></i>走"相等"分支
+          <i style="background:#37271c"></i>走"不等"分支
+          <i style="background:#3d2b58"></i>正在算的格子
+        </div>
+        <div style="margin-top:4px">箭头 = 这格的值从哪一格拿来：<b>青色实线</b> = 真正被用到（min 选中的那一格），<b>灰色虚线</b> = 也查了但 min 没选它，<b>橙色虚线</b> = 边界格直接取行号 / 列号。</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="colR">
+    <div class="card">
+      <h2>讲解（当前这一步在干什么）</h2>
+      <div id="note"></div>
+      <div style="margin-top:10px">
+        <div style="font-size:14px;color:var(--dim)" id="rowlab"></div>
+        <div class="bar"><span id="rowbar"></span></div>
+        <div style="font-size:14px;color:var(--dim)" id="totlab"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>② 结论（cout 原样打印的那一行）</h2>
+      <div id="concl"></div>
+    </div>
+    <div class="card">
+      <h2>③ 源码（与 verify/r2.cpp 逐字一致）+ 当前执行行</h2>
+      <div id="code"></div>
+    </div>
+    <div class="card">
+      <h2>④ 变量表</h2>
+      <table class="vars" id="vars"></table>
+    </div>
+  </div>
+</div>
+
+<div class="card hide" id="cmpCard">
+  <h2>对照：同一对字符串，三种写法各算出什么（真 LCS / 真编辑距离都由本页现场计算，不是抄来的）</h2>
+  <div class="cmp" id="cmpNums"></div>
+  <table class="cmp">
+    <tr><th>算法</th><th>字符相等时</th><th>字符不等时</th><th>本题结果</th></tr>
+    <tr><td><b>本程序</b>（四不像）</td><td>dp[i-1][j-1] <b>+1</b></td><td>min(dp[i-1][j], dp[i][j-1]) <b>+1</b></td><td><b id="c0">-</b></td></tr>
+    <tr><td>真 LCS（最长公共子序列长度）</td><td>f[i-1][j-1] <b>+1</b></td><td>max(f[i-1][j], f[i][j-1])，<b>不 +1</b></td><td><b id="c1">-</b></td></tr>
+    <tr><td>真编辑距离（增 / 删 / 改 代价都是 1）</td><td>g[i-1][j-1] <b>+0</b>（字符相同不用花钱）</td><td>min(g[i-1][j]+1, g[i][j-1]+1, g[i-1][j-1]+1)</td><td><b id="c2">-</b></td></tr>
+  </table>
+  <ul class="tight">
+    <li>差别就在这两个"+1 还是 +0 / max 还是 min"上：<b>真正的 LCS 在不等时取 max 且不 +1</b>；<b>真正的编辑距离在相等时是 +0</b>。本程序两个分支都 +1 —— 等于"每往右下走一格就强制记 1 笔"，所以数值只会往上涨，绝不会像编辑距离那样在字符相同处停下来，也绝不会像 LCS 那样把不好的分支丢掉不要。</li>
+    <li>所以它算的不是标准编辑距离，也不是 LCS；<b>直观上更接近"沿对角线的相等匹配数 + 剩下没匹配上的步数"这一类东西</b>。这句话只用来帮助记忆，卷面不需要给它名字 —— 讲义的结论是：<b>不要拿"LCS / 编辑距离"的直觉去猜答案，必须老老实实填表</b>。</li>
+    <li>可以现场验证的一条：第 0 行是 0,1,2,…，第 0 列是 0,1,2,…，右下角永远不超过 n+m（题 22）；但当 a == b 时它正好等于 min(n,m)（题 23 把">"写成"≥"就错在这里 —— 试试预设 `a / a`）。</li>
+  </ul>
+</div>
+
+<div class="card hide" id="gistCard">
+  <h2>卷面结论（全部机器实测，见 verify/RESULTS.md）</h2>
+  <ul class="tight">
+    <li><b>题 21（T）</b>：交换 a 和 b，输出不变。把 (a,b) 换成 (b,a) 只是把整张表<b>沿主对角线转置</b>：第 0 行 / 第 0 列的定义互换后仍成立；"相等"分支用的还是 dp[i-1][j-1]；"不等"分支的 min(dp[i-1][j], dp[i][j-1]) 两项互换、min 不变。右下角 dp[n][m] 与 dp[m][n] 同步互换 → 值不变。实测：`aba bab` 与 `bab aba` 都输出 <b>4</b>；`abcddd acbded` 反过来也输出 <b>8</b>；随机 20000 组 + 穷举（长度 1..4、字母 {a,b} 全部 900 个有序对）<b>不同 = 0 组</b>。</li>
+    <li><b>题 22（T）</b>：输出 ≤ n+m。归纳"任意格 dp[i][j] ≤ i+j"：边界 dp[0][j]=j ≤ 0+j、dp[i][0]=i ≤ i+0；相等分支 dp[i-1][j-1]+1 ≤ (i-1)+(j-1)+1 = i+j-1；不等分支 min(dp[i-1][j], dp[i][j-1])+1 ≤ (i+j-1)+1 = i+j。实测 20000 组随机（长度 1..6、字母 a~d）+ 900 组穷举，最大输出 8，未见超过。</li>
+    <li><b>题 23（F）</b>：说"输出 &gt; min(n,m)"是假的。最小心输入 <b>`a` / `a`</b>：dp[1][1] = dp[0][0] + 1 = <b>1</b>，min(n,m)=1，"1 &gt; 1" 为假。同样 `ab ab` → 2、`abcd abcd` → 4。实测规律（未见反例）：<b>输出 ≥ min(n,m) 恒成立，等号当且仅当 a == b</b>；随机 20000 组里反例 172 组、穷举 900 组里反例 30 组，正好都是 a == b 的那些。</li>
+    <li><b>题 24 = A（4）</b>：`aba` / `bab` → dp[3][3] = <b>4</b>（真 LCS = 2，真编辑距离 = 2，和 4 完全不同，用直觉一定错）。</li>
+    <li><b>题 25 = B（8）</b>：`abcddd` / `acbded` → dp[6][6] = <b>8</b>（真 LCS = 4，真编辑距离 = 3；选项里的 7 / 9 / 10 都是差一错误的产物）。</li>
+    <li><b>题 26 = D（156）</b>：长度 2、字母只有 a/b/c/d，16×16 = 256 个有序对全穷举实测：输出 2 有 <b>16</b> 组（= A 选项，正是 a == b 的对角线），输出 3 有 <b>156</b> 组，输出 4 有 <b>84</b> 组（= C 选项；题问的是 3）。16 + 156 + 84 = 256 校验通过。</li>
+  </ul>
+</div>
+
+<script>
+var SRC = [
+'#include <iostream>',
+'#include <string>',
+'#include <vector>',
+'#include <algorithm>',
+'using namespace std;',
+'int main() {',
+'    string a, b;',
+'    cin >> a >> b;',
+'    int n = a.size(), m = b.size();',
+'    vector<vector<int>> dp(n + 1, vector<int>(m + 1, 0));',
+'    for(int i = 0; i <= n; ++i) {',
+'        for(int j = 0; j <= m; ++j) {',
+'            if(i == 0) {',
+'                dp[i][j] = j;',
+'            }',
+'            else if(j == 0) {',
+'                dp[i][j] = i;',
+'            }',
+'            else if(a[i - 1] == b[j - 1]) {',
+'                dp[i][j] = dp[i - 1][j - 1] + 1;',
+'            }',
+'            else {',
+'                dp[i][j] = min(dp[i - 1][j], dp[i][j - 1]) + 1;',
+'            }',
+'        }',
+'    }',
+'    cout << dp[n][m] << endl;',
+'    return 0;',
+'}'];
+
+var A = '', B = '', N = 0, M = 0, DP = [], BR = [], STEPS = [], T = 0, TIMER = null;
+var PRESETS = [['aba', 'bab'], ['abcddd', 'acbded'], ['abcd', 'abcd'], ['a', 'a'], ['bab', 'aba']];
+var cellEls = [], iHead = [], jHead = [], cellAt = [], LIM = 8;
+
+function q(id){ return document.getElementById(id); }
+function el(t, c, x){ var e = document.createElement(t); if(c) e.className = c; if(x != null) e.textContent = x; return e; }
+
+// ---------- 与 r2.cpp 完全一致的现场模拟：每个格子都记成 step，绝不手写值 ----------
+function simulate(a, b){
+  var n = a.length, m = b.length, dp = [], br = [], steps = [], i, j;
+  for(i = 0; i <= n; i++){ dp.push(new Array(m + 1).fill(0)); br.push(new Array(m + 1).fill('')); }
+  steps.push({ kind: 'read' });
+  steps.push({ kind: 'init' });
+  for(i = 0; i <= n; i++){
+    steps.push({ kind: 'row', i: i });
+    for(j = 0; j <= m; j++){
+      var s = { kind: 'cell', i: i, j: j, br: '', v: 0, src: [] };
+      if(i === 0){
+        dp[i][j] = j; br[i][j] = 'i0'; s.br = 'i0'; s.v = j;
+        s.expr = 'dp[' + i + '][' + j + '] = j = ' + j; s.ref = { jHead: j };
+      } else if(j === 0){
+        dp[i][j] = i; br[i][j] = 'j0'; s.br = 'j0'; s.v = i;
+        s.expr = 'dp[' + i + '][' + j + '] = i = ' + i; s.ref = { iHead: i };
+      } else if(a.charAt(i - 1) === b.charAt(j - 1)){
+        dp[i][j] = dp[i - 1][j - 1] + 1; br[i][j] = 'eq'; s.br = 'eq'; s.v = dp[i][j];
+        s.src = [[i - 1, j - 1]];
+        s.expr = 'dp[' + i + '][' + j + '] = dp[' + (i - 1) + '][' + (j - 1) + '] + 1 = ' + dp[i - 1][j - 1] + ' + 1 = ' + dp[i][j];
+      } else {
+        var up = dp[i - 1][j], le = dp[i][j - 1];
+        dp[i][j] = Math.min(up, le) + 1; br[i][j] = 'ne'; s.br = 'ne'; s.v = dp[i][j];
+        s.src = [[i - 1, j], [i, j - 1]]; s.up = up; s.le = le; s.pick = up <= le ? 'up' : 'le';
+        s.expr = 'dp[' + i + '][' + j + '] = min(dp[' + (i - 1) + '][' + j + ']=' + up + ', dp[' + i + '][' + (j - 1) + ']=' + le + ') + 1 = ' + Math.min(up, le) + ' + 1 = ' + dp[i][j];
+      }
+      steps.push(s);
+    }
+    steps.push({ kind: 'rowend', i: i });
+  }
+  steps.push({ kind: 'out', v: dp[n][m] });
+  return { dp: dp, br: br, steps: steps, n: n, m: m };
+}
+// 真 LCS / 真编辑距离：只为对照面板，现场算
+function lcsLen(a, b){
+  var n = a.length, m = b.length, f = [], i, j;
+  for(i = 0; i <= n; i++) f.push(new Array(m + 1).fill(0));
+  for(i = 1; i <= n; i++) for(j = 1; j <= m; j++)
+    f[i][j] = a.charAt(i - 1) === b.charAt(j - 1) ? f[i - 1][j - 1] + 1 : Math.max(f[i - 1][j], f[i][j - 1]);
+  return f[n][m];
+}
+function edDist(a, b){
+  var n = a.length, m = b.length, f = [], i, j;
+  for(i = 0; i <= n; i++){ f.push(new Array(m + 1).fill(0)); f[i][0] = i; }
+  for(j = 0; j <= m; j++) f[0][j] = j;
+  for(i = 1; i <= n; i++) for(j = 1; j <= m; j++)
+    f[i][j] = Math.min(f[i - 1][j] + 1, f[i][j - 1] + 1, f[i - 1][j - 1] + (a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1));
+  return f[n][m];
+}
+
+function examTag(a, b){
+  var k = a + '|' + b;
+  if(k === 'aba|bab') return '这正是卷面第 24 题的输入，输出 <b>4</b> → 题 24 选 A。';
+  if(k === 'abcddd|acbded') return '这正是卷面第 25 题的输入，输出 <b>8</b> → 题 25 选 B。';
+  if(k === 'bab|aba') return '这是第 21 题的"交换 a、b"版本：输出还是 <b>4</b>，和 `aba` / `bab` 一样（表沿主对角线转置，右下角不变）→ 题 21 = T。';
+  if(k === 'a|a') return '这是打倒第 23 题的最短反例：输出 <b>1</b> = min(n,m)，"输出 &gt; min(n,m)" 为假 → 题 23 = F。';
+  if(k === 'abcd|abcd') return 'a == b 时输出正好等于 min(n,m) = <b>4</b>，"4 &gt; 4" 是假的 → 题 23 = F 的另一组证据。';
+  return '';
+}
+
+function buildGrid(){
+  var g = q('grid'); g.innerHTML = ''; cellEls = []; iHead = []; jHead = []; cellAt = [];
+  var i, j;
+  for(i = 0; i <= N; i++) cellAt.push(new Array(M + 1).fill(-1));
+  var hrow = el('tr'), hc = el('th', 'ha');
+  hc.appendChild(el('span', 'ch', 'a\\b')); hc.appendChild(el('span', 'ix', 'i 行 / j 列'));
+  hrow.appendChild(hc);
+  for(j = 0; j <= M; j++){
+    var th = el('th', 'hb');
+    th.appendChild(el('span', 'ch', j === 0 ? '' : B.charAt(j - 1)));
+    th.appendChild(el('span', 'ix', 'j=' + j));
+    hrow.appendChild(th); jHead.push(th);
+  }
+  g.appendChild(hrow);
+  for(i = 0; i <= N; i++){
+    var tr = el('tr'), rh = el('th', 'ha');
+    rh.appendChild(el('span', 'ch', i === 0 ? '' : A.charAt(i - 1)));
+    rh.appendChild(el('span', 'ix', 'i=' + i));
+    tr.appendChild(rh); iHead.push(rh);
+    var row = [];
+    for(j = 0; j <= M; j++){ var td = el('td', 'empty', '·'); tr.appendChild(td); row.push(td); }
+    cellEls.push(row); g.appendChild(tr);
+  }
+  q('sz').textContent = (N + 1) + '×' + (M + 1) + ' = ' + ((N + 1) * (M + 1)) + ' 格';
+}
+
+function centerOf(elm){
+  var w = q('gridwrap').getBoundingClientRect(), r = elm.getBoundingClientRect();
+  return { x: r.left - w.left + r.width / 2, y: r.top - w.top + r.height / 2 };
+}
+function renderArrows(st){
+  var wrap = q('gridwrap'), svg = q('arrows');
+  var W = wrap.clientWidth, H = wrap.clientHeight;
+  svg.setAttribute('width', W); svg.setAttribute('height', H); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  var defs = '<defs>' +
+    '<marker id="ahG" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5eead4"/></marker>' +
+    '<marker id="ahD" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#8b93b5"/></marker>' +
+    '<marker id="ahB" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#f59e6b"/></marker></defs>';
+  if(st.kind !== 'cell'){ svg.innerHTML = defs; return; }
+  var tg = centerOf(cellEls[st.i][st.j]), parts = [];
+  function to(srcEl, col, mk, dash){
+    var s = centerOf(srcEl), dx = tg.x - s.x, dy = tg.y - s.y, L = Math.sqrt(dx * dx + dy * dy) || 1;
+    parts.push('<line x1="' + (s.x + dx / L * 15) + '" y1="' + (s.y + dy / L * 15) + '" x2="' + (tg.x - dx / L * 20) +
+      '" y2="' + (tg.y - dy / L * 20) + '" stroke="' + col + '" stroke-width="2.6"' + (dash ? ' stroke-dasharray="5 4"' : '') +
+      ' marker-end="url(#' + mk + ')"/>');
+  }
+  if(st.br === 'eq') to(cellEls[st.i - 1][st.j - 1], '#5eead4', 'ahG', false);
+  else if(st.br === 'ne'){
+    to(cellEls[st.i - 1][st.j], st.pick === 'up' ? '#5eead4' : '#8b93b5', st.pick === 'up' ? 'ahG' : 'ahD', st.pick !== 'up');
+    to(cellEls[st.i][st.j - 1], st.pick === 'le' ? '#5eead4' : '#8b93b5', st.pick === 'le' ? 'ahG' : 'ahD', st.pick !== 'le');
+  }
+  else if(st.ref && st.ref.jHead != null) to(jHead[st.ref.jHead], '#f59e6b', 'ahB', true);
+  else if(st.ref && st.ref.iHead != null) to(iHead[st.ref.iHead], '#f59e6b', 'ahB', true);
+  svg.innerHTML = defs + '<g>' + parts.join('') + '</g>';
+}
+
+function hotLines(st){
+  if(st.kind === 'read') return [8, 9];
+  if(st.kind === 'init') return [10];
+  if(st.kind === 'row') return [11];
+  if(st.kind === 'rowend') return [12, 25];
+  if(st.kind === 'out') return [27];
+  if(st.br === 'i0') return [12, 13, 14];
+  if(st.br === 'j0') return [12, 16, 17];
+  if(st.br === 'eq') return [12, 19, 20];
+  return [12, 22, 23];
+}
+function renderCode(st){
+  var hot = hotLines(st), box = q('code'); box.innerHTML = '';
+  for(var i = 0; i < SRC.length; i++){
+    var no = i + 1, ln = el('div', 'ln' + (hot.indexOf(no) >= 0 ? ' hot' : ''));
+    ln.appendChild(el('span', 'n', String(no))); ln.appendChild(el('span', null, SRC[i]));
+    box.appendChild(ln);
+  }
+}
+
+function brName(k){
+  return k === 'i0' ? 'if(i == 0)' : k === 'j0' ? 'else if(j == 0)' : k === 'eq' ? 'else if(a[i-1]==b[j-1])' : 'else（不等）';
+}
+function renderVars(st){
+  var isCell = st.kind === 'cell', i = isCell ? st.i : st.i, j = isCell ? st.j : null;
+  var rows = [
+    ['a', '"' + A + '"'], ['b', '"' + B + '"'], ['n', String(N)], ['m', String(M)],
+    ['i', i == null ? '—' : String(i)],
+    ['j', j != null ? String(j) : (st.kind === 'rowend' ? 'm+1，退出' : '—')],
+    ['a[i-1]', (i != null && i > 0) ? "'" + A.charAt(i - 1) + "'" : '—'],
+    ['b[j-1]', (j != null && j > 0) ? "'" + B.charAt(j - 1) + "'" : (j === 0 ? '—（j==0 不进比较）' : '—')],
+    ['分支', isCell ? brName(st.br) : '—'],
+    ['dp[i][j]', isCell ? String(st.v) : '—']
+  ];
+  var t = q('vars'); t.innerHTML = '';
+  for(var r = 0; r < rows.length; r++){
+    var tr = el('tr'); tr.appendChild(el('th', null, rows[r][0]));
+    tr.appendChild(el('td', r >= 4 ? 'hot' : '', rows[r][1])); t.appendChild(tr);
+  }
+}
+
+function renderProgress(st){
+  var filled = 0, k;
+  for(k = 0; k <= T; k++) if(STEPS[k].kind === 'cell') filled++;
+  var i = (st.kind === 'read' || st.kind === 'init' || st.kind === 'out') ? null : st.i;
+  var need = M + 1, done = 0, txt;
+  if(i == null) txt = '这行填完了吗：' + (st.kind === 'out' ? '全部 ' + (N + 1) + ' 行都填完了，循环已结束' : '还没进外层循环');
+  else if(st.kind === 'row'){ done = 0; txt = '第 ' + i + ' 行：0 / ' + need + ' 格 —— 刚开始，还没填'; }
+  else if(st.kind === 'rowend'){ done = need; txt = '第 ' + i + ' 行：' + done + ' / ' + need + ' 格 —— <b>填完了</b>，i++ 换下一行'; }
+  else { done = st.j + 1; txt = '第 ' + i + ' 行：' + done + ' / ' + need + ' 格 —— ' + (done >= need ? '<b>填完了</b>（这格是本行最后一格）' : '还差 ' + (need - done) + ' 格'); }
+  if(st.kind === 'out') done = need;
+  q('rowlab').innerHTML = txt;
+  q('rowbar').style.width = Math.round(done / need * 100) + '%';
+  var total = (N + 1) * (M + 1);
+  q('totlab').innerHTML = '全表已填 <b>' + filled + '</b> / ' + total + ' 格' + (filled < total ? '，距右下角 dp[' + N + '][' + M + '] 还有 ' + (total - filled) + ' 格' : '，右下角已算出');
+}
+
+function renderNote(st){
+  var n = q('note');
+  if(st.kind === 'read'){
+    n.innerHTML = '第 8、9 行：`cin &gt;&gt; a &gt;&gt; b` 读入 a = <b>"' + A + '"</b>、b = <b>"' + B + '"</b>；n = a.size() = <b>' + N + '</b>，m = b.size() = <b>' + M + '</b>。<br>n、m 是<b>长度</b>，而 dp 的下标要从"一个字符都还没取"算起，所以表要开 <b>(n+1)×(m+1)</b>：多出来的第 0 行和第 0 列代表空串前缀。';
+    return;
+  }
+  if(st.kind === 'init'){
+    n.innerHTML = '第 10 行：`vector&lt;vector&lt;int&gt;&gt; dp(n+1, vector&lt;int&gt;(m+1, 0))` 把 ' + (N + 1) + '×' + (M + 1) + ' = <b>' + ((N + 1) * (M + 1)) + '</b> 格先填 0（只是占位，真正的赋值在下面两层循环里）。<br>第 11 行 <b>i 从 0 到 n</b> 是外层（一行一行往下），第 12 行 <b>j 从 0 到 m</b> 是内层（每行从左到右）。所以顺序是先填满第 0 行、再第 1 行……这也是本页 step 的生成顺序。';
+    return;
+  }
+  if(st.kind === 'row'){
+    n.innerHTML = '进入外层循环 <b>i = ' + st.i + '</b>：这一行代表 <b class="te">a 的前 ' + st.i + ' 个字符 = "' + A.slice(0, st.i) + '"</b>' + (st.i > 0 ? '，末位是 a[' + (st.i - 1) + '] = \'' + A.charAt(st.i - 1) + '\'' : '（空串，没有末位）') + '。<br>内层 j = 0, 1, …, ' + M + '，本行要填 <b>' + (M + 1) + '</b> 格。';
+    return;
+  }
+  if(st.kind === 'rowend'){
+    n.innerHTML = '第 <b>i = ' + st.i + '</b> 行的 ' + (M + 1) + ' 格全部填完 → 内层循环退出，外层 <b>i++</b> 换到下一行。注意 dp 只依赖 <b>上一行</b> 和 <b>本行左边</b>，所以这个顺序一定成立（这也是为什么不用记忆化搜索）。';
+    return;
+  }
+  if(st.kind === 'out'){
+    n.innerHTML = '两层循环结束，右下角 dp[' + N + '][' + M + '] = <b>' + st.v + '</b>。<br>第 27 行 `cout &lt;&lt; dp[n][m] &lt;&lt; endl;` 原样打印一行：<b>' + st.v + '</b>（`endl` 只是换行，不打印别的东西）。<br>' + (examTag(A, B) || '打开上面的"对照"按钮，看看真 LCS 和真编辑距离在这对字符串上算出多少。');
+    return;
+  }
+  var ap = 'a[' + (st.i - 1) + '] = \'' + A.charAt(st.i - 1) + '\'', bp = 'b[' + (st.j - 1) + '] = \'' + B.charAt(st.j - 1) + '\'';
+  if(st.br === 'i0'){
+    n.innerHTML = '<b>i = 0</b>（<b class="te">a 的前 0 个字符 = 空串</b>）→ 命中第一个分支 <b>if(i == 0)</b>，写 <b>dp[0][j] = j</b>。<br>这一格 dp[0][' + st.j + '] = <b>' + st.v + '</b>。整条第 0 行就是 0, 1, 2, …, ' + M + '，和 a 里是什么字符<b>完全无关</b>。';
+    return;
+  }
+  if(st.br === 'j0'){
+    n.innerHTML = '<b>j = 0</b>（<b class="og">b 的前 0 个字符 = 空串</b>）→ 命中第二个分支 <b>else if(j == 0)</b>，写 <b>dp[i][0] = i</b>。<br>这一格 dp[' + st.i + '][0] = <b>' + st.v + '</b>。整条第 0 列就是 0, 1, …, ' + N + '，和 b 无关。';
+    return;
+  }
+  if(st.br === 'eq'){
+    n.innerHTML = 'i = <b>' + st.i + '</b> → <b class="te">a 的前 ' + st.i + ' 个字符 "' + A.slice(0, st.i) + '"</b>，末位 ' + ap + '；<br>j = <b>' + st.j + '</b> → <b class="og">b 的前 ' + st.j + ' 个字符 "' + B.slice(0, st.j) + '"</b>，末位 ' + bp + '。<br>两个字符<b>相等</b> → 走第三个分支，只看<b>左上角</b>再加 1：<b>' + st.expr + '</b>。<br><span style="color:var(--dim)">这一步和 LCS 的写法相同（左上 +1）；但真正的编辑距离在这里是 <b>+0</b>（字符相同不用花钱）—— 差距就是从这些格子一点点攒出来的。</span>';
+    return;
+  }
+  n.innerHTML = 'i = <b>' + st.i + '</b> → <b class="te">a 的前 ' + st.i + ' 个字符 "' + A.slice(0, st.i) + '"</b>，末位 ' + ap + '；<br>j = <b>' + st.j + '</b> → <b class="og">b 的前 ' + st.j + ' 个字符 "' + B.slice(0, st.j) + '"</b>，末位 ' + bp + '。<br>两个字符<b>不等</b> → 走第四个分支 else：看<b class="ta">上边</b> dp[' + (st.i - 1) + '][' + st.j + '] = ' + st.up + ' 和<b class="ta">左边</b> dp[' + st.i + '][' + (st.j - 1) + '] = ' + st.le + '，<b>两个都要查</b>，取 min 再加 1。<br><b>' + st.expr + '</b>，min 实际取的是<b>' + (st.up === st.le ? '两格并列（都 = ' + st.up + '）' : (st.pick === 'up' ? '上边那格 ' + st.up : '左边那格 ' + st.le)) + '</b>。<br><span style="color:var(--dim)">这一步像编辑距离（min + 1）；但真正的 LCS 在这里取的是 <b>max</b>，而且<b>不 +1</b>。</span>';
+}
+
+function renderExpr(st){
+  var e = q('expr');
+  if(st.kind === 'cell') e.textContent = st.expr;
+  else if(st.kind === 'out') e.textContent = 'cout << dp[' + N + '][' + M + '] << endl;   // 打印 ' + st.v;
+  else if(st.kind === 'read') e.textContent = 'a = "' + A + '" (n=' + N + ')   b = "' + B + '" (m=' + M + ')';
+  else if(st.kind === 'init') e.textContent = 'dp 表开成 (n+1) x (m+1)，全部先填 0';
+  else if(st.kind === 'row') e.textContent = 'i = ' + st.i + '：即将开始本行的第 1 格 j = 0';
+  else e.textContent = 'i = ' + st.i + ' 这一行填完了（共 m+1 = ' + (M + 1) + ' 格）';
+}
+
+function renderConcl(st){
+  var box = q('concl');
+  if(st.kind === 'out'){
+    box.innerHTML = '<div style="font-size:14px;color:var(--dim)">`cout &lt;&lt; dp[n][m] &lt;&lt; endl;` 打印的就是这一行：</div>' +
+      '<div class="out" style="margin:6px 0 8px">' + st.v + '</div>' +
+      '<div style="font-size:14px">dp[' + N + '][' + M + '] = <b style="color:#c4a6ff">' + st.v + '</b>&nbsp;&nbsp;|&nbsp;&nbsp;n+m = ' + (N + M) +
+      '（题 22：输出 &le; n+m，T）&nbsp;&nbsp;|&nbsp;&nbsp;min(n,m) = ' + Math.min(N, M) + '（题 23："&gt;" 写成这样才是 F）</div>' +
+      '<div style="font-size:14px;color:var(--dim);margin-top:6px">' + (examTag(A, B) || '') + '</div>' +
+      '<div style="font-size:14px;color:var(--dim);margin-top:6px">同数据对照：真 LCS = <b>' + lcsLen(A, B) + '</b>，真编辑距离 = <b>' + edDist(A, B) +
+      '</b>，把 a、b 交换后本程序输出 = <b>' + simulate(B, A).dp[M][N] + '</b>。</div>';
+  } else {
+    var total = (N + 1) * (M + 1), filled = 0, k;
+    for(k = 0; k <= T; k++) if(STEPS[k].kind === 'cell') filled++;
+    box.innerHTML = '<div style="font-size:14px;color:var(--dim)">还轮不到输出。程序最后打印的是右下角那一格 <b style="color:var(--ink)">dp[' + N + '][' + M + ']</b>，' +
+      '它要等整张表按 i 外层 / j 内层的顺序填完才会算出来（还差 ' + (total - filled) + ' 格）。<br>' +
+      '第 27 行只对这一格做一次输出，没有任何加工、没有累加、没有换行以外的字符。</div>';
+  }
+}
+
+function renderCompare(){
+  var v = DP[N][M], l = lcsLen(A, B), e = edDist(A, B), sw = simulate(B, A).dp[M][N];
+  var nums = q('cmpNums'); nums.innerHTML = '';
+  function kd(lab, val, cls, title){
+    var d = el('div', 'k' + (cls ? ' ' + cls : ''));
+    d.appendChild(el('div', 'lab', lab)); d.appendChild(el('div', 'val', String(val)));
+    if(title) d.title = title; nums.appendChild(d);
+  }
+  kd('本程序 dp[n][m]', v, 'ans', '第 27 行输出的值');
+  kd('真 LCS 长度', l, 'badk', '相等 +1、不等取 max 不 +1');
+  kd('真编辑距离', e, 'badk', '相等 +0、不等 min(删,插,改)+1');
+  kd('本程序交换 (b,a)', sw, '', '题 21：沿主对角线转置，右下角不变。实测 20000 组随机 + 900 组穷举，不同 = 0 组');
+  q('c0').textContent = v; q('c1').textContent = l; q('c2').textContent = e;
+}
+
+function render(){
+  var st = STEPS[T];
+  for(var i = 0; i <= N; i++) for(var j = 0; j <= M; j++){
+    var td = cellEls[i][j], idx = cellAt[i][j];
+    td.className = 'empty'; td.textContent = '·';
+    if(idx >= 0 && T >= idx){
+      td.textContent = String(DP[i][j]);
+      td.className = 'b-' + BR[i][j];
+      if(st.kind === 'cell' && st.i === i && st.j === j) td.className += ' cur';
+      else if(st.kind === 'cell'){
+        for(var s = 0; s < st.src.length; s++) if(st.src[s][0] === i && st.src[s][1] === j){ td.className += ' src'; break; }
+      }
+      if(st.kind === 'out' && i === N && j === M) td.className = 'b-' + BR[i][j] + ' tgtok';
+    }
+  }
+  renderArrows(st); renderExpr(st); renderNote(st); renderCode(st); renderVars(st);
+  renderProgress(st); renderConcl(st);
+  q('prog').textContent = '第 ' + (T + 1) + ' / ' + STEPS.length + ' 步';
+  q('prev').disabled = T === 0;
+  q('next').disabled = T === STEPS.length - 1;
+}
+
+function presetKey(){ return A + '|' + B; }
+function markPresets(){
+  var k = presetKey();
+  for(var i = 0; i < PRESETS.length; i++) q('p' + i).className = 'pre' + (PRESETS[i][0] + '|' + PRESETS[i][1] === k ? ' sel' : '');
+}
+function stop(){ if(TIMER){ clearInterval(TIMER); TIMER = null; q('play').textContent = '自动播放'; } }
+function load(){
+  stop();
+  var R = simulate(A, B);
+  DP = R.dp; BR = R.br; N = R.n; M = R.m; STEPS = R.steps; T = 0;
+  buildGrid();
+  for(var i = 0; i < STEPS.length; i++) if(STEPS[i].kind === 'cell') cellAt[STEPS[i].i][STEPS[i].j] = i;
+  q('ina').value = A; q('inb').value = B;
+  markPresets(); renderCompare(); render();
+}
+function go(d){ var t = T + d; if(t < 0 || t > STEPS.length - 1) return; T = t; render(); }
+
+function setup(){
+  for(var i = 0; i < PRESETS.length; i++){
+    (function(idx){ q('p' + idx).onclick = function(){ A = PRESETS[idx][0]; B = PRESETS[idx][1]; q('warn').textContent = ''; load(); }; })(i);
+  }
+  q('load').onclick = function(){
+    var a = q('ina').value.replace(/\s/g, ''), b = q('inb').value.replace(/\s/g, '');
+    if(!a || !b){ q('warn').textContent = '两个串都必须非空：`cin >> a >> b` 读到的是不含空白的词，空串在这里演示不了。'; return; }
+    if(a.length > LIM || b.length > LIM){
+      q('warn').textContent = '长度上限 ' + LIM + '：现在 a = ' + a.length + '、b = ' + b.length +
+        '，表会是 ' + (a.length + 1) + '×' + (b.length + 1) + '，步数约 ' + (2 + (a.length + 1) * (b.length + 3) + 1) +
+        ' 步 —— 画面放不下，也超出课堂需要。请把两个串各限制在 ' + LIM + ' 个字符以内。';
+      return;
+    }
+    q('warn').textContent = '';
+    A = a; B = b; load();
+  };
+  q('next').onclick = function(){ stop(); go(1); };
+  q('prev').onclick = function(){ stop(); go(-1); };
+  q('end').onclick = function(){ stop(); T = STEPS.length - 1; render(); };
+  q('home').onclick = function(){ stop(); T = 0; render(); };
+  q('play').onclick = function(e){
+    if(TIMER){ stop(); return; }
+    e.target.textContent = '暂停';
+    if(T >= STEPS.length - 1) T = 0;
+    TIMER = setInterval(function(){ if(T >= STEPS.length - 1){ stop(); return; } T++; render(); }, 620);
+  };
+  q('cmpBtn').onclick = function(e){ var c = q('cmpCard'); c.classList.toggle('hide'); e.target.classList.toggle('on', !c.classList.contains('hide')); };
+  q('gistBtn').onclick = function(e){ var c = q('gistCard'); c.classList.toggle('hide'); e.target.classList.toggle('on', !c.classList.contains('hide')); };
+  document.addEventListener('keydown', function(e){
+    if(e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    if(e.key === 'ArrowRight'){ e.preventDefault(); stop(); go(1); }
+    else if(e.key === 'ArrowLeft'){ e.preventDefault(); stop(); go(-1); }
+    else if(e.key === ' ' || e.key === 'Spacebar'){ e.preventDefault(); q('play').click(); }
+  });
+  window.addEventListener('resize', function(){ if(STEPS.length) renderArrows(STEPS[T]); });
+  A = 'aba'; B = 'bab'; load();
+}
+setup();
+</script>
+</body>
+</html>

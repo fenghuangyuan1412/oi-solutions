@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>完善程序(2) · BFS 走迷宫（最多 k 次传送）分步演示</title>
+<style>
+  :root{--bg:#0f1220;--card:#1a1f35;--ink:#e8ecff;--dim:#8b93b5;--acc:#5eead4;--bad:#f59e6b;--good:#5eead4;--line:#262c4a;}
+  *{box-sizing:border-box}
+  body{margin:0;padding:20px 22px 40px;background:var(--bg);color:var(--ink);font:15px/1.65 "Segoe UI",system-ui,sans-serif;max-width:1400px}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+  .card h2{font-size:14px;letter-spacing:.05em;color:var(--dim);margin:0 0 10px;font-weight:600}
+  button{background:#2b3358;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 12px;font-size:14px;cursor:pointer;margin:0 6px 6px 0}
+  button:hover:not(:disabled){background:#394373}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.on{background:#16323f;border-color:var(--acc);color:var(--acc)}
+  textarea{background:#0d1020;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:8px 10px;font:14px/1.5 Consolas,monospace;width:100%;max-width:520px;height:104px;resize:vertical}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
+  .row>div{min-width:300px}
+  .col-l{flex:1 1 640px}
+  .col-r{flex:1 1 420px}
+  .prog{color:var(--dim);font-size:14px}
+  /* ---- 迷宫主画面 ---- */
+  #mazeWrap{position:relative;display:inline-block;line-height:0;border:1px solid #3d4778;border-radius:6px;overflow:hidden}
+  #maze{display:grid}
+  .mc{position:relative;display:flex;align-items:center;justify-content:center;background:#131730;border:1px solid #232a4a;font:15px Consolas,monospace;color:var(--dim)}
+  .mc.wall{background:#2a2f4d;color:#6b7499}
+  .mc.startlab::before,.mc.goallab::after{position:absolute;font-size:14px;left:3px;top:0;color:var(--dim)}
+  .mc.startlab::before{content:"起"}
+  .mc.goallab::after{content:"终";left:auto;right:3px;top:auto;bottom:0}
+  .mc .dv{position:absolute;right:3px;top:0;font-size:14px;color:#7f8ac0}
+  .mc.cur{background:#16323f;border-color:var(--acc);color:var(--ink);animation:pulse 1s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:inset 0 0 0 2px var(--acc)}50%{box-shadow:inset 0 0 0 6px #5eead455}}
+  .mc.upd{background:#1d3b33;border-color:var(--good)}
+  .mc.skip{background:#3a2a1c;border-color:var(--bad)}
+  .mc.skip span{color:var(--bad);font-size:14px}
+  .mc.onpath{border-color:#5eead4aa;background:#152a3d}
+  #mazeSvg{position:absolute;left:0;top:0;pointer-events:none}
+  .legend{font-size:14px;color:var(--dim);margin-top:8px}
+  .legend i{display:inline-block;width:14px;height:14px;vertical-align:-2px;margin:0 4px 0 12px;border:1px solid #3d4778}
+  /* ---- 分层距离表 ---- */
+  #layers{display:flex;gap:10px;flex-wrap:wrap}
+  .lyr{background:#131730;border:1px solid var(--line);border-radius:10px;padding:8px}
+  .lyr h3{margin:0 0 6px;font-size:14px;color:var(--dim);font-weight:600}
+  .lyr.active h3{color:var(--acc)}
+  .lg{display:grid;line-height:0}
+  .lc{display:flex;align-items:center;justify-content:center;background:#0d1020;border:1px solid #232a4a;font:14px Consolas,monospace;color:#7f8ac0}
+  .lc.wall{background:#2a2f4d;color:#6b7499}
+  .lc.inf{color:#4c5478}
+  .lc.cur{background:#16323f;border-color:var(--acc);color:var(--ink)}
+  .lc.upd{background:#1d3b33;border-color:var(--good);color:var(--good)}
+  .lc.diff{box-shadow:inset 0 0 0 2px #9d6bff}
+  .lc.onpath{border-color:#5eead4aa}
+  .lc.best{color:var(--good)}
+  /* ---- 队列 ---- */
+  #queue{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+  .qc{padding:4px 7px;border-radius:7px;background:#232a4a;border:1px solid #333c66;font:14px Consolas,monospace}
+  .qc.front{background:#16323f;border-color:var(--acc);color:var(--acc);font-weight:700}
+  .qc.new{background:#1d3b33;border-color:var(--good);color:var(--good)}
+  .qc.dup{border-color:#9d6bff}
+  .qarrow{color:var(--dim);font-size:14px}
+  /* ---- 变量表 ---- */
+  table{width:100%;border-collapse:collapse;font:14px Consolas,monospace}
+  th,td{padding:3px 7px;border-bottom:1px solid #222743;text-align:left;vertical-align:top}
+  th{color:var(--dim);font-weight:600}
+  td.v{color:var(--acc)}
+  /* ---- 代码 ---- */
+  #code{background:#0d1020;border:1px solid var(--line);border-radius:9px;padding:8px 6px;max-height:430px;overflow:auto;font:14px/1.45 Consolas,monospace}
+  .cl{display:flex;gap:8px;padding:1px 4px;white-space:pre;color:#aab3d8}
+  .cl .ln{color:#4c5478;min-width:22px;text-align:right}
+  .cl.hl{background:#242c52;color:var(--acc)}
+  .cl.hl .ln{color:var(--acc)}
+  .cl .bl{color:#c4a6ff}
+  /* ---- 台词 ---- */
+  #note{font-size:15px;min-height:96px}
+  #note b{color:var(--acc)}
+  .badge{display:inline-block;background:#2b3358;border:1px solid #3d4778;border-radius:6px;padding:1px 8px;font-size:14px;color:var(--dim);margin-right:8px}
+  #ans{font:15px Consolas,monospace}
+  #ans .big{font-size:22px;color:var(--good)}
+  #ans .big.neg{color:var(--bad)}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+  .blank{border:1px solid var(--line);border-radius:9px;background:#131730;padding:9px 11px;margin-bottom:8px}
+  .blank b.a{color:var(--acc)}
+  .blank .tag{font-size:14px;color:var(--dim)}
+  .hint{color:var(--dim);font-size:14px}
+  ul{margin:6px 0 0;padding-left:20px}
+  li{font-size:14px;color:#c8cfe8;margin-bottom:3px}
+</style>
+</head>
+<body>
+<h1>完善程序(2) · BFS 走迷宫：最多 k 次“传送”（一次跳两格）</h1>
+<div class="sub">
+  洛谷模拟卷 SCP-J1 2026 第 38~42 题（官方答案 <b>C A B D D</b>）补全后的程序，逐帧播放。
+  状态是<b>三元组 {x, y, k}</b>：位置 + <b>已经用掉的传送次数</b>。距离数组是三维的 <code>dis[x][y][k]</code>，
+  所以下面用“分层小网格”同时画出来 —— 这是本页最重要的教学点。
+</div>
+
+<div class="card">
+  <div style="display:flex;flex-wrap:wrap;align-items:center">
+    <button id="prev">上一步</button>
+    <button id="next">下一步</button>
+    <button id="play">自动播放</button>
+    <button id="end">跳到末尾</button>
+    <button id="home">回到开头</button>
+    <span class="qarrow" style="margin-right:6px">速度</span>
+    <button class="sp on" data-ms="900">1x</button>
+    <button class="sp" data-ms="450">2x</button>
+    <button class="sp" data-ms="200">4x</button>
+    <span class="prog" style="margin-left:auto"><span id="prog"></span></span>
+  </div>
+  <div class="hint" style="margin-top:2px">键盘：← 上一步 ／ → 下一步 ／ 空格 播放暂停</div>
+</div>
+
+<div class="card">
+  <h2>课堂演示迷宫（8 个，答案由 -static 编译的 fill2.exe 实测）</h2>
+  <div class="tabs" id="presets"></div>
+  <div class="hint" id="presetNote"></div>
+</div>
+
+<div class="row">
+  <div class="card" style="flex:1 1 480px">
+    <h2>自定义输入（上限 8×8，k ≤ 3）</h2>
+    <textarea id="src">4 4 1
+....
+.##.
+....
+....</textarea>
+    <div style="margin-top:8px">
+      <button id="load">载入并重新生成步骤</button>
+      <button id="loadP">载入示例</button>
+    </div>
+    <div class="hint">格式：第一行 <code>n m k</code>，随后 n 行、每行 m 个字符（<code>.</code> 空格，<code>#</code> 墙）。起点固定 (1,1)，终点固定 (n,m)。</div>
+  </div>
+  <div class="card" style="flex:1 1 480px">
+    <h2>本步结论 / 运行结果</h2>
+    <div id="ans"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>逐帧讲解（老师念这一段）</h2>
+  <div id="note"></div>
+</div>
+
+<div class="row">
+  <div class="col-l">
+    <div class="card">
+      <h2>① 迷宫主画面：细箭头 = 走一步，粗箭头 = 传送（跳两格）</h2>
+      <div id="mazeWrap"><div id="maze"></div><svg id="mazeSvg"></svg></div>
+      <div class="legend">
+        <i style="background:#2a2f4d"></i>墙 #
+        <i style="background:#16323f;border-color:var(--acc)"></i>当前弹出的格子
+        <i style="background:#1d3b33;border-color:var(--good)"></i>本步刚更新
+        <i style="background:#3a2a1c;border-color:var(--bad)"></i>传送时被跳过的中间格
+      </div>
+      <div class="legend" style="margin-top:2px">格子里的小数字 = 该格在<b>所有已画层</b>里的最小距离（“目前最快几步到过它”）。</div>
+    </div>
+    <div class="card">
+      <h2>② 分层距离表 dis[x][y][层]：同一格在不同层可以有不同距离</h2>
+      <div id="layers"></div>
+      <div class="legend"><i style="box-shadow:inset 0 0 0 2px #9d6bff"></i>同一格在多层都到过（紫色描边）
+        <span style="margin-left:10px">· = 还没访问（INF）</span></div>
+      <div id="layerSay" class="hint" style="margin-top:6px"></div>
+    </div>
+  </div>
+  <div class="col-r">
+    <div class="card">
+      <h2>③ 队列 queue&lt;Node&gt;（左 = 队首 front，右 = 队尾）</h2>
+      <div id="queue"></div>
+      <div id="queueSay" class="hint" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h2>④ 变量表</h2>
+      <table id="vars"></table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>⑤ 代码（补全后的 bfs()，高亮 = 本步执行的行；① ~ ⑤ 是卷面的五个空）</h2>
+  <div id="code"></div>
+</div>
+
+<div class="card">
+  <h2>五个空：官方答案 38~42 = C A B D D</h2>
+  <div class="blank"><span class="tag">38 ①</span> <b class="a">C {-1, 1, 0, 0}</b> —— dy 已给定 {0,0,-1,1}，dx 必须配成 上/下/左/右。A 让第 1、2 个方向都是原地 (0,0)、第 3 个变斜走；B 混进斜向；D 只有斜向＋上下，走不到相邻格。<span class="tag">（本页 8 个迷宫用 C 全部实测正确）</span></div>
+  <div class="blank"><span class="tag">39 ②</span> <b class="a">A !q.empty()</b> —— BFS 的循环条件是“队列非空”。B <code>!q.size()</code> 正好反了（一进就退出）；C <code>!q.clear()</code> 里 clear() 返回 void，<b>编译不过</b>；D <code>q.front()</code> 在空队列上是未定义行为，而且返回的是引用不是 bool。</div>
+  <div class="blank"><span class="tag">40 ③</span> <b class="a">B dis[u.x][u.y][u.k]</b> —— 弹出的就是终点，直接返回它的距离，<b>不加 1</b>。<span class="tag">实测杀手：maze4 <code>1 1 / .</code> 正确答案 <b>0</b>，填 A（+1）会输出 1。</span>C 用全局上限 k 而不是 u.k（层数搞错）；D 写死第 0 层，传送过来的终点读不到值。</div>
+  <div class="blank"><span class="tag">41 ④</span> <b class="a">D u.k &lt; k</b> —— “还能不能再传送一次” = 已用次数<b>严格</b>小于上限。填 C <code>u.k &lt;= k</code> 会让 nk = u.k+1 取到 k+1，当 k 接近 MAXK=15 时<b>越界写数组</b>；填 A <code>u.k == k</code> 逻辑相反；填 B <code>u.k &gt; 0</code> 把第一次传送彻底禁用。</div>
+  <div class="blank"><span class="tag">42 ⑤</span> <b class="a">D q.push({nx, ny, nk})</b> —— std::queue 只有 push，且一次只接<b>一个</b>参数。A <code>q.push(nx,ny,nk)</code> 参数个数不对；B <code>push_back</code>、C <code>insert</code> 都不是 queue 的成员函数 —— 三者都编译不过。</div>
+  <div class="hint" style="margin-top:6px">RESULTS.md 的实测结论：官方 C A B D D 补全后 <b>8 个课堂迷宫全对</b>（4 / 3 / -1 / 2 / 6 / -1 / 4 / 0）。上面带“实测”标记的两条是跑出来的，其余选项的后果是按卷面语义分析（其中 ②⑤ 属于编译期就能否掉的送分点）。</div>
+</div>
+
+<div class="card">
+  <h2>为什么要按 k 分层？（本页最重要的一段）</h2>
+  <div class="hint">
+    “传送”是一种<b>用完就没了</b>的资源：用过它，位置虽然一样，但<b>能力</b>不一样了。
+    只记 <code>dis[x][y]</code> 的普通 BFS 会认为“到过 (3,3) 就不用再到了”，于是把“带着 1 次传送额度到 (3,3)”这种<b>更值钱</b>的状态直接丢掉。
+  </div>
+  <ul>
+    <li>实测 maze3（k=2）最终：<code>dis[3][3][1]=3</code>、<code>dis[3][3][2]=2</code> —— 同一格、不同层、距离不同。</li>
+    <li>maze3c（k=10）里格子 (1,2) 在 5 个不同层各进队一次；终点 (5,5) 是在<b>第 4 层</b>弹出的，距离 4。</li>
+    <li>把 maze3 的 k 从 2 改成 10，答案从 6 变成 4；k=1 时无解 -1。同一张地图，只改资源上限 —— 不带层的 BFS 三个值都算不出来。</li>
+    <li>为什么“第一次弹出终点”就能直接 return？BFS 按 <code>dis</code> 从小到大的顺序出队（每步权值都是 1），所以后面再弹出任何终点状态时，距离只会 ≥ 当前值。注意判据是 <code>u.x==n && u.y==m</code>：终点在<b>任何一层</b>弹出都算到达，取到的就是全局最小。</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2>三种结局</h2>
+  <ul>
+    <li><b>弹出终点</b> ⇒ <code>return dis[u.x][u.y][u.k]</code>，输出最短步数（例：maze3 输出 6）。</li>
+    <li><b>队列空了</b> ⇒ 循环退出后 <code>return -1</code>，说明在 k 次传送的限制下不可达（例：maze2 k=1、maze3b k=1）。</li>
+    <li><b>起点即终点</b>（1×1 迷宫）⇒ 第一次弹出 {1,1,0} 就命中判定，返回 <code>dis[1][1][0]=0</code>，输出 0。这就是 ③ 不能填 A 的原因。</li>
+  </ul>
+</div>
+
+<script>
+/* ================= 代码面板（与 fill2.cpp 的行号一一对应） ================= */
+const CODE = [
+"const int dx[4] = {-1, 1, 0, 0};      // 38 ① 填 C",
+"const int dy[4] = {0, 0, -1, 1};",
+"int bfs() {",
+"    memset(dis, 0x3f, sizeof(dis));",
+"    queue<Node> q;",
+"    q.push({1, 1, 0});",
+"    dis[1][1][0] = 0;",
+"    while (!q.empty()) {              // 39 ② 填 A",
+"        Node u = q.front();",
+"        q.pop();",
+"        if (u.x == n && u.y == m) {",
+"            return dis[u.x][u.y][u.k]; // 40 ③ 填 B",
+"        }",
+"        for (int i = 0; i < 4; i++) {",
+"            int nx = u.x + dx[i];",
+"            int ny = u.y + dy[i];",
+"            if (nx>=1 && nx<=n && ny>=1 && ny<=m && grid[nx][ny] != '#') {",
+"                if (dis[nx][ny][u.k] > dis[u.x][u.y][u.k] + 1) {",
+"                    dis[nx][ny][u.k] = dis[u.x][u.y][u.k] + 1;",
+"                    q.push({nx, ny, u.k});",
+"                }",
+"            }",
+"        }",
+"        if (u.k < k) {                // 41 ④ 填 D",
+"            for (int i = 0; i < 4; i++) {",
+"                int nx = u.x + dx[i] * 2;",
+"                int ny = u.y + dy[i] * 2;",
+"                int nk = u.k + 1;",
+"                if (nx>=1 && nx<=n && ny>=1 && ny<=m && grid[nx][ny] != '#') {",
+"                    if (dis[nx][ny][nk] > dis[u.x][u.y][u.k] + 1) {",
+"                        dis[nx][ny][nk] = dis[u.x][u.y][u.k] + 1;",
+"                        q.push({nx, ny, nk});  // 42 ⑤ 填 D",
+"                    }",
+"                }",
+"            }",
+"        }",
+"    }",
+"    return -1;",
+"}"
+];
+
+/* ================= 8 个演示迷宫（逐字来自 verify/mazeN.txt，答案 = fill2.exe 实测） ================= */
+const PRESETS = [
+ {name:'maze1', ans:4,  txt:"3 3 0\n...\n.#.\n...",    note:'只能绕行，4 步'},
+ {name:'maze1b',ans:3,  txt:"3 3 1\n...\n.#.\n...",    note:'一次传送省一步'},
+ {name:'maze2', ans:-1, txt:"1 5 1\n.#.#.",            note:'一次传送跨不过两道墙'},
+ {name:'maze2b',ans:2,  txt:"1 5 2\n.#.#.",            note:'传送 + 传送，两次到位'},
+ {name:'maze3', ans:6,  txt:"5 5 2\n.....\n#####\n.....\n#####\n.....", note:'纵向必须传送 2 次，分层主例'},
+ {name:'maze3b',ans:-1, txt:"5 5 1\n.....\n#####\n.....\n#####\n.....", note:'传送次数不够，无解'},
+ {name:'maze3c',ans:4,  txt:"5 5 10\n.....\n#####\n.....\n#####\n.....",note:'传送管够，横向也能传'},
+ {name:'maze4', ans:0,  txt:"1 1 0\n.",                note:'起点即终点 → ③ 不加 1'},
+];
+const DIRNAME = ['上', '下', '左', '右'];
+const LAYER_CAP = 6;
+
+/* ================= fill2.cpp 的 JS 逐语义复刻（步数/顺序与 C++ 完全一致） ================= */
+function buildSteps(n, m, k, rows) {
+  const dx = [-1, 1, 0, 0];           // ① = C
+  const dy = [0, 0, -1, 1];
+  const INF = 1e9;                    // 对应 0x3f3f3f3f：当作“无穷大”
+  const K = k + 1;
+  const size = (n + 2) * (m + 2) * K;
+  const cell = (x, y) => (rows[x - 1] ? rows[x - 1][y - 1] : '#');
+  const inb = (x, y) => x >= 1 && x <= n && y >= 1 && y <= m;
+  const id = (x, y, l) => ((x * (m + 2) + y) * K + l);
+  const dis = new Array(size).fill(INF);
+  const par = new Array(size).fill(null);
+  const pushCnt = Object.create(null);
+  const q = [];
+  const steps = [];
+
+  const g = (x, y, l) => dis[id(x, y, l)];
+  const put = (x, y, l, v) => { dis[id(x, y, l)] = v; };
+  function tracePath(x, y, l) {
+    const out = [];
+    while (x !== undefined) {
+      out.unshift({ x, y, k: l });
+      const p = par[id(x, y, l)];
+      if (!p) break;
+      x = p.x; y = p.y; l = p.k;
+    }
+    for (let i = 1; i < out.length; i++) {
+      const dd = Math.abs(out[i].x - out[i - 1].x) + Math.abs(out[i].y - out[i - 1].y);
+      out[i].mode = dd === 2 ? 'tele' : 'norm';
+    }
+    return out;
+  }
+
+  let stepNo = 0;
+  function snap(extra) {
+    const st = Object.assign({
+      no: ++stepNo,
+      dis: dis.slice(),
+      q: q.map(u => ({ x: u.x, y: u.y, k: u.k })),
+      lines: [], vars: {}, say: '', kind: '', cur: null, arrow: null, upd: null, path: null,
+    }, extra);
+    steps.push(st);
+    return st;
+  }
+  const V = o => o;
+
+  snap({
+    kind: 'init', lines: [4],
+    vars: V({ n, m, k, 'dis[*]': 'INF（尚未访问）' }),
+    say: '读入 <b>n=' + n + ', m=' + m + ', k=' + k + '</b>。先 <b>memset(dis, 0x3f, sizeof(dis))</b>：三维距离数组全部置为“无穷大”，表示每个格子在<b>每一层</b>都还没被访问。',
+  });
+
+  q.push({ x: 1, y: 1, k: 0 });
+  put(1, 1, 0, 0);
+  snap({
+    kind: 'push', lines: [5, 6, 7], cur: { x: 1, y: 1, k: 0 }, upd: { x: 1, y: 1, k: 0 },
+    vars: V({ n, m, k, 'dis[1][1][0]': 0, 队尾: '{1, 1, 0}' }),
+    say: '起点 <b>(1,1)</b> 还没传送过，属于第 <b>0</b> 层，所以 <b>dis[1][1][0]=0</b> 并把 <b>{1,1,0}</b> 压进队尾。注意入队的是<b>三元组</b>，不是“格子”。',
+  });
+
+  let answer = null, guard = 0;
+  while (true) {
+    if (++guard > 200000) throw new Error('loop guard');
+    if (q.length === 0) {
+      answer = -1;
+      snap({
+        kind: 'fail', lines: [8, 38],
+        vars: V({ n, m, k, 'q.empty()': 'true' }),
+        say: '队列空了（<b>②填 A：!q.empty()</b> 不再成立），while 循环退出，走到最后一行 <b>return -1</b>。终点从来没有被弹出过 —— 说明在“最多 ' + k + ' 次传送”的限制下<b>根本走不到</b>。输出 <b>-1</b>。',
+      });
+      break;
+    }
+    const u = q[0];
+    snap({
+      kind: 'pop', lines: [8, 9, 10], cur: { x: u.x, y: u.y, k: u.k },
+      vars: V({
+        n, m, k, 'u.x': u.x, 'u.y': u.y, 'u.k': u.k,
+        'dis[u.x][u.y][u.k]': g(u.x, u.y, u.k), 'q.size()': q.length,
+      }),
+      say: '<b>②的循环条件 !q.empty() 成立</b>，取出队首 <b>u = {' + u.x + ', ' + u.y + ', ' + u.k + '}</b> 并出队。它的距离是 <b>dis[' + u.x + '][' + u.y + '][' + u.k + '] = ' + g(u.x, u.y, u.k) + '</b> —— 读作“在<b>已经用掉 ' + u.k + ' 次传送</b>的前提下，走到 (' + u.x + ',' + u.y + ') 最少要 ' + g(u.x, u.y, u.k) + ' 步”。',
+    });
+
+    if (u.x === n && u.y === m) {
+      answer = g(u.x, u.y, u.k);
+      q.shift();
+      const path = tracePath(u.x, u.y, u.k);
+      const nTele = path.slice(1).filter(s => s.mode === 'tele').length;
+      snap({
+        kind: 'win', lines: [11, 12], cur: { x: u.x, y: u.y, k: u.k }, path,
+        vars: V({ 'u.x == n': u.x === n, 'u.y == m': u.y === m, 'dis[u.x][u.y][u.k]': answer }),
+        say: '<b>u.x==n 且 u.y==m</b>：弹出的这个状态正好在终点！<b>③填 B：return dis[u.x][u.y][u.k]</b>，直接返回 <b>dis[' + u.x + '][' + u.y + '][' + u.k + '] = ' + answer + '</b>，<b>不加 1</b>（填 A 会多 1；1×1 迷宫就会从 0 变成 1）。BFS 按距离从短到长出队，所以<b>第一次弹出终点就是最短步数</b>。',
+      });
+      snap({
+        kind: 'route', lines: [11, 12], cur: { x: n, y: m, k: u.k }, path,
+        vars: V({ 答案: answer, 终点所在层: u.k, 用了传送: nTele, 上限: k }),
+        say: '<b>输出 ' + answer + '</b>。回溯最短路线：' + path.map(s => '(' + s.x + ',' + s.y + ')').join(' — ') +
+             '，共 ' + (path.length - 1) + ' 步，其中<b>传送 ' + nTele + ' 次</b>。终点是在<b>第 ' + u.k + ' 层</b>弹出的 —— 这正是 ③ 必须写 <b>dis[u.x][u.y][u.k]</b>、不能写死第 0 层（填 D）的原因。',
+      });
+      break;
+    }
+    q.shift();
+
+    for (let i = 0; i < 4; i++) {
+      const nx = u.x + dx[i], ny = u.y + dy[i];
+      let ok, why, cond;
+      if (!inb(nx, ny)) { ok = false; why = 'out'; cond = '(' + nx + ',' + ny + ') 不在 1..' + n + ' × 1..' + m + '，越界'; }
+      else if (cell(nx, ny) === '#') { ok = false; why = 'wall'; cond = 'grid[' + nx + '][' + ny + "] == '#'，是墙"; }
+      else {
+        const cur1 = g(nx, ny, u.k), nd = g(u.x, u.y, u.k) + 1;
+        if (!(cur1 > nd)) { ok = false; why = 'seen'; cond = 'dis[' + nx + '][' + ny + '][' + u.k + ']=' + (cur1 >= INF ? 'INF' : cur1) + ' > ' + nd + ' 不成立'; }
+        else { ok = true; why = 'upd'; cond = 'dis[' + nx + '][' + ny + '][' + u.k + ']=' + (cur1 >= INF ? 'INF' : cur1) + ' > ' + nd + ' 成立'; }
+      }
+      snap({
+        kind: 'dir', lines: [14, 15, 16, 17, 18], cur: { x: u.x, y: u.y, k: u.k },
+        arrow: (ok || why === 'seen') ? { fx: u.x, fy: u.y, tx: nx, ty: ny, mode: 'norm' } : null,
+        vars: V({
+          'u.x': u.x, 'u.y': u.y, 'u.k': u.k, 'dis[u]': g(u.x, u.y, u.k),
+          i, 'dx[i]': dx[i], 'dy[i]': dy[i], nx, ny,
+          落点: inb(nx, ny) ? cell(nx, ny) : '出界', 判定条件: cond, 是否更新: ok ? '是' : '否',
+        }),
+        say: '普通一步：i=' + i + '（向' + DIRNAME[i] + '），nx=' + u.x + '+(' + dx[i] + ')=' + nx + '，ny=' + u.y + '+(' + dy[i] + ')=' + ny + '。' + cond + ' ⇒ <b>' + (ok ? '更新并压队' : '什么都不做（' + (why === 'out' ? '越界' : why === 'wall' ? '撞墙' : '这一层已经有不更差的距离') + '）') + '</b>。' + (why === 'seen' ? '这就是 BFS 的“到过就不再进队”——但只比较<b>同一层</b>。' : ''),
+      });
+      if (ok) {
+        put(nx, ny, u.k, g(u.x, u.y, u.k) + 1);
+        par[id(nx, ny, u.k)] = { x: u.x, y: u.y, k: u.k };
+        (pushCnt[nx + ',' + ny] = pushCnt[nx + ',' + ny] || []).push(u.k);
+        q.push({ x: nx, y: ny, k: u.k });
+        snap({
+          kind: 'push', lines: [19, 20], cur: { x: u.x, y: u.y, k: u.k }, upd: { x: nx, y: ny, k: u.k },
+          arrow: { fx: u.x, fy: u.y, tx: nx, ty: ny, mode: 'norm' },
+          vars: V({ 'dis[nx][ny][u.k]': g(nx, ny, u.k), 新节点: '{' + nx + ', ' + ny + ', ' + u.k + '}' }),
+          say: '<b>dis[' + nx + '][' + ny + '][' + u.k + '] = ' + g(nx, ny, u.k) + '</b>（比 (' + u.x + ',' + u.y + ') 那一层多 1），并把<b>同一层</b>的新状态 <b>{' + nx + ', ' + ny + ', ' + u.k + '}</b> 压到队尾。没传送，所以还在第 ' + u.k + ' 层。',
+        });
+      }
+    }
+
+    const can = u.k < k;
+    snap({
+      kind: 'gate', lines: [24], cur: { x: u.x, y: u.y, k: u.k },
+      vars: V({ 'u.k': u.k, k, 'u.k < k': can }),
+      say: can
+        ? '④判 <b>u.k &lt; k</b>：' + u.k + ' &lt; ' + k + ' 成立，还能再传送一次。传送 = 沿某个方向<b>跳两格</b>，并且把传送次数 +1（落到第 ' + (u.k + 1) + ' 层）。'
+        : '④判 <b>u.k &lt; k</b>：' + u.k + ' &lt; ' + k + ' <b>不成立</b>，传送额度用完，整段传送代码直接跳过。' + (k > 0 ? '（同一个格子，带着额度的那次弹出才能传送 —— 这就是“用完就没了”的资源必须进状态的原因。）' : '（本题 k=0，任何状态都永远不许传送，所以这份代码退化成普通 BFS。）'),
+    });
+    if (!can) continue;
+
+    for (let i = 0; i < 4; i++) {
+      const nx = u.x + dx[i] * 2, ny = u.y + dy[i] * 2, nk = u.k + 1;
+      const mx = u.x + dx[i], my = u.y + dy[i];
+      let ok, why, cond;
+      if (!inb(nx, ny)) { ok = false; why = 'out'; cond = '落点 (' + nx + ',' + ny + ') 越界'; }
+      else if (cell(nx, ny) === '#') { ok = false; why = 'wall'; cond = 'grid[' + nx + '][' + ny + "] == '#'，落点是墙"; }
+      else {
+        const cur1 = g(nx, ny, nk), nd = g(u.x, u.y, u.k) + 1;
+        if (!(cur1 > nd)) { ok = false; why = 'seen'; cond = 'dis[' + nx + '][' + ny + '][' + nk + ']=' + (cur1 >= INF ? 'INF' : cur1) + ' > ' + nd + ' 不成立'; }
+        else { ok = true; why = 'upd'; cond = 'dis[' + nx + '][' + ny + '][' + nk + ']=' + (cur1 >= INF ? 'INF' : cur1) + ' > ' + nd + ' 成立'; }
+      }
+      const midTxt = inb(mx, my) ? '中间格 (' + mx + ',' + my + ") 是 '" + cell(mx, my) + "'" : '中间格 (' + mx + ',' + my + ') 已经出界';
+      snap({
+        kind: 'tdir', lines: [25, 26, 27, 28, 29, 30], cur: { x: u.x, y: u.y, k: u.k },
+        arrow: (ok || why === 'seen') ? { fx: u.x, fy: u.y, tx: nx, ty: ny, mx, my, mode: 'tele' } : null,
+        vars: V({
+          'u.x': u.x, 'u.y': u.y, 'u.k': u.k, 'dis[u]': g(u.x, u.y, u.k),
+          i, 'dx[i]*2': dx[i] * 2, 'dy[i]*2': dy[i] * 2, nx, ny, nk,
+          落点: inb(nx, ny) ? cell(nx, ny) : '出界', 判定条件: cond, 是否更新: ok ? '是' : '否',
+        }),
+        say: '传送：i=' + i + '（向' + DIRNAME[i] + '跳两格），nx=' + u.x + '+(' + dx[i] + ')*2=' + nx + '，ny=' + u.y + '+(' + dy[i] + ')*2=' + ny + '，nk=' + u.k + '+1=' + nk + '。' + midTxt + '，但程序<b>只检查落点</b>：中间那一格被整个<b>跳过</b>，<b>是墙也没关系</b>。' + cond + ' ⇒ <b>' + (ok ? '更新并压队' : '不做（' + (why === 'out' ? '越界' : why === 'wall' ? '落点是墙' : '第 ' + nk + ' 层已到过') + '）') + '</b>。',
+      });
+      if (ok) {
+        put(nx, ny, nk, g(u.x, u.y, u.k) + 1);
+        par[id(nx, ny, nk)] = { x: u.x, y: u.y, k: u.k };
+        (pushCnt[nx + ',' + ny] = pushCnt[nx + ',' + ny] || []).push(nk);
+        q.push({ x: nx, y: ny, k: nk });
+        snap({
+          kind: 'push', lines: [31, 32], cur: { x: u.x, y: u.y, k: u.k }, upd: { x: nx, y: ny, k: nk },
+          arrow: { fx: u.x, fy: u.y, tx: nx, ty: ny, mx, my, mode: 'tele' },
+          vars: V({ 'dis[nx][ny][nk]': g(nx, ny, nk), 新节点: '{' + nx + ', ' + ny + ', ' + nk + '}' }),
+          say: '<b>dis[' + nx + '][' + ny + '][' + nk + '] = ' + g(nx, ny, nk) + '</b>，⑤填 D：<b>q.push({' + nx + ', ' + ny + ', ' + nk + '})</b>（queue 只有 push，一次一个参数）。新状态落在<b>第 ' + nk + ' 层</b>。',
+        });
+      }
+    }
+  }
+  return { steps, answer, n, m, k, rows, dis: dis.slice(), K, pushCnt };
+}
+
+function parse(txt, kmax) {
+  const p = txt.trim().split(/\s+/);
+  if (p.length < 3) throw '第一行要写 n m k 三个数';
+  const n = +p[0], m = +p[1], k = +p[2];
+  if (!Number.isInteger(n) || !Number.isInteger(m) || !Number.isInteger(k)) throw 'n m k 必须是整数';
+  if (n < 1 || m < 1 || n > 8 || m > 8) throw '演示上限：n, m ≤ 8（再大画面画不清）';
+  if (k < 0 || k > kmax) throw '这里允许的最大 k = ' + kmax + '（自定义输入请把 k 限制在 3 以内，否则步数会爆炸）';
+  let rest = p.slice(3), rows = [];
+  if (rest.length === n && rest.every(r => r.length === m)) rows = rest;
+  else {
+    const j = rest.join('');
+    if (j.length < n * m) throw '迷宫行数/列数不够：需要 ' + n + ' 行、每行 ' + m + " 个字符";
+    for (let i = 0; i < n; i++) rows.push(j.slice(i * m, i * m + m));
+  }
+  rows.forEach(r => { if (!/^[.#]+$/.test(r)) throw "迷宫里只能出现 . 和 #"; });
+  return { n, m, k, rows };
+}
+
+/* ================= 播放器 ================= */
+let sim = null, steps = [], t = 0, timer = null, ms = 900, curPreset = 'maze1b';
+const $ = id => document.getElementById(id);
+
+function loadText(txt, label, kmax) {
+  let d;
+  try { d = parse(txt, kmax === undefined ? 3 : kmax); } catch (e) { alert('输入不合法：' + e); return false; }
+  sim = buildSteps(d.n, d.m, d.k, d.rows);
+  steps = sim.steps; t = 0;
+  $('presetNote').textContent = '当前输入：' + label + '　n=' + d.n + ', m=' + d.m + ', k=' + d.k + '　程序答案 = ' + sim.answer +
+    '　共 ' + steps.length + ' 步。' + (d.k + 1 > LAYER_CAP ? '（k=' + d.k + '，分层表只画前 ' + LAYER_CAP + ' 层）' : '') +
+    (steps.length > 1200 ? ' 步数偏多：建议按 4x 播放，或直接“跳到末尾”再看关键帧。' : '');
+  render();
+  return true;
+}
+
+const shownLayers = () => Math.min(sim.k + 1, LAYER_CAP);
+const val = (st, x, y, l) => st.dis[((x * (sim.m + 2) + y) * sim.K) + l];
+const same = (p, x, y, k) => p && p.x === +x && p.y === +y && p.k === +k;
+
+function renderMaze(st) {
+  const n = sim.n, m = sim.m;
+  const cs = Math.max(26, Math.min(48, Math.floor(300 / Math.max(n, m))));
+  const wrap = $('maze'), L = shownLayers();
+  wrap.style.gridTemplateColumns = 'repeat(' + m + ',' + cs + 'px)';
+  wrap.style.gridTemplateRows = 'repeat(' + n + ',' + cs + 'px)';
+  wrap.innerHTML = '';
+  const pathSet = {};
+  if (st.path) st.path.forEach((p, i) => { pathSet[p.x + ',' + p.y] = i; });
+  for (let x = 1; x <= n; x++) for (let y = 1; y <= m; y++) {
+    const ch = sim.rows[x - 1][y - 1];
+    let best = Infinity;
+    for (let l = 0; l < L; l++) best = Math.min(best, val(st, x, y, l));
+    const c = document.createElement('div');
+    let cls = 'mc' + (ch === '#' ? ' wall' : '');
+    if (x === 1 && y === 1) cls += ' startlab';
+    if (x === n && y === m) cls += ' goallab';
+    if (same(st.cur, x, y, st.cur ? st.cur.k : -1)) cls += ' cur';
+    if (same(st.upd, x, y, st.upd ? st.upd.k : -1)) cls += ' upd';
+    if (st.arrow && st.arrow.mode === 'tele' && st.arrow.mx === x && st.arrow.my === y) cls += ' skip';
+    if (pathSet[x + ',' + y] !== undefined) cls += ' onpath';
+    c.className = cls;
+    if (ch === '#') c.textContent = '#';
+    else if (best < 1e9) { const s = document.createElement('span'); s.className = 'dv'; s.textContent = best; c.appendChild(s); }
+    if (ch !== '#' && st.arrow && st.arrow.mode === 'tele' && st.arrow.mx === x && st.arrow.my === y) {
+      const s = document.createElement('span'); s.textContent = '跳'; c.appendChild(s);
+    }
+    c.title = '(' + x + ',' + y + ") " + (ch === '#' ? '墙' : '各层距离：' + Array.from({ length: L }, (_, l) => 'L' + l + '=' + (val(st, x, y, l) >= 1e9 ? '·' : val(st, x, y, l))).join(' '));
+    wrap.appendChild(c);
+  }
+  const svg = $('mazeSvg');
+  svg.setAttribute('width', m * cs); svg.setAttribute('height', n * cs);
+  svg.setAttribute('viewBox', '0 0 ' + (m * cs) + ' ' + (n * cs));
+  const C = (x, y) => [ (y - 1) * cs + cs / 2, (x - 1) * cs + cs / 2 ];
+  let s = '<defs>' +
+    '<marker id="ahN" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9aa6de"/></marker>' +
+    '<marker id="ahT" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5eead4"/></marker>' +
+    '<marker id="ahP" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="3" markerHeight="3" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c4a6ff"/></marker>' +
+    '</defs>';
+  if (st.path && st.path.length > 1) {
+    for (let i = 1; i < st.path.length; i++) {
+      const a = st.path[i - 1], b = st.path[i], p1 = C(a.x, a.y), p2 = C(b.x, b.y);
+      const tele = b.mode === 'tele';
+      s += '<line x1="' + p1[0] + '" y1="' + p1[1] + '" x2="' + p2[0] + '" y2="' + p2[1] + '" stroke="#c4a6ff" stroke-width="' + (tele ? 5 : 3) + '" stroke-opacity=".85" marker-end="url(#ahP)"/>';
+      if (tele) { const mid = C((a.x + b.x) / 2, (a.y + b.y) / 2); s += '<circle cx="' + mid[0] + '" cy="' + mid[1] + '" r="5" fill="#0f1220" stroke="#c4a6ff" stroke-width="2"/>'; }
+    }
+  }
+  if (st.arrow) {
+    const A = C(st.arrow.fx, st.arrow.fy), B = C(st.arrow.tx, st.arrow.ty);
+    const tele = st.arrow.mode === 'tele';
+    s += '<line x1="' + A[0] + '" y1="' + A[1] + '" x2="' + B[0] + '" y2="' + B[1] +
+         '" stroke="' + (tele ? '#5eead4' : '#9aa6de') + '" stroke-width="' + (tele ? 6 : 2) +
+         '" stroke-opacity="' + (tele ? '.95' : '.9') + '" marker-end="url(#' + (tele ? 'ahT' : 'ahN') + ')"/>';
+    if (tele) { const M = C(st.arrow.mx, st.arrow.my); s += '<circle cx="' + M[0] + '" cy="' + M[1] + '" r="7" fill="#f59e6b" fill-opacity=".35" stroke="#f59e6b" stroke-width="2"/>'; }
+  }
+  svg.innerHTML = s;
+}
+
+function renderLayers(st) {
+  const box = $('layers'); box.innerHTML = '';
+  const L = shownLayers(), n = sim.n, m = sim.m;
+  const cs = Math.max(24, Math.min(32, Math.floor(180 / Math.max(n, m))));
+  const pathSet = {};
+  if (st.path) st.path.forEach(p => pathSet[p.x + ',' + p.y] = p.k);
+  const diffSet = {};
+  for (let x = 1; x <= n; x++) for (let y = 1; y <= m; y++) {
+    const vs = [];
+    for (let l = 0; l < L; l++) { const v = val(st, x, y, l); if (v < 1e9) vs.push(v); }
+    if (vs.length >= 2 && new Set(vs).size >= 2) diffSet[x + ',' + y] = 1;
+  }
+  for (let l = 0; l < L; l++) {
+    const d = document.createElement('div'); d.className = 'lyr' + (st.cur && st.cur.k === l ? ' active' : '');
+    const h = document.createElement('h3');
+    h.textContent = '第 ' + l + ' 层　已用 ' + l + ' 次传送' + (l === 0 ? '（还没传送）' : (l === sim.k ? '（额度用光）' : ''));
+    d.appendChild(h);
+    const g = document.createElement('div'); g.className = 'lg';
+    g.style.gridTemplateColumns = 'repeat(' + m + ',' + cs + 'px)';
+    g.style.gridTemplateRows = 'repeat(' + n + ',' + cs + 'px)';
+    for (let x = 1; x <= n; x++) for (let y = 1; y <= m; y++) {
+      const ch = sim.rows[x - 1][y - 1], v = val(st, x, y, l);
+      const c = document.createElement('div');
+      let cls = 'lc';
+      if (ch === '#') cls += ' wall';
+      else if (v >= 1e9) cls += ' inf';
+      else {
+        let best = Infinity; for (let q2 = 0; q2 < L; q2++) best = Math.min(best, val(st, x, y, q2));
+        if (v === best) cls += ' best';
+      }
+      if (same(st.cur, x, y, l)) cls += ' cur';
+      if (same(st.upd, x, y, l)) cls += ' upd';
+      if (diffSet[x + ',' + y]) cls += ' diff';
+      if (pathSet[x + ',' + y] === l) cls += ' onpath';
+      c.className = cls;
+      c.textContent = ch === '#' ? '#' : (v >= 1e9 ? '·' : v);
+      g.appendChild(c);
+    }
+    d.appendChild(g); box.appendChild(d);
+  }
+  let say = '';
+  if (st.cur) {
+    const x = st.cur.x, y = st.cur.y;
+    const parts = [];
+    for (let l = 0; l < L; l++) { const v = val(st, x, y, l); parts.push('第' + l + '层=' + (v >= 1e9 ? '·' : v)); }
+    say = '当前格 (' + x + ',' + y + ') 的<b>各层</b>距离：' + parts.join('　') +
+      '。紫色描边的格子 = 它在好几层都被到过，而且<b>距离互不相同</b> —— 普通 BFS 只有一张 dis[x][y]，这种信息会被直接丢掉。';
+  } else say = '还没有弹出任何状态：下面每张网格都是 dis[x][y][层] 的一层。';
+  if (sim.k + 1 > L) say += '　（k=' + sim.k + '，最多 ' + (sim.k + 1) + ' 层，画面只画前 ' + L + ' 层）';
+  $('layerSay').innerHTML = say;
+}
+
+function renderQueue(st) {
+  const box = $('queue'); box.innerHTML = '';
+  if (!st.q.length) { const e = document.createElement('span'); e.className = 'qarrow'; e.textContent = '（队列为空）'; box.appendChild(e); }
+  const cnt = {};
+  st.q.forEach(u => { cnt[u.x + ',' + u.y] = (cnt[u.x + ',' + u.y] || 0) + 1; });
+  st.q.forEach((u, i) => {
+    const c = document.createElement('span');
+    let cls = 'qc' + (i === 0 ? ' front' : '') + (cnt[u.x + ',' + u.y] > 1 ? ' dup' : '');
+    if (st.kind === 'push' && i === st.q.length - 1 && same(st.upd, u.x, u.y, u.k)) cls += ' new';
+    c.className = cls;
+    c.textContent = '{' + u.x + ',' + u.y + ',' + u.k + '}';
+    c.title = '状态：位置 (' + u.x + ',' + u.y + ')，已用 ' + u.k + ' 次传送';
+    box.appendChild(c);
+    if (i === 0) { const a = document.createElement('span'); a.className = 'qarrow'; a.textContent = st.kind === 'pop' ? '← 本步弹出' : '← front'; box.appendChild(a); }
+  });
+  const dup = Object.keys(cnt).filter(key => cnt[key] > 1);
+  $('queueSay').innerHTML =
+    '队列长度 <b>' + st.q.length + '</b>。' +
+    (dup.length ? '注意此刻 <b>' + dup.map(key => '(' + key + ')').join('、') + '</b> 这几个<b>格子</b>在队列里出现了不止一次 —— 它们带的传送层不同，是<b>不同的状态</b>，必须都留着。'
+      : '同一个格子可能进队两次（因为层不同）：BFS 判重看的是三元组，不是格子。');
+}
+
+function renderVars(st) {
+  let h = '<tr><th>变量</th><th>值</th></tr>';
+  for (const key in st.vars) h += '<tr><td>' + key + '</td><td class="v">' + st.vars[key] + '</td></tr>';
+  $('vars').innerHTML = h;
+}
+
+const KINDNAME = {
+  init: '初始化', push: '入队 push', pop: '弹出队首', dir: '普通一步', tdir: '传送一步',
+  gate: '传送闸门 ④', win: '命中终点 ③', route: '最短路线', fail: '队列空 → -1',
+};
+
+function renderCode(st) {
+  const box = $('code');
+  if (!box.childElementCount) {
+    box.innerHTML = CODE.map((line, i) => '<div class="cl" data-l="' + (i + 1) + '"><span class="ln">' + (i + 1) + '</span><span>' +
+      line.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])).replace(/(①|②|③|④|⑤)/g, '<span class="bl">$1</span>') + '</span></div>').join('');
+  }
+  let first = null;
+  [...box.children].forEach(div => {
+    const on = st.lines.includes(+div.dataset.l);
+    div.className = 'cl' + (on ? ' hl' : '');
+    if (on && first === null) first = div;
+  });
+  if (first) {
+    const top = first.offsetTop - box.clientHeight / 2 + first.clientHeight / 2;
+    box.scrollTop = Math.max(0, top);
+  }
+}
+
+function renderAns(st) {
+  const e = $('ans');
+  if (st.kind === 'win' || st.kind === 'route')
+    e.innerHTML = '<span class="big">输出 ' + sim.answer + '</span>　最短 <b>' + sim.answer + '</b> 步到达 (n,m)，其中终点在<b>第 ' + st.cur.k + ' 层</b>被弹出。';
+  else if (st.kind === 'fail')
+    e.innerHTML = '<span class="big neg">输出 -1</span>　队列被抽空，终点 (n,m) 在所有层都不可达。';
+  else {
+    const d = [];
+    for (let l = 0; l < shownLayers(); l++) {
+      let seen = 0;
+      for (let x = 1; x <= sim.n; x++) for (let y = 1; y <= sim.m; y++) if (val(st, x, y, l) < 1e9) seen++;
+      d.push('L' + l + ' 到过 ' + seen + ' 格');
+    }
+    e.innerHTML = '还没结束：队列里剩 <b>' + st.q.length + '</b> 个状态　' + d.join('　') + '<br><span class="hint">程序只在<b>弹出终点</b>或<b>队列空</b>时才有输出，所以中间任何一步都还没有答案可打印。</span>';
+  }
+}
+
+function render() {
+  const st = steps[t];
+  renderMaze(st); renderLayers(st); renderQueue(st); renderVars(st); renderCode(st); renderAns(st);
+  $('note').innerHTML = '<span class="badge">' + (KINDNAME[st.kind] || st.kind) + '</span><span class="badge">第 ' + (t + 1) + ' / ' + steps.length + ' 步</span>' + st.say;
+  $('prog').textContent = '第 ' + (t + 1) + ' / ' + steps.length + ' 步';
+  $('prev').disabled = t === 0;
+  $('next').disabled = t === steps.length - 1;
+  $('end').disabled = t === steps.length - 1;
+  document.querySelectorAll('#presets button').forEach(b => b.classList.toggle('on', b.dataset.name === curPreset));
+}
+
+function stop() { if (timer) { clearInterval(timer); timer = null; $('play').textContent = '自动播放'; } }
+
+/* ---------- 预设按钮 ---------- */
+const pw = $('presets');
+PRESETS.forEach(p => {
+  const b = document.createElement('button');
+  b.textContent = p.name + '（k=' + p.txt.split('\n')[0].split(/\s+/)[2] + '，输出 ' + p.ans + '）';
+  b.dataset.name = p.name;
+  b.title = p.note;
+  b.onclick = () => { stop(); curPreset = p.name; if (loadText(p.txt, p.name + '.txt', 10)) $('src').value = p.txt; };
+  pw.appendChild(b);
+});
+
+$('next').onclick = () => { if (t < steps.length - 1) { t++; render(); } };
+$('prev').onclick = () => { if (t > 0) { t--; render(); } };
+$('home').onclick = () => { stop(); t = 0; render(); };
+$('end').onclick = () => { stop(); t = steps.length - 1; render(); };
+$('play').onclick = () => {
+  if (timer) { stop(); return; }
+  if (t >= steps.length - 1) t = 0;
+  $('play').textContent = '暂停';
+  timer = setInterval(() => {
+    if (t >= steps.length - 1) { stop(); return; }
+    t++; render();
+  }, ms);
+  render();
+};
+document.querySelectorAll('.sp').forEach(b => b.onclick = () => {
+  ms = +b.dataset.ms;
+  document.querySelectorAll('.sp').forEach(x => x.classList.toggle('on', x === b));
+  if (timer) { clearInterval(timer); timer = setInterval(() => { if (t >= steps.length - 1) { stop(); return; } t++; render(); }, ms); }
+});
+$('load').onclick = () => { stop(); curPreset = '自定义'; loadText($('src').value, '自定义输入'); };
+$('loadP').onclick = () => { stop(); curPreset = '自定义'; $('src').value = "4 4 1\n....\n.##.\n....\n...."; loadText($('src').value, '自定义输入'); };
+
+document.addEventListener('keydown', e => {
+  if (e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT')) return;
+  if (e.key === 'ArrowRight') { e.preventDefault(); if (t < steps.length - 1) { t++; render(); } }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); if (t > 0) { t--; render(); } }
+  else if (e.key === ' ') { e.preventDefault(); $('play').click(); }
+});
+
+/* 默认：maze1b —— 3×3 中间一个墙，k=1，一次传送就能省一步 */
+curPreset = 'maze1b';
+loadText(PRESETS[1].txt, 'maze1b.txt', 10);
+</script>
+</body>
+</html>

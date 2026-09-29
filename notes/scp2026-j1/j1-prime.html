@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SCP-J1 2026 阅读程序(1) · 孪生素数 isPrime 逐帧演示</title>
+<style>
+  :root{--bg:#0f1220;--card:#1a1f35;--ink:#e8ecff;--dim:#8b93b5;--acc:#5eead4;--bad:#f59e6b;--good:#5eead4;--line:#262c4a;}
+  *{box-sizing:border-box}
+  body{margin:0;padding:18px 22px;background:var(--bg);color:var(--ink);font:15px/1.65 "Segoe UI",system-ui,sans-serif}
+  h1{font-size:20px;margin:0 0 3px}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+  .card h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:0 0 9px}
+  button,select,input[type=number]{background:#2b3358;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 12px;font-size:14px;cursor:pointer;font-family:inherit}
+  button:hover:not(:disabled){background:#394373}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.key{background:#1f4d4a;border-color:#2f7d6b}
+  input[type=number]{width:88px}
+  select{font-family:inherit}
+  .top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .prog{color:var(--acc);font:15px Consolas,monospace;margin-left:auto;white-space:nowrap}
+  .narr{background:#12172c;border:1px solid #3d4778;border-left:4px solid var(--acc);border-radius:10px;padding:11px 14px;font-size:16px;line-height:1.7;margin-bottom:12px;min-height:62px}
+  .narr.trap{border-left-color:var(--bad);background:#1d1723}
+  .narr b{color:var(--acc)}
+  .narr .tag{display:inline-block;background:#5a3418;color:#ffd9b8;border:1px solid var(--bad);border-radius:6px;padding:0 8px;font-size:12.5px;margin-right:8px;vertical-align:2px}
+  .split{display:grid;grid-template-columns:minmax(340px,43%) 1fr;gap:12px;align-items:start}
+  @media (max-width:1100px){.split{grid-template-columns:1fr}}
+  pre.src{margin:0;font:13.5px/1.6 Consolas,"Courier New",monospace;max-height:560px;overflow:auto}
+  .ln{display:flex;gap:10px;padding:1px 6px;border-radius:5px;white-space:pre}
+  .ln .no{width:24px;text-align:right;color:#5a628a;flex:none}
+  .ln .tx{color:#c7cdec}
+  .ln.on{background:#223059;box-shadow:inset 3px 0 0 var(--acc)}
+  .ln.on .tx{color:#ffffff;font-weight:700}
+  pre.focus .ln{opacity:.26}
+  pre.focus .ln.on{opacity:1}
+  .ln.rf.on{background:#4a2415;box-shadow:inset 3px 0 0 var(--bad)}
+  .ln.rt.on{background:#123c34;box-shadow:inset 3px 0 0 var(--good)}
+  table{width:100%;border-collapse:collapse;font:14px Consolas,monospace}
+  th,td{padding:4px 7px;border-bottom:1px solid #222743;text-align:left}
+  th{color:var(--dim);font-weight:normal;font-size:12.5px}
+  td.v{color:var(--acc);font-weight:700}
+  tr.on td{background:#242c52}
+  tr.hit td{background:#3d1f13;color:var(--bad);font-weight:700}
+  tr.ok td{background:#123c34;color:var(--good)}
+  .strip{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px}
+  .striplab{color:var(--dim);font-size:13px;margin:6px 0 4px}
+  .cell{min-width:32px;padding:3px 5px;border-radius:6px;background:#232a4a;border:1px solid #333c66;text-align:center;font:14px Consolas,monospace;color:var(--dim)}
+  .cell .lb{display:block;font-size:9.5px;color:#6f78a0;line-height:1.2}
+  .cell.prime{background:#15352f;border-color:#2f7d6b;color:var(--good)}
+  .cell.comp{background:#3a2418;border-color:#7d5233;color:var(--bad)}
+  .cell.cur{outline:2px solid #9d6bff;font-weight:700}
+  .cell.twin{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--dim);margin-top:2px}
+  .dot{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+  .out{font:15px/1.6 Consolas,monospace;background:#0b0e1b;border:1px solid #2f3760;border-radius:8px;padding:8px 11px;min-height:60px;white-space:pre-wrap}
+  .out .l{color:var(--acc)}
+  .out .none{color:var(--dim)}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+  .k{background:#131730;border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+  .k .lab{font-size:12px;color:var(--dim);line-height:1.35}
+  .k .val{font:21px Consolas,monospace;margin-top:2px;color:var(--ink)}
+  .k.badk .val{color:var(--bad)} .k.goodk .val{color:var(--good)}
+  .row{display:flex;gap:12px;flex-wrap:wrap}.row>div{flex:1;min-width:290px}
+  .hint{color:var(--dim);font-size:13.5px}
+  ul.conc{margin:0;padding-left:20px;font-size:14.5px;color:#c7cdec}
+  ul.conc li{margin-bottom:5px}
+</style>
+</head>
+<body>
+<h1>阅读程序（1）孪生素数：把 <span style="color:var(--acc)">isPrime</span> 的每一次试除都摊开看</h1>
+<div class="sub">SCP-J 2026 模拟卷 · 第 16–20 题配套。程序逐字来自 <code>notes/scp2026-j1/verify/r1.cpp</code>。所有步骤由页面里的 JS <b>现场模拟真实算法</b> 生成（与 C++ 同一条逻辑），所以演示绝不会和代码矛盾。零基础同学只需跟着旁白一行一行读。</div>
+
+<div class="top">
+  <label class="hint" for="preset">n 预设</label>
+  <select id="preset">
+    <option value="10">n = 10</option>
+    <option value="20" selected>n = 20（默认）</option>
+    <option value="30">n = 30</option>
+    <option value="50">n = 50（题 19）</option>
+    <option value="14">n = 14（题 16）</option>
+    <option value="custom">自定义…</option>
+  </select>
+  <input type="number" id="custom" min="5" max="200" step="1" value="20">
+  <button id="load" class="key">载入 / 重新生成</button>
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到末尾</button>
+  <button id="home">回到开头</button>
+  <button id="concl">只看结论</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="narr" id="narr"></div>
+
+<div class="split">
+  <div class="card">
+    <h2>① 当前执行的行（r1.cpp 原文，行号一致）</h2>
+    <pre class="src" id="src"></pre>
+    <div class="hint" style="margin-top:8px">橙色高亮 = 正在执行的行；整片变暗只留 <code>return false;</code> 亮着，就是"提前返回、后面不试了"。</div>
+  </div>
+
+  <div>
+    <div class="card">
+      <h2>② 变量状态表</h2>
+      <table id="vars"></table>
+    </div>
+
+    <div class="card">
+      <h2 id="trhdr">③ 本次 isPrime 调用的试除过程</h2>
+      <div id="trials"></div>
+    </div>
+
+    <div class="card">
+      <h2>④ 两条候选数轴（左：i，右：i + 2）</h2>
+      <div class="striplab" id="lab1"></div>
+      <div class="strip" id="strip1"></div>
+      <div class="striplab" id="lab2"></div>
+      <div class="strip" id="strip2"></div>
+      <div class="legend">
+        <span><span class="dot" style="background:#15352f;border:1px solid #2f7d6b"></span>已判定：质数</span>
+        <span><span class="dot" style="background:#3a2418;border:1px solid #7d5233"></span>已判定：合数</span>
+        <span><span class="dot" style="background:#232a4a;border:1px solid #333c66"></span>未判定（还没轮到 / 被短路跳过）</span>
+        <span><span class="dot" style="background:#9d6bff"></span>当前这一对</span>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="card">
+        <h2>⑤ 输出面板（与 cout 逐字一致）</h2>
+        <div class="out" id="out"></div>
+      </div>
+      <div class="card">
+        <h2>⑥ 试除次数统计</h2>
+        <div class="grid">
+          <div class="k goodk"><div class="lab">实际执行<br>if(n%i==0) 次数</div><div class="val" id="s1">0</div></div>
+          <div class="k badk"><div class="lab">&& 短路<br>省下的试除次数</div><div class="val" id="s2">0</div></div>
+          <div class="k"><div class="lab">不短路共需<br>试除次数</div><div class="val" id="s3">0</div></div>
+          <div class="k"><div class="lab">被短路跳过的<br>isPrime 调用个数</div><div class="val" id="s4">0</div></div>
+        </div>
+        <p class="hint">这四个数由本页 JS 现场累加；播到最后一帧时应与 C++ 独立实测一致：
+          n=20 → 实际 97 / 不短路 129 / 省下 32 / 跳过 10 次调用（<code>verify/r1_divcount.exe 20</code>，
+          另有 n=10、30、50 的表在 <code>verify/RESULTS.md</code> §1.6）。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>⑦ 三个必考陷阱（本页各自是一个独立步骤）</h2>
+  <ul class="conc">
+    <li><b>陷阱 1：`(2,3)` 永远打不出来。</b>外层枚举的是 <code>(i, i+2)</code>，两数相差固定是 2；从 <code>i=2</code> 起，第一对候选是 <code>(2,4)</code>，而 <code>isPrime(4)</code> 为假。相差 1 的 <code>(2,3)</code> 根本不是候选。</li>
+    <li><b>陷阱 2：循环条件是 `i + 2 <= n`，不是 `i <= n`。</b>n=20 时 <code>i</code> 最大只能取到 <b>18</b>（<code>18+2=20 ≤ 20</code>），<code>i=19</code> 时条件为假就退出，所以最后一组候选永远是 <code>i = n-2</code>。</li>
+    <li><b>陷阱 3：`isPrime(0)` 和 `isPrime(1)` 都返回 true（机器实测，RESULTS.md §1.3）。</b>因为 <code>for(int i=2; i&lt;n; ++i)</code> 一次都不执行，直接落到 <code>return true;</code>。本程序从 <code>i=2</code> 起枚举才没出事；第 17 题把 <code>int i=2</code> 改成 <code>int i=1</code> 就凭空多打一行 <code>1 3</code>（n=14 的和从 44 变 48）。</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2>⑧ 与讲义 / 机器实测（RESULTS.md §1）的对照</h2>
+  <ul class="conc">
+    <li>题 16（n=14）：输出 <code>3 5 / 5 7 / 11 13</code>，全部整数之和 <b>44</b> → <b>T</b>（实测一致）。</li>
+    <li>题 17（第 16 行改成 <code>int i = 1</code>）：多打一行 <code>1 3</code>，和 44→48、224→228 → "输出不变"为 <b>F</b>。</li>
+    <li>题 18（输出是否全为奇数）：n 从 5 扫到 1000，输出中出现偶数的次数 = <b>0</b> → <b>T</b>。偶数里只有 2 是质数，而 <code>(2,4)</code> 需要 <code>isPrime(4)</code>，为假。</li>
+    <li>题 19（n=50）：6 对 <code>(3,5)(5,7)(11,13)(17,19)(29,31)(41,43)</code>，和 = <b>224</b> → <b>B</b>（220/227/230 都是干扰）。</li>
+    <li>题 20（改第 5 行循环条件）：只有 <code>i * i &lt;= n</code> 与原程序在 5≤n≤1000 输出逐个相同 → <b>C</b>。<code>i*i &lt; n</code> 会把 4/9/25/49 这类完全平方数误判成质数。</li>
+  </ul>
+</div>
+
+<script>
+// ==== SIM-START ====
+// 下面是 r1.cpp 的等价模拟（纯逻辑，不碰 DOM），步骤表完全由它生成。
+var SRC = [
+  "#include <iostream>",
+  "using namespace std;",
+  "",
+  "bool isPrime(int n) {",
+  "    for(int i = 2; i < n; ++i) {",
+  "        if(n % i == 0) {",
+  "            return false;",
+  "        }",
+  "    }",
+  "    return true;",
+  "}",
+  "",
+  "int main() {",
+  "    int n;",
+  "    cin >> n;",
+  "    for(int i = 2; i + 2 <= n; ++i) {",
+  "        if(isPrime(i) && isPrime(i + 2)) {",
+  "            cout << i << \" \" << i + 2 << endl;",
+  "        }",
+  "    }",
+  "    return 0;",
+  "}"
+];
+
+// 完整记录一次 isPrime(m) 的试除过程：与 C++ 第 5~10 行逐句对应。
+function trialInfo(m) {
+  var rows = [], div = null;
+  for (var i = 2; i < m; ++i) {
+    var mod = m % i;
+    rows.push({ m: m, d: i, mod: mod, hit: mod === 0 });
+    if (mod === 0) { div = i; break; }
+  }
+  return { rows: rows, prime: div === null, div: div };
+}
+
+function buildSteps(N) {
+  var steps = [];
+  var v = { out: [], verdict: {}, rows: [], arg: null, trial: 0, saved: 0, savedCalls: 0 };
+  function snap() {
+    return {
+      out: v.out.map(function (p) { return p.slice(); }),
+      verdict: Object.assign({}, v.verdict),
+      rows: v.rows.map(function (r) { return { m: r.m, d: r.d, mod: r.mod, hit: r.hit }; }),
+      arg: v.arg, trial: v.trial, saved: v.saved, savedCalls: v.savedCalls
+    };
+  }
+  function push(o) { o.view = snap(); steps.push(o); }
+  function V(o) {
+    // 变量状态表：n / i / 实参 / 除数 j / n%j / 返回值
+    var s = { n: N, i: '-', cond: '-', arg: '-', j: '-', mod: '-', ret: '-' };
+    for (var k in o) if (o.hasOwnProperty(k)) s[k] = o[k];
+    return s;
+  }
+
+  push({ line: 13, kind: 'intro', vars: V({}),
+    narr: '第 13 行 <b>int main()</b> 是入口，第 1~2 行的 #include / using 不做任何运算。左边高亮行 = 程序此刻真正执行到的那一行。' });
+  push({ line: 14, kind: 'decl', vars: V({}),
+    narr: '第 14 行 <b>int n;</b> 只声明了一个整数，值还是不确定的，要等下一行由键盘读入。' });
+  push({ line: 15, kind: 'read', vars: V({ n: N }),
+    narr: '第 15 行 <b>cin >> n;</b> 读入 n = ' + N + '。程序要做的事：把相差 2 的一对数都检查一遍，两个都是质数就打印一行。' });
+  push({ line: 16, kind: 'trap', trap: '陷阱 1', vars: V({ n: N }),
+    narr: '第 16 行循环从 <b>i = 2</b> 开始，可它枚举的是 <b>(i, i+2)</b>：第一对候选是 (2, 4) 而不是 (2, 3)。相差 1 的 (2,3) 从头到尾都不会出现 —— 别凭直觉先写下它。' });
+
+  // 一次 isPrime(arg) 调用：产生 入口步 + 每个除数一步 +（命中时）return false 一步 / （质数）return true 一步
+  function emitCall(arg, outer, slot) {
+    var ti = trialInfo(arg);
+    v.arg = arg; v.rows = [];
+    push({ line: 4, kind: 'call', vars: V({ i: outer, arg: arg, cond: 'i=' + outer + ': ' + (outer + 2 <= N) }),
+      narr: '第 17 行调用 <b>isPrime(' + arg + ')</b>（这是' + (slot === 'left' ? '左边的 i' : '右边的 i+2') + '），实参 ' + arg + ' 交给第 4 行的形参 n。' });
+    if (ti.rows.length === 0) {
+      push({ line: 5, kind: 'notrial', vars: V({ i: outer, arg: arg }),
+        narr: '第 5 行 <b>for(int i = 2; i < n; ++i)</b>：条件 2 < ' + arg + ' 为假，循环体<b>一次都不执行</b>，直接掉到第 10 行。' });
+    }
+    for (var q = 0; q < ti.rows.length; ++q) {
+      var r = ti.rows[q];
+      v.rows.push(r); v.trial++;
+      if (r.hit) {
+        push({ line: 6, kind: 'trial-hit', vars: V({ i: outer, arg: arg, j: r.d, mod: r.mod }),
+          narr: '第 6 行 <b>' + arg + ' % ' + r.d + ' == 0</b> 成立（余 ' + r.mod + '），走进 if 分支。' });
+        v.verdict[arg] = false;
+        push({ line: 7, kind: 'ret-false', vars: V({ i: outer, arg: arg, j: r.d, mod: r.mod, ret: 'false' }),
+          narr: '第 7 行 <b>return false;</b>：' + arg + ' = ' + r.d + ' × ' + (arg / r.d) + ' 是合数，函数立刻结束，比 ' + r.d + ' 大的除数一个都不再试。' });
+        return { prime: false, trials: ti.rows.length };
+      }
+      push({ line: 6, kind: 'trial', vars: V({ i: outer, arg: arg, j: r.d, mod: r.mod }),
+        narr: '第 6 行 <b>' + arg + ' % ' + r.d + ' == 0</b> 不成立（余 ' + r.mod + '），回到第 5 行 ++i，换下一个除数继续试。' });
+    }
+    v.verdict[arg] = true;
+    push({ line: 10, kind: 'ret-true', vars: V({ i: outer, arg: arg, ret: 'true' }),
+      narr: '第 10 行 <b>return true;</b>：' + (arg === 2 ? '一次都没试（2 < 2 为假），2 就被判成质数。' : arg + ' 被 2…' + (arg - 1) + ' 全试过都没有因子，判定为质数。') });
+    if (arg === 2) {
+      push({ line: 5, kind: 'trap', trap: '陷阱 3', vars: V({ i: outer, arg: 2, ret: 'true' }),
+        narr: '同一个"循环一次都不进"的漏洞套在 0 和 1 上就出事：<b>isPrime(0) 与 isPrime(1) 都返回 true</b>（RESULTS.md 实测）。本程序因为 i 从 2 起才没被它坑到。' });
+    }
+    return { prime: true, trials: ti.rows.length };
+  }
+
+  var printed = [];
+  for (var i = 2; i + 2 <= N; ++i) {
+    v.arg = null; v.rows = [];
+    push({ line: 16, kind: 'outer', vars: V({ i: i, cond: (i + 2) + ' <= ' + N + ' = true' }),
+      narr: '第 16 行 <b>i + 2 <= n</b>：' + i + ' + 2 = ' + (i + 2) + ' ≤ ' + N + ' 成立，进入循环体，本轮检查候选对 (' + i + ', ' + (i + 2) + ')。' });
+    var L = emitCall(i, i, 'left');
+    var Rinfo = trialInfo(i + 2);
+    if (!L.prime) {
+      v.saved += Rinfo.rows.length; v.savedCalls++;
+      push({ line: 17, kind: 'and-false', vars: V({ i: i, arg: i, ret: 'false' }),
+        narr: '第 17 行 <b>isPrime(' + i + ') && isPrime(' + (i + 2) + ')</b>：左边已是 false，&& <b>短路</b>，右边的 isPrime(' + (i + 2) + ') 连调用都没有，白省 ' + Rinfo.rows.length + ' 次试除。' });
+    } else {
+      v.arg = i;
+      push({ line: 17, kind: 'and-left', vars: V({ i: i, arg: i, ret: 'true' }),
+        narr: '第 17 行 && 的左边 isPrime(' + i + ') 返回 true，右边必须真算：接着求 isPrime(' + (i + 2) + ')。' });
+      var R = emitCall(i + 2, i, 'right');
+      if (R.prime) {
+        v.out.push([i, i + 2]); printed.push([i, i + 2]);
+        push({ line: 18, kind: 'print', vars: V({ i: i, arg: i + 2, ret: 'true' }),
+          narr: '第 17 行两个条件<b>都为真</b>，执行第 18 行 <b>cout << i << " " << i + 2 << endl;</b>，输出一行「' + i + ' ' + (i + 2) + '」并换行。' });
+      } else {
+        push({ line: 17, kind: 'and-false', vars: V({ i: i, arg: i + 2, ret: 'false' }),
+          narr: '第 17 行：左边 true、右边 isPrime(' + (i + 2) + ') 是 false，&& 结果为假，第 18 行不执行，回到第 16 行 ++i。' });
+      }
+    }
+  }
+  var failI = Math.max(2, N - 1);
+  v.arg = null; v.rows = [];
+  push({ line: 16, kind: 'trap', trap: '陷阱 2', vars: V({ i: failI, cond: (failI + 2) + ' <= ' + N + ' = false' }),
+    narr: '第 16 行：i 走到 ' + failI + ' 时 ' + failI + ' + 2 = ' + (failI + 2) + ' > ' + N + '，条件为假，循环结束。所以 n=' + N + ' 时 i 最大只取到 <b>' + (N - 2) + '</b>，最后一组候选永远是 i = n-2。' });
+  var sum = 0; printed.forEach(function (p) { sum += p[0] + p[1]; });
+  push({ line: 21, kind: 'end', vars: V({ i: '-', cond: '-' }),
+    narr: '第 21 行 <b>return 0;</b>，main 结束，程序总共打印 ' + printed.length + ' 行。' });
+
+  var concl = {
+    line: 18, kind: 'summary',
+    vars: V({ i: '-', cond: '-' }),
+    narr: '结论（n=' + N + '）：输出 ' + printed.length + ' 对，整数之和 = <b>' + sum + '</b>；试除实际执行 <b>' + v.trial + '</b> 次，如果 && 不短路要 <b>' + (v.trial + v.saved) + '</b> 次，短路一共少算 <b>' + v.saved + '</b> 次（跳过 ' + v.savedCalls + ' 个 isPrime 调用）。'
+  };
+  push(concl);
+  var summaryIdx = steps.length - 1;
+  push({ line: 18, kind: 'exam', vars: V({ i: '-', cond: '-' }),
+    narr: '对照讲义：本页演示的就是第 16~20 题的程序。n=14 之和 44（题16 T）、n=50 之和 224（题19 B）、输出永无偶数（题18 T）、只有 i*i<=n 输出不变（题20 C）。' });
+
+  return { steps: steps, summaryIdx: summaryIdx, out: printed, sum: sum,
+    stats: { trial: v.trial, saved: v.saved, savedCalls: v.savedCalls } };
+}
+// ==== SIM-END ====
+
+var N = 20, PLAN = null, steps = [], t = 0, timer = null;
+
+function el(tag, cls, x) { const e = document.createElement(tag); if (cls) e.className = cls; if (x != null) e.textContent = x; return e; }
+
+function renderSrc(step) {
+  const pre = document.getElementById('src'); pre.innerHTML = '';
+  if (step.kind === 'ret-false') pre.className = 'src focus'; else pre.className = 'src';
+  for (let i = 0; i < SRC.length; i++) {
+    let cls = 'ln';
+    if (i + 1 === step.line) {
+      cls += ' on';
+      if (step.kind === 'ret-false') cls += ' rf';
+      if (step.kind === 'ret-true') cls += ' rt';
+    }
+    const ln = el('div', cls);
+    ln.appendChild(el('span', 'no', String(i + 1)));
+    ln.appendChild(el('span', 'tx', SRC[i] === '' ? ' ' : SRC[i]));
+    pre.appendChild(ln);
+  }
+}
+
+function renderVars(vars) {
+  const rows = [
+    ['n（main 第 14 行读入）', vars.n],
+    ['i（main 第 16 行外层循环）', vars.i],
+    ['第 16 行条件 i + 2 <= n', vars.cond],
+    ['当前调用 isPrime 的实参 n', vars.arg],
+    ['试除的除数 j（源码第 5 行叫 i）', vars.j],
+    ['n % j', vars.mod],
+    ['本次调用的返回值', vars.ret]
+  ];
+  let h = '<tr><th>变量 / 表达式</th><th>当前值</th></tr>';
+  rows.forEach(function (r) { h += '<tr><td>' + r[0] + '</td><td class="v">' + r[1] + '</td></tr>'; });
+  document.getElementById('vars').innerHTML = h;
+}
+
+function renderTrials(step) {
+  const v = step.view;
+  const box = document.getElementById('trials');
+  const hdr = document.getElementById('trhdr');
+  if (v.arg == null) {
+    hdr.textContent = '③ 本次 isPrime 调用的试除过程';
+    box.innerHTML = '<div class="hint">现在不在 isPrime 函数里（main 的第 16/17 行）。进入 isPrime 后这里会一除一行地列出记录。</div>';
+    return;
+  }
+  const verdict = v.verdict[v.arg];
+  const vt = verdict === undefined ? '未判定' : (verdict ? '质数（return true）' : '合数（return false）');
+  hdr.textContent = '③ isPrime(' + v.arg + ') 的试除记录 → ' + vt;
+  let h = '<table><tr><th>除数 j</th><th>' + v.arg + ' % j</th><th>j 整除 ' + v.arg + ' 吗</th><th>走到哪一行</th></tr>';
+  if (v.rows.length === 0) {
+    h += '<tr><td colspan="4" style="color:var(--bad)">第 5 行 2 &lt; ' + v.arg + ' 为假 —— 一次试除都没执行</td></tr>';
+  }
+  v.rows.forEach(function (r, idx) {
+    const last = idx === v.rows.length - 1;
+    const at = r.hit ? (step.line === 7 ? '第 7 行 return false;' : '第 6 行 if 成立') : '第 6 行为假 → 第 5 行 ++i';
+    h += '<tr class="' + (r.hit ? 'hit' : (last ? 'on' : '')) + '"><td>' + r.d + '</td><td>' + r.mod + '</td><td>' + (r.hit ? '是（整除）' : '否') + '</td><td>' + at + '</td></tr>';
+  });
+  h += '</table>';
+  if (step.kind === 'ret-false') {
+    h += '<div class="hint" style="margin-top:7px;color:var(--bad)">注意左边整片代码变暗，只有第 7 行亮着：' + v.arg + ' 一到除数 ' + v.rows[v.rows.length - 1].d + ' 就返回，后面的除数根本不会被试。</div>';
+  }
+  box.innerHTML = h;
+}
+
+function cellFor(x, view, role) {
+  const c = el('div', 'cell');
+  c.appendChild(el('span', null, String(x)));
+  const w = el('span', 'lb');
+  const vd = view.verdict[x];
+  if (vd === undefined) { c.className = 'cell'; w.textContent = '未判定'; }
+  else if (vd) { c.className = 'cell prime'; w.textContent = '质数'; }
+  else { c.className = 'cell comp'; w.textContent = '合数'; }
+  const twin = view.out.some(function (p) { return p[0] === x || p[1] === x; });
+  if (twin) c.className += ' twin';
+  if (view.arg === x) c.className += ' cur';
+  c.title = '数值 ' + x + (twin ? '（属于已找到的孪生对）' : '');
+  c.appendChild(w);
+  return c;
+}
+
+function renderStrips(step) {
+  const v = step.view;
+  const s1 = document.getElementById('strip1'), s2 = document.getElementById('strip2');
+  s1.innerHTML = ''; s2.innerHTML = '';
+  document.getElementById('lab1').textContent = '候选 i（第 16 行枚举，2 … ' + (N - 2) + '）';
+  document.getElementById('lab2').textContent = '候选 i + 2（跟着一起被 isPrime 判定，4 … ' + N + '）';
+  for (let x = 2; x <= N - 2; x++) s1.appendChild(cellFor(x, v, 'left'));
+  for (let x = 4; x <= N; x++) s2.appendChild(cellFor(x, v, 'right'));
+}
+
+function renderOut(step) {
+  const v = step.view;
+  const o = document.getElementById('out'); o.innerHTML = '';
+  if (v.out.length === 0) { o.appendChild(el('span', 'none', '（还没有任何输出）')); }
+  v.out.forEach(function (p) { o.appendChild(el('div', 'l', p[0] + ' ' + p[1])); });
+  document.getElementById('s1').textContent = v.trial;
+  document.getElementById('s2').textContent = v.saved;
+  document.getElementById('s3').textContent = v.trial + v.saved;
+  document.getElementById('s4').textContent = v.savedCalls;
+}
+
+function render() {
+  const step = steps[t];
+  renderSrc(step);
+  renderVars(step.vars);
+  renderTrials(step);
+  renderStrips(step);
+  renderOut(step);
+  const nn = document.getElementById('narr');
+  nn.className = 'narr' + (step.kind === 'trap' ? ' trap' : '');
+  nn.innerHTML = (step.trap ? '<span class="tag">' + step.trap + '</span>' : '') + step.narr;
+  document.getElementById('prog').textContent = '第 ' + (t + 1) + ' / ' + steps.length + ' 步　(n = ' + N + ')';
+  document.getElementById('prev').disabled = (t === 0);
+  document.getElementById('next').disabled = (t === steps.length - 1);
+}
+
+function stop() { if (timer) { clearInterval(timer); timer = null; document.getElementById('play').textContent = '▶ 自动播放'; } }
+
+function load(n) {
+  stop();
+  if (!(n >= 5 && n <= 200)) { alert('题目规定 5 ≤ n ≤ 1000；为了让步骤数能讲完，本页把演示上限设为 200。'); return; }
+  N = n; PLAN = buildSteps(N); steps = PLAN.steps; t = 0; render();
+}
+
+document.getElementById('load').onclick = function () {
+  const p = document.getElementById('preset').value;
+  let n = (p === 'custom') ? parseInt(document.getElementById('custom').value, 10) : parseInt(p, 10);
+  if (!Number.isFinite(n)) n = 20;
+  if (n > 200) { alert('已截断到 200：再多步骤就讲不完了。'); n = 200; }
+  if (n < 5) n = 5;
+  load(n);
+};
+document.getElementById('next').onclick = function () { stop(); if (t < steps.length - 1) { t++; render(); } };
+document.getElementById('prev').onclick = function () { stop(); if (t > 0) { t--; render(); } };
+document.getElementById('jump').onclick = function () { stop(); t = steps.length - 1; render(); };
+document.getElementById('home').onclick = function () { stop(); t = 0; render(); };
+document.getElementById('concl').onclick = function () { stop(); t = PLAN.summaryIdx; render(); };
+document.getElementById('play').onclick = function (e) {
+  if (timer) { stop(); return; }
+  e.target.textContent = '⏸ 暂停';
+  timer = setInterval(function () {
+    if (t >= steps.length - 1) { stop(); return; }
+    t++; render();
+  }, 650);
+};
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'ArrowRight') { e.preventDefault(); stop(); if (t < steps.length - 1) { t++; render(); } }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); stop(); if (t > 0) { t--; render(); } }
+  else if (e.key === ' ') { e.preventDefault(); document.getElementById('play').click(); }
+});
+
+load(20);
+</script>
+</body>
+</html>

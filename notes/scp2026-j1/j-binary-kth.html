@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>完善程序(1) 二分答案求第 k 小 · 题 33–37 分步演示</title>
+<style>
+  :root{--bg:#0f1220;--card:#1a1f35;--ink:#e8ecff;--dim:#8b93b5;--acc:#5eead4;--bad:#f59e6b;--good:#5eead4;--line:#262c4a;}
+  *{box-sizing:border-box}
+  body{margin:0;padding:20px 22px 34px;background:var(--bg);color:var(--ink);font:15px/1.65 "Segoe UI",system-ui,sans-serif}
+  h1{font-size:20px;margin:0 0 3px}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:16px;max-width:1180px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:13px}
+  .card h2{font-size:14px;letter-spacing:.06em;color:var(--dim);margin:0 0 10px;font-weight:600}
+  button{background:#2b3358;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 12px;font-size:14px;cursor:pointer;margin:0 6px 6px 0}
+  button:hover:not(:disabled){background:#394373}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.on{background:#1f5145;border-color:var(--acc);color:#d8fff6}
+  button.warn{background:#4a3020;border-color:#7c5233}
+  input[type=text],input[type=number]{background:#0d1020;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 10px;font:14px Consolas,monospace}
+  input[type=text]{width:250px}
+  input[type=number]{width:88px}
+  input[type=range]{width:150px;vertical-align:middle}
+  label{font-size:14px;color:var(--dim)}
+  .bar{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+  .sticky{position:sticky;top:0;z-index:9;background:#141830;border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:0 0 13px}
+  .prog{color:var(--ink);font:15px Consolas,monospace;margin-left:10px}
+  .prog b{color:var(--acc)}
+  .row{display:flex;gap:13px;flex-wrap:wrap}
+  .row>div{flex:1;min-width:420px}
+  .inv{background:#152a33;border:1px solid #2f6a78;border-radius:12px;padding:12px 15px;margin-bottom:13px;font-size:15px}
+  .inv b{color:var(--acc)}
+  .inv .tt{font-size:14px;color:#a5e8dd;letter-spacing:.06em;margin-bottom:6px;font-weight:600}
+  .inv .bad{color:var(--bad)}
+  .note{color:var(--ink);font-size:15px;min-height:74px}
+  .note b{color:var(--acc)} .note .o{color:var(--bad)}
+  .o{color:var(--bad)}
+  .numline{position:relative;height:44px;margin:6px 0 0}
+  .track{position:absolute;left:0;right:0;top:18px;height:8px;background:#0d1020;border:1px solid #2b3157;border-radius:5px}
+  .surv{position:absolute;top:0;height:8px;background:#2c6f62;border-radius:4px;min-width:3px}
+  .dead{position:absolute;top:0;height:8px;background:#20253f}
+  .mk{position:absolute;top:2px;width:2px;height:24px;background:#9d6bff}
+  .mk.x{background:var(--acc);width:3px}
+  .mk i{position:absolute;top:-16px;left:-18px;font:14px Consolas,monospace;font-style:normal;color:#c4a6ff;white-space:nowrap}
+  .mk.x i{color:var(--acc);left:-24px}
+  .ticks{position:relative;height:20px;font:14px Consolas,monospace;color:var(--dim)}
+  .ticks span{position:absolute;transform:translateX(-50%)}
+  .zoomwrap{margin-top:14px}
+  .zoom{position:relative;height:30px;background:#0d1020;border:1px solid #2b3157;border-radius:6px}
+  .zkeep{position:absolute;top:0;bottom:0;background:#2c6f62}
+  .zdrop{position:absolute;top:0;bottom:0;background:#241d2b}
+  .zx{position:absolute;top:-3px;bottom:-3px;width:3px;background:var(--acc)}
+  .zx em{position:absolute;top:-20px;left:-26px;font:14px Consolas,monospace;font-style:normal;color:var(--acc)}
+  .zlab{position:absolute;top:7px;font:14px Consolas,monospace;color:var(--dim)}
+  .zarrow{position:absolute;top:7px;font:14px Consolas,monospace;color:#d8fff6;white-space:nowrap}
+  .oback{position:relative;height:26px;margin-top:8px;background:linear-gradient(90deg,#3a2233,#20253f 50%,#3a2233);border:1px solid #2b3157;border-radius:6px}
+  .okeep{position:absolute;top:0;bottom:0;background:#1f5145}
+  .oflow{position:absolute;top:-2px;bottom:-2px;width:3px;background:var(--bad)}
+  .obub{position:absolute;top:-19px;font:14px Consolas,monospace;color:var(--bad);white-space:nowrap}
+  .cells{display:flex;gap:7px;flex-wrap:wrap;align-items:flex-end;min-height:132px;border-bottom:1px solid #3a4270;padding-top:20px}
+  .cell{width:56px;text-align:center}
+  .cb{height:92px;display:flex;align-items:flex-end;justify-content:center}
+  .cb div{width:34px;background:#2a3156;border-radius:4px 4px 0 0;border:1px solid #3a4270}
+  .cell.hit .cb div{background:var(--good);border-color:var(--good)}
+  .cell.miss .cb div{background:#4a3020;border-color:#7c5233}
+  .cell.cur .cb div{box-shadow:0 0 0 2px #9d6bff}
+  .cell .v{font:14px Consolas,monospace}
+  .cell .t{font-size:14px;color:var(--dim)}
+  .cell.hit .v{color:var(--good)} .cell.miss .v{color:var(--bad)}
+  .kbig{display:flex;gap:9px;flex-wrap:wrap;margin-top:10px}
+  .k{background:#131730;border:1px solid var(--line);border-radius:9px;padding:8px 11px;min-width:96px}
+  .k .lab{font-size:14px;color:var(--dim)}
+  .k .val{font:16px Consolas,monospace;margin-top:2px;word-break:break-all}
+  .k.g .val{color:var(--good)} .k.b .val{color:var(--bad)}
+  pre{margin:0;font:14px/1.55 Consolas,monospace;white-space:pre;overflow-x:auto}
+  .cl{padding:1px 7px;border-left:3px solid transparent;border-radius:4px;color:#c7cdea}
+  .cl.hi{background:#243055;border-left-color:var(--acc);color:#eafffb}
+  .cl.w{color:#f7c8a8}
+  .cl.hi.w{background:#3d2b1f;border-left-color:var(--bad)}
+  .cl .tag{color:#8b93b5}
+  table{width:100%;border-collapse:collapse;font:14px Consolas,monospace}
+  th,td{padding:3px 7px;border-bottom:1px solid #222743;text-align:right;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  tr.cur td{background:#242c52;color:var(--acc)}
+  tr.hangrow td{background:#3d2b1f;color:var(--bad)}
+  .scroll{max-height:330px;overflow:auto}
+  .tag2{display:inline-block;background:#232a4a;border:1px solid #333c66;border-radius:6px;padding:1px 7px;font-size:14px;margin:2px 4px 2px 0;color:#c7cdea}
+  .warnbox{background:#3d2b1f;border:1px solid #7c5233;border-radius:9px;padding:10px 12px;color:#ffd9c0;font-size:15px;margin-top:8px}
+  .okbox{background:#1f5145;border:1px solid #2f6a78;border-radius:9px;padding:10px 12px;color:#d8fff6;font-size:15px;margin-top:8px}
+  .sumtab td{white-space:normal;text-align:left;font-family:inherit}
+  .sumtab th{text-align:left}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<h1>完善程序 (1)：二分答案求"序列第 k 小" · 题 33–37</h1>
+<div class="sub">
+  不排序，而是<b>二分答案</b>：答案 = "最小的那个 x，使得不超过 x 的数至少有 k 个"。
+  这一页把二分区间 <b>[l, r]</b> 怎么一步步收缩画出来，并演示<b>填错空为什么死循环 / 溢出</b>。
+  官方答案 33~37 = <b>A C D D A</b>；所有"填错后果"都是本机 g++ 实测数字（见 <span class="tag2">verify/RESULTS.md</span>）。
+</div>
+
+<div class="card">
+  <h2>模式</h2>
+  <div class="bar">
+    <button id="m0" class="on">正常演示（A C D D A）</button>
+    <button id="m1" class="warn">陷阱一：④ 填 (l + r) / 2</button>
+    <button id="m2" class="warn">陷阱二：③ 里 r 该填什么</button>
+    <span class="prog" id="modewhy"></span>
+  </div>
+</div>
+
+<div class="sticky">
+  <div class="bar">
+    <button id="prev">上一步</button>
+    <button id="next">下一步</button>
+    <button id="play">自动播放</button>
+    <button id="end">跳到末尾</button>
+    <button id="home">回到开头</button>
+    <label>速度 <input type="range" id="spd" min="120" max="1400" step="40" value="620"></label>
+    <span class="prog" id="prog"></span>
+    <span class="prog" style="margin-left:14px;color:var(--dim)">快捷键 ← → 空格</span>
+  </div>
+</div>
+
+<div class="card" id="inputcard">
+  <h2>数据（老师可改：n ≤ 12，1 ≤ a[i] ≤ 2e9，1 ≤ k ≤ n）</h2>
+  <div class="bar">
+    <button class="pre" data-i="0">n=5 k=3 / 7 2 9 1 5 → 5</button>
+    <button class="pre" data-i="1">n=5 k=1 → 1</button>
+    <button class="pre" data-i="2">n=5 k=5 → 9</button>
+    <button class="pre" data-i="3">n=3 k=2 / 2e9 1 2e9 → 2000000000</button>
+  </div>
+  <div class="bar" style="margin-top:6px">
+    <label>n <input type="number" id="inN" min="1" max="12" value="5"></label>
+    <label>k <input type="number" id="inK" min="1" max="12" value="3"></label>
+    <label>数组 <input type="text" id="inA" value="7 2 9 1 5"></label>
+    <button id="load">载入并重新生成</button>
+    <label><input type="checkbox" id="exp" checked> check(x) 逐元素展开</label>
+  </div>
+  <div class="sub" id="loadmsg" style="margin:8px 0 0"></div>
+</div>
+
+<div class="inv" id="inv"></div>
+
+<div class="card">
+  <h2>① 数轴：二分区间 [l, r] 怎么收缩（值域 1 … 2e9，对数刻度）</h2>
+  <div id="loghint" class="sub" style="margin:0 0 6px"></div>
+  <div class="numline">
+    <div class="track" id="track"></div>
+  </div>
+  <div class="ticks" id="ticks"></div>
+  <div class="zoomwrap">
+    <div class="bar"><label>局部放大（线性，只看当前的 [l, r]）</label><span class="prog" id="zlen"></span></div>
+    <div class="zoom" id="zoom"></div>
+  </div>
+  <div id="overflowbox" class="hidden">
+    <div class="bar" style="margin-top:14px"><label>int 32 位溢出台尺：看 <code>l + r</code> 这个加法本身</label><span class="prog" id="ofinfo"></span></div>
+    <div class="oback" id="oback"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="card">
+    <h2>② check(x) 展开：数"不超过 x 的数有几个"</h2>
+    <div class="bar"><span class="tag2" id="xlab">x = -</span><span class="tag2" id="clab">c = -</span><span class="tag2" id="vlab">判定 -</span></div>
+    <div class="cells" id="cells"></div>
+    <div class="kbig">
+      <div class="k"><div class="lab">不超过 x 的个数 c</div><div class="val" id="k1">-</div></div>
+      <div class="k g"><div class="lab">check(x) = (k &le; c)</div><div class="val" id="k2">-</div></div>
+      <div class="k"><div class="lab">保留的半边</div><div class="val" id="k3">-</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>③ 代码（逐行高亮，填错的空会标橙）</h2>
+    <pre id="code"></pre>
+    <div class="bar" style="margin-top:8px"><span class="prog" id="curline"></span></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="card">
+    <h2>④ 变量表</h2>
+    <div id="vars"></div>
+  </div>
+  <div class="card">
+    <h2>⑤ 区间收缩表（数轴看不清之后，这张表才是真相）</h2>
+    <div class="scroll"><table id="tbl"><thead><tr><th>次</th><th>l</th><th>r</th><th>长度 r-l+1</th><th>x</th><th>c</th><th>check(x)</th><th>动作</th></tr></thead><tbody></tbody></table></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>⑥ 这一步在说什么</h2>
+  <div class="note" id="note"></div>
+</div>
+
+<div class="card" id="trapbox">
+  <h2 id="traptitle">陷阱演示</h2>
+  <div id="trapbody"></div>
+</div>
+
+<div class="card">
+  <h2>⑦ 五空小结：官方选项 + 其它填法的<b>实测</b>后果</h2>
+  <div class="sub" style="margin:0 0 8px">
+    "输出"一栏是本机 <span class="tag2">fill1.exe</span> / <span class="tag2">fill1_stress.exe</span> 跑出来的数字；点每行末尾的按钮可以把这个错误填法搬进上面的动画。
+  </div>
+  <div class="scroll" style="max-height:520px">
+  <table class="sumtab"><thead><tr><th style="width:52px">空</th><th style="width:150px">官方</th><th>其它填法实测后果</th><th style="width:150px">课堂彩蛋</th><th style="width:92px">演示</th></tr></thead>
+  <tbody id="sumbody"></tbody></table>
+  </div>
+  <div class="warnbox">
+    诚实说明：RESULTS.md <b>没有</b>记录"某个错误填法在所有数据上都对"，但它记录了两处<b>输出恰好相同</b>的巧合 ——
+    ③ 填 <code>a[n]</code> 在 <code>a={7,2,9,1,5}</code> 上因为 a[5]=5 正好不小于真答案，输出仍是 5；
+    ④ 填 <code>(l+r)/2</code> 在这组小数据上 l+r 从没超过 INT_MAX，输出也仍是 5。
+    <b>输出对 ≠ 填法对</b>：这就是为什么要用 5000 组随机数据对拍，而不是只验一组样例。
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============ 与 fill1.cpp 逐字对应的 JS 复刻 ============ */
+const INT_MAX = 2147483647, INT_MIN = -2147483648;
+const wrap32 = v => v | 0;                      // 模拟 32 位 int 回绕（本机 g++ 观察到的行为；标准里是 UB）
+
+function rValue(mode, n, arr) {
+  if (mode === 'D') return 2000000000;          // ③ D: 2e9（double 字面量 -> int = 2000000000）
+  if (mode === '1e9') return 1000000000;
+  if (mode === 'INTMAX') return INT_MAX;
+  if (mode === 'n') return n;
+  if (mode === 'an') return arr[n];
+  if (mode === 'shift') return 1;               // ③ C: 1 << 32 本机实测 = 1（移位 >= 位宽是 UB）
+  return 2000000000;
+}
+function midValue(mode, l, r) {
+  if (mode === 'D') return { x: l + Math.floor((r - l) / 2), raw: l + (r - l) / 2, wrapped: false };
+  if (mode === 'A') { const s = l + r, w = wrap32(s); return { x: Math.trunc(w / 2), raw: s, wrapped: (w !== s) }; }
+  if (mode === 'B') { const s = l + r + 1, w = wrap32(s); return { x: Math.trunc(w / 2), raw: s, wrapped: (w !== s) }; }
+  if (mode === 'C') return { x: (r >> 1), raw: r, wrapped: false, prec: true }; // l+(r-l)>>1 因为优先级变成 r>>1
+}
+function countLE(arr, n, x, strict) {
+  let c = 0; const hits = [];
+  for (let i = 1; i <= n; i++) { const h = strict ? (arr[i] < x) : (arr[i] <= x); hits.push(h); if (h) c++; }
+  return { c, hits };
+}
+
+/* ============ 场景 / 步骤生成 ============ */
+const PRESETS = [
+  { k: 3, a: [7, 2, 9, 1, 5], ans: 5, name: 'n=5 k=3 / 7 2 9 1 5' },
+  { k: 1, a: [7, 2, 9, 1, 5], ans: 1, name: 'n=5 k=1 / 7 2 9 1 5' },
+  { k: 5, a: [7, 2, 9, 1, 5], ans: 9, name: 'n=5 k=5 / 7 2 9 1 5' },
+  { k: 2, a: [2000000000, 1, 2000000000], ans: 2000000000, name: 'n=3 k=2 / 2e9 1 2e9' }
+];
+const DEF = { rMode: 'D', midMode: 'D', updMode: 'A', cmpStrict: false, retFlip: false };
+let SC = { data: PRESETS[0].a.slice(), k: PRESETS[0].k, o: Object.assign({}, DEF), l0: 1, cap: 200, title: '', custom: true };
+let steps = [], t = 0, timer = null, expectAns = null;
+
+function buildCode(o) {
+  const W = c => c ? ' w' : '';
+  const line = (txt, cls) => ({ txt, cls });
+  const L = [];
+  L.push(line('int n, k, a[100005];', ''));
+  L.push(line('bool check(int x) {', ''));
+  L.push(line('    int c = 0;', ''));
+  L.push(line('    for (int i = 1; i <= n; i++)', ''));
+  L.push(line('        if (a[i] ' + (o.cmpStrict ? '<' : '<=') + ' x)          // ① ' + (o.cmpStrict ? 'B（错）' : 'A'), W(o.cmpStrict)));
+  L.push(line('            c++;', ''));
+  L.push(line('    return ' + (o.retFlip ? 'c <= k' : 'k <= c') + ';              // ② ' + (o.retFlip ? 'A（错）' : 'C'), W(o.retFlip)));
+  L.push(line('}', ''));
+  L.push(line('int main() {', ''));
+  L.push(line('    cin >> n >> k;', ''));
+  L.push(line('    for (int i = 1; i <= n; i++) cin >> a[i];', ''));
+  const rn = { D: '2e9            // ③ D', '1e9': '1e9           // 候选', INTMAX: 'INT_MAX       // 候选', n: 'n              // ③ A（错）', an: 'a[n]           // ③ B（错）', shift: '1 << 32        // ③ C（错）' }[o.rMode];
+  L.push(line('    int l = 1, r = ' + rn, W(o.rMode !== 'D')));
+  L.push(line('    while (l < r) {', ''));
+  const xn = { D: 'l + (r - l) / 2   // ④ D', A: '(l + r) / 2        // ④ A（错）', B: '(l + r + 1) >> 1   // ④ B（错）', C: 'l + (r - l) >> 1   // ④ C（错）' }[o.midMode];
+  L.push(line('        int x = ' + xn, W(o.midMode !== 'D')));
+  L.push(line('            if (check(x))', ''));
+  L.push(line('                r = x;', ''));
+  L.push(line('            else', ''));
+  const un = { A: 'l = x + 1;       // ⑤ A', B: 'l = x;           // ⑤ B（错）', C: 'break;           // ⑤ C（错）' }[o.updMode];
+  L.push(line('            ' + un, W(o.updMode !== 'A')));
+  L.push(line('    }', ''));
+  L.push(line('    cout << l << endl;', ''));
+  return L;
+}
+
+function genSteps() {
+  const A = SC.data.slice(), arr = [0].concat(A), n = A.length, k = SC.k, o = SC.o, exp = document.getElementById('exp').checked;
+  let l = SC.l0, r = (SC.r0 !== undefined ? SC.r0 : rValue(o.rMode, n, arr));
+  const S = [], rows = [];
+  let last = { l: null, r: null, x: null, c: null, hits: [], scan: 0, verdict: null, act: '-', iter: 0, ofl: null, hang: false, ans: null };
+  function snap(over) {
+    const s = Object.assign({}, last, { hits: last.hits.slice(), rows: rows.slice() });
+    return Object.assign(s, over || {});
+  }
+  function push(line, note, over) { S.push({ line, note, s: snap(over) }); }
+
+  push(9, '读入 <b>n</b> 和 <b>k</b>：n = ' + n + '，k = ' + k + '。k 是"第几名"，注意 1 ≤ k ≤ n。');
+  push(10, '读入数组 a：' + arr.slice(1).join(' , ') + '。<b>没有排序</b> —— 二分答案根本不需要排序。');
+
+  const full = countLE(arr, n, r, o.cmpStrict);
+  const below = countLE(arr, n, l - 1, o.cmpStrict);
+  last = Object.assign({}, last, { l, r, iter: 0 });
+  push(11, '③ <b>int l = 1, r = ' + fmt(r) + '</b>。r 必须是<b>答案的上界</b>：a[i] 最大可到 2×10⁹，所以 r = 2e9 = 2000000000。'
+    + ' 起点满足不变式：<b>check(r) = ' + (o.retFlip ? (full.c <= k) : (k <= full.c)) + '</b>（' + full.c + ' 个数不超过 r），'
+    + '<b>check(l-1) = check(' + (l - 1) + ') = ' + (o.retFlip ? (below.c <= k) : (k <= below.c)) + '</b>。'
+    + ' l = 1 合法，是因为题面写了 <b>1 ≤ a[i]</b>，值域从 1 开始，所以答案不可能比 1 更小。');
+
+  const seen = {};
+  let it = 0, hang = false, hangWhy = '';
+  while (l < r) {
+    const key = l + ',' + r;
+    if (seen[key]) { hang = true; hangWhy = '区间 (l, r) = (' + l + ', ' + r + ') 又回来了 —— 真的死循环'; break; }
+    seen[key] = 1;
+    it++;
+    if (it > SC.cap) { hang = true; hangWhy = '迭代次数超过 ' + SC.cap + ' 的上限，仍未收敛 —— 疑似死循环（对拍脚本就是这么截断的）'; break; }
+    const mv = midValue(o.midMode, l, r);
+    const x = mv.x;
+    rows.push({ i: it, l: l, r: r, len: r - l + 1, x: x, c: null, ok: null, act: '-' });
+    last = Object.assign({}, last, { l, r, x, iter: it, c: null, hits: [], scan: 0, verdict: null, act: '-', ofl: mv.wrapped ? mv : null, preL: l, preR: r });
+    let mnote = '④ 取中点 <b>x = ' + fmt(x) + '</b>';
+    if (o.midMode === 'D') mnote += '（先减后加，r - l 不超过 2e9，永远不溢出）';
+    else if (mv.wrapped) mnote = '<span class="o">④ 填 A：真实 l + r = ' + fmt(mv.raw) + ' &gt; INT_MAX(2147483647)，'
+      + '32 位回绕成 ' + fmt(wrap32(mv.raw)) + '，除以 2 得到负数 x = ' + fmt(x) + '。有符号溢出在 C++ 标准里是未定义行为，这里是本机 g++ 的实测行为。</span>';
+    else mnote += '（本步 l + r = ' + fmt(mv.raw) + '，还没溢出）';
+    if (mv.prec) mnote = '④ 填 C：<code>l + (r - l) &gt;&gt; 1</code> —— <b>&gt;&gt; 的优先级比 + 低</b>，整个式子被解析成 <code>(l + (r - l)) &gt;&gt; 1 = r &gt;&gt; 1</code>，于是 x = ' + fmt(x) + '，跟 l 再无关系。';
+    push(13, mnote);
+
+    const res = countLE(arr, n, x, o.cmpStrict);
+    const cTot = res.c;
+    if (exp) {
+      for (let i = 1; i <= n; i++) {
+        const hs = res.hits.slice(0, i);
+        const cNow = hs.filter(Boolean).length;
+        rows[rows.length - 1] = Object.assign({}, rows[rows.length - 1], { c: cNow });
+        last = Object.assign({}, last, { c: cNow, hits: hs, scan: i });
+        push(res.hits[i - 1] ? 5 : 4, 'check(' + fmt(x) + ') 内：i = ' + i + '，<b>a[' + i + '] = ' + fmt(arr[i]) + '</b> '
+          + (res.hits[i - 1] ? '<b>≤</b> x → c++  (c = ' + cNow + ')' : (o.cmpStrict ? '&lt;' : '≤') + ' x 不成立 → c 不变 (' + cNow + ')'));
+      }
+    } else {
+      rows[rows.length - 1] = Object.assign({}, rows[rows.length - 1], { c: cTot });
+      last = Object.assign({}, last, { c: cTot, hits: res.hits.slice(), scan: n });
+      push(4, 'check(' + fmt(x) + ') 数完整个数组：' + cTot + ' 个数' + (o.cmpStrict ? '小于' : '不超过') + ' x。（已合并成一步，可用上面的勾选框逐元素展开）');
+    }
+    const ok = o.retFlip ? (cTot <= k) : (k <= cTot);
+    rows[rows.length - 1] = Object.assign({}, rows[rows.length - 1], { ok: ok });
+    last = Object.assign({}, last, { verdict: ok, c: cTot });
+    push(6, '② ' + (o.retFlip ? '<span class="o">填 A：<b>c &le; k</b>，也就是 "' + cTot + ' &le; ' + k + '" → ' + ok + '。方向整个反了：check 的语义是"至少有 k 个"，主语是 k，应该写 <b>k &le; c</b>。</span>'
+      : '返回 <b>k &le; c</b>：即 "' + k + ' &le; ' + cTot + '" → <b>' + ok + '</b>。'
+      + ' k &le; c 和 c &ge; k 是同一个意思，选项故意只给一种写法，考的是"把不等式读成一句话"而不是背方向。'));
+
+    let act;
+    if (ok) { r = x; act = 'r = x'; }
+    else if (o.updMode === 'A') { l = x + 1; act = 'l = x+1'; }
+    else if (o.updMode === 'B') { l = x; act = 'l = x'; }
+    else { act = 'break'; hang = true; hangWhy = '⑤ 填 break：直接跳出循环，打印的 l 还没走到答案（实测输出 ' + l + '，真答案 ' + fmt(expectAns) + '）'; }
+    rows[rows.length - 1] = Object.assign({}, rows[rows.length - 1], { act: act });
+    last = Object.assign({}, last, { l, r, act });
+    let un = ok
+      ? 'check(x) 为<b>真</b>：不超过 x 的数已经有 ' + cTot + ' 个，够 k 个了 → <b>x 可能是答案，也可能太大</b>，所以 <b>r = x</b>（x 留在区间里，因为它自己就是候选）。保留左半边 [' + fmt(l) + ', ' + fmt(r) + ']。'
+      : 'check(x) 为<b>假</b>：连 x 都不够大 → 答案<b>严格大于 x</b>，x 和它左边全出局，所以 <b>l = x + 1</b>（注意是 +1，x 本身已被排除）。保留右半边 [' + fmt(l) + ', ' + fmt(r) + ']。';
+    if (!ok && o.updMode === 'B') un = '<span class="o">⑤ 填 B：<b>l = x</b>。x 已经判过是假的，却还留在区间里；一旦 x = l（当 r = l + 1 时 x = l + (r-l)/2 = l 必然成立），区间一个格子也不掉 → 死循环。</span>';
+    if (o.updMode === 'C') un = '<span class="o">⑤ 填 C：<b>break</b>。check(x) 为假就直接退出，区间还没收缩到底，打印出来的 l 停在半路上，答案丢了。</span>';
+    push(ok ? 15 : 17, un);
+    if (act === 'break') break;
+  }
+  if (hang) {
+    last = Object.assign({}, last, { hang: true, hangWhy });
+    push(12, '<span class="o"><b>' + hangWhy + '</b>。此刻区间是 [l, r] = [' + fmt(l) + ', ' + fmt(r) + ']，长度 ' + fmt(r - l + 1) + '，'
+      + '而 l 已经跑到 ' + (l < 1 ? '<b>负数</b>（越界，正是 l + r 溢出的直接证据）' : '值域内') + '。'
+      + '真实程序在这里不会打印任何东西，只会 TLE。</span>');
+  }
+  last = Object.assign({}, last, { ans: l, hang: hang });
+  push(19, (hang ? '<span class="o">如果没被强行截断，程序会一直转；本机实测：④ 填 A 在 5000 组随机数据里有 <b>2316 组</b>是这样被迭代上限截断的。</span>' : 'l == r，循环结束，<b>cout &lt;&lt; l</b> 输出 <b>' + fmt(l) + '</b>。')
+    + ' 不变式收口：答案始终是"第一个让 check(x) 为真的 x"，收缩过程从未把它丢出 [l, r]，所以最后 l = r = 答案。', { fin: true });
+  steps = S; if (t >= S.length) t = S.length - 1;
+}
+function fmt(v) { if (v === null || v === undefined) return '-'; return String(v); }
+
+/* ============ 渲染 ============ */
+function el(tt, cls, x) { const e = document.createElement(tt); if (cls) e.className = cls; if (x !== undefined && x !== null) e.textContent = x; return e; }
+const LOGMAX = Math.log10(2000000000);
+function posLog(v) {
+  if (v <= 1) return 0;
+  if (v >= 2000000000) return 1;
+  return Math.log10(v) / LOGMAX;
+}
+function invariant(s) {
+  const A = SC.data, arr = [0].concat(A), n = A.length, k = SC.k, o = SC.o;
+  const box = document.getElementById('inv');
+  if (s.l === null) { box.innerHTML = '<div class="tt">不变式</div>还没进入二分。要维持的口号：<b>答案永远在 [l, r] 里</b>。'; return; }
+  const cr = countLE(arr, n, s.r, o.cmpStrict), cl = countLE(arr, n, s.l - 1, o.cmpStrict);
+  const okr = o.retFlip ? (cr.c <= k) : (k <= cr.c), okl = o.retFlip ? (cl.c <= k) : (k <= cl.c);
+  box.innerHTML = '<div class="tt">不变式（每一步都必须保持，否则二分就错了）</div>'
+    + '① <b>答案 ∈ [l, r]</b>，此刻区间长度 r - l + 1 = <b>' + fmt(s.r - s.l + 1) + '</b>；'
+    + '② <b>check(r) 为真</b>（此刻 check(' + fmt(s.r) + ') = ' + okr + '）；'
+    + '③ <b>check(l-1) 为假</b>（此刻 check(' + fmt(s.l - 1) + ') = ' + okl + '）。'
+    + '<br>所以 <b>r 初值必须 ≥ 最大值</b>：题面 a[i] ≤ 2×10⁹，r = 2e9 才能保证 check(r) 真；'
+    + '而 <b>l = 1</b> 对本题合法，因为 1 ≤ a[i]，值域就是从 1 开始，check(0) 必然数到 0 个。'
+    + (s.hang ? '<div class="bad">本模式里这个不变式被破坏：l 已经跑到 ' + fmt(s.l) + '，出了值域，说明 x 本身就是错的（溢出的后果）。</div>' : '');
+}
+function renderNumline(s) {
+  const track = document.getElementById('track'); track.innerHTML = '';
+  const pl = posLog(s.l === null ? 1 : s.l), pr = posLog(s.r === null ? 2000000000 : s.r);
+  const dl = el('div', 'dead'); dl.style.left = '0%'; dl.style.width = (pl * 100) + '%'; track.appendChild(dl);
+  const dr = el('div', 'dead'); dr.style.left = (pr * 100) + '%'; dr.style.width = ((1 - pr) * 100) + '%'; track.appendChild(dr);
+  const sv = el('div', 'surv'); sv.style.left = (pl * 100) + '%'; sv.style.width = Math.max(0.4, (pr - pl) * 100) + '%'; track.appendChild(sv);
+  if (s.x !== null && s.x !== undefined) {
+    const mk = el('div', 'mk x'); mk.style.left = (posLog(s.x) * 100) + '%'; mk.appendChild(el('i', null, 'x')); track.appendChild(mk);
+  }
+  const ml = el('div', 'mk'); ml.style.left = (pl * 100) + '%'; ml.appendChild(el('i', null, 'l')); track.appendChild(ml);
+  const mr = el('div', 'mk'); mr.style.left = (pr * 100) + '%'; mr.appendChild(el('i', null, 'r')); track.appendChild(mr);
+  const tk = document.getElementById('ticks'); tk.innerHTML = '';
+  [[1, '1'], [10, '10'], [100, '100'], [1e4, '1e4'], [1e6, '1e6'], [1e8, '1e8'], [2e9, '2e9']].forEach(p => {
+    const sp = el('span', null, p[1]);
+    sp.style.left = (posLog(p[0]) * 100) + '%'; tk.appendChild(sp);
+  });
+  const hint = document.getElementById('loghint');
+  if (s.iter > 5) {
+    hint.innerHTML = '已经第 ' + s.iter + ' 次迭代：区间每步减半，现在长度只有 <b>' + fmt(s.r - s.l + 1)
+      + '</b>，在 1…2e9 的对数数轴上只剩一个像素宽的缝。<b>数轴到此为止只能当"全景"看</b>，具体数值请看下面的局部放大条和收缩表。';
+  } else {
+    hint.innerHTML = '青色是还没被排除的候选值区间 [l, r]，绿色竖线是本次中点 x。每次砍掉一半：check(x) 真 → 留左边（含 x），假 → 留右边（不含 x）。';
+  }
+  // 局部放大（线性）：绿 = 留下来的半边，紫 = 被砍掉的半边（判定/收缩那两步用"收缩前"的区间来画）
+  const z = document.getElementById('zoom'); z.innerHTML = '';
+  const usePre = (s.verdict !== null && s.preL !== undefined && !s.fin);
+  const l = usePre ? s.preL : s.l, r = usePre ? s.preR : s.r, x = s.x;
+  const len = Math.max(1, r - l);
+  const pc = function (v) { return Math.max(0, Math.min(100, ((v - l) / len) * 100)); };
+  if (x !== null && x !== undefined && r - l >= 1) {
+    if (s.verdict === true) {
+      const kp = el('div', 'zkeep'); kp.style.left = '0%'; kp.style.width = pc(x) + '%'; z.appendChild(kp);
+      const dp = el('div', 'zdrop'); dp.style.left = pc(x) + '%'; dp.style.width = (100 - pc(x)) + '%'; z.appendChild(dp);
+      const ar = el('div', 'zarrow', '← 留左半边'); ar.style.left = Math.max(1, pc(x) / 2 - 9) + '%'; z.appendChild(ar);
+    } else if (s.verdict === false) {
+      const dp = el('div', 'zdrop'); dp.style.left = '0%'; dp.style.width = pc(x + 1) + '%'; z.appendChild(dp);
+      const kp = el('div', 'zkeep'); kp.style.left = pc(x + 1) + '%'; kp.style.width = (100 - pc(x + 1)) + '%'; z.appendChild(kp);
+      const ar = el('div', 'zarrow', '留右半边 →'); ar.style.left = Math.min(72, pc(x + 1) + 3) + '%'; z.appendChild(ar);
+    }
+    const zx = el('div', 'zx'); zx.style.left = pc(x) + '%'; zx.appendChild(el('em', null, 'x=' + fmt(x))); z.appendChild(zx);
+  }
+  if (l !== null) {
+    const zl = el('div', 'zlab', fmt(l)); zl.style.left = '4px'; z.appendChild(zl);
+    const zr = el('div', 'zlab', fmt(r)); zr.style.right = '4px'; z.appendChild(zr);
+  }
+  document.getElementById('zlen').textContent = (l === null || r === null) ? '还没赋值' : ('区间 [' + fmt(l) + ', ' + fmt(r) + ']  长度 ' + fmt(r - l + 1) + (usePre ? '（收缩前）' : ''));
+  // 溢出台尺
+  const ob = document.getElementById('overflowbox');
+  if (s.ofl || (s.l !== null && s.l < 1)) {
+    ob.classList.remove('hidden');
+    const back = document.getElementById('oback'); back.innerHTML = '';
+    const real = s.ofl ? s.ofl.raw : (s.l + (s.r === null ? 0 : s.r));
+    const sp = el('div', 'okeep'); sp.style.left = '0%'; sp.style.width = '50%'; back.appendChild(sp);
+    const f1 = el('div', 'oflow'); f1.style.left = '50%'; back.appendChild(f1);
+    const b1 = el('div', 'obub', 'INT_MAX = 2147483647'); b1.style.left = '50%'; back.appendChild(b1);
+    const realPct = 50 + Math.min(48, (real / 4e9) * 50);
+    const b2 = el('div', 'obub', '真实 l + r = ' + fmt(real) + ' 超出上界'); b2.style.left = '52%'; back.appendChild(b2);
+    const wr = wrap32(real);
+    const wp = 25 + (wr / 2147483647) * 25;
+    const f2 = el('div', 'oflow'); f2.style.left = wp + '%'; f2.style.background = '#9d6bff'; back.appendChild(f2);
+    const b3 = el('div', 'obub'); b3.style.color = '#c4a6ff'; b3.textContent = '回绕后 = ' + fmt(wr) + ' → x = ' + fmt(Math.trunc(wr / 2)); b3.style.left = '0px'; b3.style.top = '30px'; back.appendChild(b3);
+    back.style.height = '52px';
+    document.getElementById('ofinfo').textContent = '④ 若填 (l + r) / 2，这个加法本身就先炸了';
+  } else {
+    ob.classList.add('hidden');
+  }
+}
+function renderCheck(s) {
+  const A = SC.data, arr = [0].concat(A), n = A.length, k = SC.k, o = SC.o;
+  const box = document.getElementById('cells'); box.innerHTML = '';
+  const mx = Math.max.apply(null, arr.slice(1));
+  document.getElementById('xlab').textContent = 'x = ' + (s.x === null ? '-' : fmt(s.x));
+  document.getElementById('clab').textContent = 'c = ' + (s.c === null ? '-' : s.c);
+  document.getElementById('vlab').textContent = s.verdict === null ? '判定：还没轮到'
+    : ('判定：' + (o.retFlip ? 'c ≤ k' : 'k ≤ c') + ' 即 ' + (o.retFlip ? (s.c + ' ≤ ' + k) : (k + ' ≤ ' + s.c)) + ' → ' + (s.verdict ? '真' : '假'));
+  if (s.x === null) {
+    box.appendChild(el('div', 'sub', '进入了 check 才有这一栏：把每个 a[i] 和 x 比一次，不超过 x 就 c++。'));
+  } else {
+    for (let i = 1; i <= n; i++) {
+      const done = i <= s.hits.length, hit = s.hits[i - 1];
+      const cell = el('div', 'cell' + (done ? (hit ? ' hit' : ' miss') : '') + (i === s.scan ? ' cur' : ''));
+      const cb = el('div', 'cb');
+      const h = Math.max(6, Math.round(Math.sqrt(arr[i] / mx) * 92));
+      cb.appendChild(el('div', null, null)).style.height = h + 'px';
+      cell.appendChild(cb);
+      cell.appendChild(el('div', 'v', fmt(arr[i])));
+      cell.appendChild(el('div', 't', done ? (hit ? 'a[' + i + ']≤x' : '不≤x') : '未看'));
+      box.appendChild(cell);
+    }
+  }
+  document.getElementById('k1').textContent = s.c === null ? '-' : String(s.c);
+  document.getElementById('k2').textContent = s.verdict === null ? '-' : (s.verdict ? '真（x 可以当答案）' : '假（x 太小）');
+  document.getElementById('k3').textContent = s.act;
+}
+function renderCode(li) {
+  const pre = document.getElementById('code'); pre.innerHTML = '';
+  CODE.forEach(function (ln, i) {
+    const d = el('div', 'cl' + ln.cls + (i === li ? ' hi' : ''));
+    d.textContent = ln.txt;
+    pre.appendChild(d);
+  });
+  document.getElementById('curline').textContent = '执行到的行：第 ' + (li + 1) + ' 行 —— ' + CODE[li].txt.trim();
+}
+function renderVars(s, li) {
+  const rowsv = [
+    ['l', fmt(s.l), s.l !== null && s.l < 1 ? 'b' : ''],
+    ['r', fmt(s.r), ''],
+    ['x = 中点', fmt(s.x), ''],
+    ['c（本轮已数到）', s.c === null ? '-' : String(s.c), ''],
+    ['k', String(SC.k), ''],
+    ['check(x)', s.verdict === null ? '-' : (s.verdict ? '真' : '假'), s.verdict === null ? '' : (s.verdict ? 'g' : 'b')],
+    ['区间长度 r-l+1', s.l === null ? '-' : fmt(s.r - s.l + 1), ''],
+    ['第几次迭代', String(s.iter), ''],
+    ['执行到的行', '第 ' + (li + 1) + ' 行', ''],
+    ['答案（l==r 时）', s.ans === null ? '还没出来' : fmt(s.ans), s.ans === null ? '' : 'g']
+  ];
+  document.getElementById('vars').innerHTML = '<table><tbody>' + rowsv.map(function (z) {
+    return '<tr><td style="text-align:left">' + z[0] + '</td><td style="text-align:right;color:' + (z[2] === 'b' ? 'var(--bad)' : (z[2] === 'g' ? 'var(--good)' : 'inherit')) + '">' + z[1] + '</td></tr>';
+  }).join('') + '</tbody></table>';
+}
+function renderTable(s) {
+  const tb = document.querySelector('#tbl tbody'); tb.innerHTML = '';
+  s.rows.forEach(function (row) {
+    const tr = el('tr', row.i === s.iter ? 'cur' : '');
+    [row.i, row.l, row.r, row.len, row.x, row.c === null ? '' : row.c, row.ok === null ? '' : (row.ok ? '真' : '假'), row.act]
+      .forEach(function (v) { tr.appendChild(el('td', null, String(v))); });
+    tb.appendChild(tr);
+  });
+  if (s.hang) {
+    const tr = el('tr', 'hangrow');
+    ['!', s.l, s.r, (s.r - s.l + 1), s.x, '', '', '死循环'].forEach(function (v) { tr.appendChild(el('td', null, fmt(v))); });
+    tb.appendChild(tr);
+  }
+}
+let CODE = [];
+function render() {
+  const s = steps[t].s, li = steps[t].line;
+  invariant(s); renderNumline(s); renderCheck(s); renderCode(li); renderVars(s, li); renderTable(s);
+  document.getElementById('note').innerHTML = steps[t].note;
+  document.getElementById('prog').innerHTML = '第 <b>' + (t + 1) + '</b> / ' + steps.length + ' 步';
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === steps.length - 1;
+}
+
+/* ============ 模式 / 场景 ============ */
+function setSC(sc) {
+  SC = Object.assign({ data: PRESETS[0].a.slice(), k: PRESETS[0].k, o: Object.assign({}, DEF), l0: 1, cap: 200, custom: false }, sc);
+  expectAns = kth(SC.data, SC.k);
+  CODE = buildCode(SC.o);
+  genSteps(); t = 0; render(); stop();
+}
+function kth(a, k) { return a.slice().sort(function (x, y) { return x - y; })[k - 1]; }
+
+document.getElementById('m0').onclick = function () { mode(0); };
+document.getElementById('m1').onclick = function () { mode(1); };
+document.getElementById('m2').onclick = function () { mode(2); };
+function mode(m) {
+  [0, 1, 2].forEach(function (i) { document.getElementById('m' + i).classList.toggle('on', i === m); });
+  document.getElementById('inputcard').style.display = m === 0 ? '' : 'none';
+  if (m === 0) {
+    document.getElementById('modewhy').innerHTML = '正确填法 A C D D A；数据可用上面的输入框改。';
+    trapNormal();
+    loadFromInputs(true);
+  } else if (m === 1) {
+    document.getElementById('modewhy').innerHTML = '陷阱一：④ 填 <code>(l + r) / 2</code> —— 加法先溢出，区间随后不再收缩。';
+    trapOne();
+  } else {
+    document.getElementById('modewhy').innerHTML = '陷阱二：③ 里 <code>l = 1, r = ?</code> 的候选对比：n / a[n] / 1&lt;&lt;32 / 1e9 / INT_MAX / 2e9。';
+    trapTwo();
+  }
+}
+
+/* ---- 陷阱一 ---- */
+function trapOne() {
+  document.getElementById('traptitle').textContent = '陷阱一：④ 填 A「x = (l + r) / 2」为什么死循环 / 溢出';
+  const b = document.getElementById('trapbody');
+  b.innerHTML = ''
+    + '<div class="note">本题 <code>l</code>、<code>r</code> 都能取到 2×10⁹ 量级，所以 (l + r) 最大约 <b>4×10⁹ &gt; INT_MAX = 2147483647</b>。'
+    + ' 先讲一个反直觉的点：<b>在这组小数据上填 A 输出还是 5</b>，因为 l + r 从来没超过 INT_MAX。错法是靠"大数据"才暴露的。'
+    + ' 本机 5000 组随机对拍（n ≤ 50，1 ≤ a[i] ≤ 2×10⁹）实测：<b>④ 填 D 不一致 0/5000；④ 填 A 有 2316/5000 组死循环</b>（被迭代上限 200 强行截断），'
+    + ' 极端数据 <code>a={2e9,2e9,2e9,2e9,2e9}, k=1</code> 迭代 201 次仍不收敛。</div>'
+    + '<div class="bar" style="margin-top:10px">'
+    + '<button id="t1a" class="warn">A：大数据现场溢出（a 全是 2e9, k=1）</button>'
+    + '<button id="t1b" class="warn">B：小区间 [4,5] 配 ⑤ 填 B「l = x」= 原地不动</button>'
+    + '<button id="t1c">C：对照 —— 同样数据但 ④ 填 D</button>'
+    + '<button id="t1d" class="warn">跑 5000 组随机对拍（JS 复刻 C++ 的 mt19937 与取数顺序）</button>'
+    + '</div><div id="t1out" style="margin-top:10px"></div>';
+  document.getElementById('t1a').onclick = function () {
+    setSC2({ data: [2e9, 2e9, 2e9, 2e9, 2e9], k: 1, o: Object.assign({}, DEF, { midMode: 'A' }) });
+    document.getElementById('t1out').innerHTML = '<div class="warnbox">已载入。第 1 步 x = 1e9 还算对（l + r = 2000000001 没超），第 2 步 l = 1000000001、r = 2000000000，'
+      + 'l + r = 3000000001 直接爆 int，x 变成负数，l 从此跳出值域，区间在"正 / 负"之间来回弹，约 30 步后 (l, r) 开始重复 —— 死循环。</div>';
+  };
+  document.getElementById('t1b').onclick = function () {
+    setSC2({ data: [7, 2, 9, 1, 5], k: 3, o: Object.assign({}, DEF, { midMode: 'A', updMode: 'B' }), l0: 4, r0: 5, cap: 200 });
+    document.getElementById('t1out').innerHTML = '<div class="warnbox">区间手动设成 <b>[4, 5]</b>（真实程序跑到第 32 次迭代时就是它）。'
+      + '此时 l = 4、r = 5，x = (4 + 5) / 2 = 4，check(4) 数到 c = 2 &lt; k = 3 为假，本该 <code>l = x + 1 = 5</code> 才能收口；'
+      + '但 ⑤ 填了 <code>l = x</code> → l 还是 4，r 还是 5，<b>区间一个格子都没掉</b>，永远重复同一状态。这就是"填错空为什么死循环"的最小模型。</div>';
+  };
+  document.getElementById('t1c').onclick = function () {
+    setSC2({ data: [2e9, 2e9, 2e9, 2e9, 2e9], k: 1, o: Object.assign({}, DEF) });
+    document.getElementById('t1out').innerHTML = '<div class="okbox">同样的数据，④ 填 D：<code>x = l + (r - l) / 2</code>。r - l 最多 2e9 - 1，先减后加永不溢出，'
+      + '31 次迭代收敛到 <b>2000000000</b>（本机 fill1.exe 实测一致）。</div>';
+  };
+  document.getElementById('t1d').onclick = function () { stress(); };
+}
+function setSC2(sc) { sc.custom = false; setSC(sc); }
+
+/* 复刻 fill1_stress.cpp：mt19937(12345) + rng()%50 取数，实测死循环 2316/5000 */
+function MT(seed) { this.mt = new Array(624); this.mti = 625; this.mt[0] = seed >>> 0;
+  for (let i = 1; i < 624; i++) { const s = (this.mt[i - 1] ^ (this.mt[i - 1] >>> 30)) >>> 0; this.mt[i] = (Math.imul(1812433253, s) + i) >>> 0; } }
+MT.prototype.gen = function () {
+  for (let i = 0; i < 624; i++) {
+    const y = ((this.mt[i] & 0x80000000) | (this.mt[(i + 1) % 624] & 0x7fffffff)) >>> 0;
+    let n = this.mt[(i + 397) % 624] >>> 0;
+    if (y & 1) n = (n ^ 0x9908b0df) >>> 0;
+    this.mt[i] = (n ^ (y >>> 1)) >>> 0;
+  }
+  this.mti = 0;
+};
+MT.prototype.next = function () {
+  if (this.mti >= 624) this.gen();
+  let y = this.mt[this.mti++];
+  y = (y ^ (y >>> 11)) >>> 0; y = (y ^ ((y << 7) & 0x9d2c5680)) >>> 0;
+  y = (y ^ ((y << 15) & 0xefc60000)) >>> 0; y = (y ^ (y >>> 18)) >>> 0;
+  return y >>> 0;
+};
+function stressSolve(a, k, midMode) {
+  let l = 1, r = 2000000000, st = 0;
+  while (l < r) {
+    if (++st > 200) return -800000000;
+    const x = midMode === 'A' ? Math.trunc(wrap32(l + r) / 2) : l + Math.floor((r - l) / 2);
+    let c = 0; for (let i = 0; i < a.length; i++) if (a[i] <= x) c++;
+    if (k <= c) r = x; else l = x + 1;
+  }
+  return l;
+}
+function stress() {
+  const out = document.getElementById('t1out');
+  out.innerHTML = '<div class="note">正在跑 5000 组（纯前端，几秒）…</div>';
+  setTimeout(function () {
+    const rng = new MT(12345);
+    let badD = 0, badA = 0, hangA = 0;
+    for (let q = 0; q < 5000; q++) {
+      const n = 1 + rng.next() % 50, k = 1 + rng.next() % n, a = [];
+      for (let i = 0; i < n; i++) a.push(1 + rng.next() % 2000000000);
+      const ref = kth(a, k);
+      const d = stressSolve(a, k, 'D'), A = stressSolve(a, k, 'A');
+      if (d !== ref) badD++;
+      if (A !== ref) badA++;
+      if (A === -800000000) hangA++;
+    }
+    out.innerHTML = '<div class="' + (hangA === 2316 ? 'okbox' : 'warnbox') + '">JS 复刻结果：④ 填 D 与 sort 不一致 = <b>' + badD
+      + ' / 5000</b>；④ 填 A 不一致 = <b>' + badA + ' / 5000</b>，其中死循环被 200 步上限截断 = <b>' + hangA + ' / 5000</b>。'
+      + ' C++ 侧 fill1_stress.exe 的官方记录是 <b>0 / 5000</b> 与 <b>2316 / 5000（全是死循环）</b>。'
+      + (hangA === 2316 ? '<b>本页把这个数字逐位复现了</b> —— 因为 JS 复刻用的随机数发生器（mt19937，种子 12345）和取数顺序与 fill1_stress.cpp 完全相同，int 回绕按本机 x86 行为模拟。' : '')
+      + '</div><div class="note" style="margin-top:6px">注意：有符号溢出在 C++ 标准里是<b>未定义行为</b>，"2316" 是这台机器（MinGW g++ 13.1 -O2）的实测数字，换编译器可能给出别的错误形态（答案错、段错误、或直接优化掉），但"④ 必须写 l + (r - l) / 2"这个结论不变。</div>';
+  }, 30);
+}
+
+/* ---- 陷阱二 ---- */
+const CAND = [
+  { rMode: 'D', data: [7, 2, 9, 1, 5], k: 3, rv: '2e9 → 2000000000', out: '5', tag: '③ D 官方', ok: true, why: '2e9 是 <b>double 字面量</b>，赋给 int 做窄化转换得 2000000000 &lt; INT_MAX(2147483647)，装得下 → r 合法，且 ≥ 任何 a[i]，check(r) 必真。这组数据输出 5。' },
+  { rMode: 'D', data: [2e9, 2e9, 2e9, 2e9, 2e9], k: 1, rv: '2000000000', out: '2000000000', tag: '2e9 顶到最大', ok: true, why: 'a[i] 恰好 = 2×10⁹，r = 2e9 正好覆盖；本机 fill1.exe 对这组输入输出 2000000000。' },
+  { rMode: 'n', data: [2e9, 2e9, 2e9, 2e9, 2e9], k: 1, rv: 'n = 5', out: '5', tag: '③ A：n', ok: false, why: 'n 是<b>个数</b>的上界（真实数据能到 10⁵），不是<b>数值</b>的上界。r = 5 把答案 2000000000 直接截掉 → 输出 5。' },
+  { rMode: 'an', data: [5, 1, 9, 2, 3], k: 5, rv: 'a[n] = 3', out: '3', tag: '③ B：a[n]', ok: false, why: 'a 没排序，a[n] 只是最后一个元素。真答案 9，r = a[5] = 3，二分只能在 [1,3] 里找 → 输出 3（本机 1 次迭代就结束）。' },
+  { rMode: 'an', data: [7, 2, 9, 1, 5], k: 3, rv: 'a[n] = 5', out: '5', tag: '③ B：a[n] 但碰巧', ok: false, why: 'a[5] = 5 恰好 ≥ 真答案 5，<b>输出也是 5</b>。"样例过了"不等于"填法对" —— 这是最常骗学生的一栏，换上一行数据立刻错。' },
+  { rMode: 'shift', data: [7, 2, 9, 1, 5], k: 3, rv: '1 << 32（本机 = 1）', out: '1', tag: '③ C：1 << 32', ok: false, why: 'int 左移 32 位（≥ 位宽）是<b>未定义行为</b>，本机实测 <code>1 &lt;&lt; 32 = 1</code> → r = 1，<code>while(l &lt; r)</code> 一次都不进，输出 1。看起来像"最大上界"，其实最危险。' },
+  { rMode: '1e9', data: [2e9, 2e9, 2e9, 2e9, 2e9], k: 1, rv: '1000000000', out: '1000000000', tag: '候选 1e9', ok: false, why: '1e9 &lt; 2×10⁹，把答案截掉了：check(x) 在这组数据里永远假，l 一路顶到 r = 1e9 → 输出 1000000000（本机实测，29 步）。' },
+  { rMode: 'INTMAX', data: [2e9, 2e9, 2e9, 2e9, 2e9], k: 1, rv: '2147483647', out: '2000000000', tag: '候选 INT_MAX', ok: true, why: '2147483647 ≥ 2e9，作为上界<b>语义正确</b>，配合 ④ D 输出 2000000000 对。但它让 l + r 更容易顶破天花板：一旦 ④ 填 A，几乎必然溢出（本机实测 33 步进入循环）。' }
+];
+function trapTwo() {
+  document.getElementById('traptitle').textContent = '陷阱二：③「int l = 1, r = ?」的候选对比';
+  const b = document.getElementById('trapbody');
+  let h = '<div class="note">判据只有一条：<b>r 必须是答案的一个上界，而且 check(r) 要为真</b>（这样不变式"答案 ∈ [l, r]"才立得住）；'
+    + '同时 r 又必须是<b>能用 int 装下的整数</b>。题面 a[i] ≤ 2×10⁹，所以 r = 2×10⁹ = 2000000000，正好写 <code>2e9</code>。'
+    + '<br>关于 <code>2e9</code> 能不能编译：本机 <code>g++ -static -O2 -std=c++14 -Wall</code> 对 <code>int r = 2e9;</code> <b>不给警告</b>，实测 r = 2000000000；'
+    + '但 <code>2e9</code> 本身是 double，把常量改成 <code>2.2e9</code> 就会报 <code>[-Woverflow]</code>，实测值被折成 2147483647。'
+    + '也就是说："能编译"靠的是运气刚好装得下，写 <code>2000000000</code> 才是零风险。<br>点下面的候选，右边动画就会用那个 r 跑一遍真实收缩过程。</div>';
+  h += '<div class="bar" style="margin-top:10px">';
+  CAND.forEach(function (c, i) { h += '<button class="cand' + (c.ok ? '' : ' warn') + '" data-c="' + i + '">' + c.tag + ' → 输出 ' + c.out + '</button>'; });
+  h += '</div><div id="candwhy" style="margin-top:10px"></div>';
+  h += '<div class="scroll" style="margin-top:12px;max-height:260px"><table><thead><tr><th>候选写法</th><th>r 的值</th><th>测试数据</th><th>本机输出</th><th>正误</th></tr></thead><tbody>'
+    + CAND.map(function (c) {
+        return '<tr><td>' + c.tag + '</td><td>' + c.rv + '</td><td>' + c.data.map(function (x) { return x >= 2e9 ? '2e9' : String(x); }).join(',') + ' k=' + c.k + '</td><td>' + c.out + '</td><td style="color:' + (c.ok ? 'var(--good)' : 'var(--bad)') + '">' + (c.ok ? '对' : '错') + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+  b.innerHTML = h;
+  Array.prototype.forEach.call(b.querySelectorAll('.cand'), function (btn) {
+    btn.onclick = function () {
+      const c = CAND[+btn.dataset.c];
+      setSC2({ data: c.data.slice(), k: c.k, o: Object.assign({}, DEF, { rMode: c.rMode }) });
+      const w = document.getElementById('candwhy');
+      w.className = c.ok ? 'okbox' : 'warnbox';
+      w.innerHTML = '<b>' + c.tag + '</b>（r = ' + c.rv + '，测试数据 ' + c.data.join(' ') + '，k = ' + c.k + '，本机输出 ' + c.out + '）：' + c.why;
+    };
+  });
+  const w0 = document.getElementById('candwhy');
+  w0.className = 'okbox';
+  w0.innerHTML = '选一个候选开始对比。默认动画是官方 ③ D。';
+  setSC2({ data: CAND[0].data.slice(), k: CAND[0].k, o: Object.assign({}, DEF, { rMode: 'D' }) });
+}
+function trapNormal() {
+  document.getElementById('traptitle').textContent = '正常演示的补充说明（也欢迎切到上面两个陷阱模式）';
+  document.getElementById('trapbody').innerHTML = ''
+    + '<div class="note"><b>为什么 r = x 而不是 r = x - 1？</b>因为 check(x) 为真时，x <b>自己就是合法候选</b>（它可能就是答案），丢掉会漏解。<br>'
+    + '<b>为什么 l = x + 1 而不是 l = x？</b>check(x) 为假时 x 已被判死刑，必须把它踢出区间；不踢就会在 r = l + 1 时原地不动 → 死循环（陷阱一里的 B 场景就是这个）。<br>'
+    + '<b>为什么 while (l &lt; r) 而不是 while (l &lt;= r)？</b>这套写法靠"区间最后缩到只剩一个点"来收口，出来时 l == r 就是答案，不需要额外记 pos。<br>'
+    + '复杂度：区间每步减半，迭代 log2(2e9) ≈ 31 次，每次 check 扫一遍数组 O(n)，合计 <b>O(n log V)</b> = 10⁵ × 31 ≈ 3×10⁶，稳过；'
+    + '而排序取第 k 小是 O(n log n) —— 本题两者都可行，但二分答案能推广到"值域大、答案单调"的题。</div>'
+    + '<div class="kbig" style="margin-top:10px">'
+    + '<div class="k"><div class="lab">官方答案 33~37</div><div class="val">A C D D A</div></div>'
+    + '<div class="k g"><div class="lab">demo 5 3 / 7 2 9 1 5</div><div class="val">5</div></div>'
+    + '<div class="k"><div class="lab">迭代次数（本机）</div><div class="val">31</div></div>'
+    + '<div class="k"><div class="lab">5000 组对拍（④ 填 D）</div><div class="val">0 组不一致</div></div></div>';
+}
+
+/* ---- 五空小结 ---- */
+const SUM = [
+  { b: '①', off: 'A：a[i] <= x', alt: '填 B <code>a[i] &lt; x</code>（严格小于）→ 数的是"比 x 小的个数"，二分化出来是<b>第 k+1 小</b>。demo 正确 5，实测输出 <b>6</b>（off-by-one，31 步）。', why: '"不超过 x"就是 ≤，含等号。', demo: { o: { cmpStrict: true } } },
+  { b: '②', off: 'C：k <= c', alt: '填 A <code>c &lt;= k</code> → 方向整个反了，check 在 5 个元素时恒假，l 一路顶到上界，实测输出 <b>2000000000</b>（30 步）。', why: 'k ≤ c 与 c ≥ k 同义；选项故意只给一种写法，考"把不等式读成一句话"。', demo: { o: { retFlip: true } } },
+  { b: '③', off: 'D：2e9', alt: '填 A <code>n</code> → 值上界被截成 5；填 B <code>a[n]</code> → <code>a={5,1,9,2,3} k=5</code> 输出 3（真答案 9）；填 C <code>1 &lt;&lt; 32</code> → UB，本机 = 1，循环一次不进，输出 1。', why: '2e9 是 double，转 int 得 2000000000 &lt; INT_MAX，恰好装得下 → 合法但有窄化转换。', demo: { o: { rMode: 'shift' } } },
+  { b: '④', off: 'D：l + (r - l) / 2', alt: '填 A <code>(l + r) / 2</code> → 5000 组随机对拍 <b>2316 组死循环</b>；填 B <code>(l + r + 1) &gt;&gt; 1</code> → 除了加法溢出还用上取整，配合 r = x / l = x + 1 必死循环；填 C <code>l + (r - l) &gt;&gt; 1</code> → 优先级 bug，实际是 r &gt;&gt; 1，本机实测也是死循环（>200 步截断）。', why: '先减后加永不溢出；本页 JS 复刻能逐位复现 2316。', demo: { o: { midMode: 'A' }, data: [2e9, 2e9, 2e9, 2e9, 2e9], k: 1 } },
+  { b: '⑤', off: 'A：l = x + 1', alt: '填 B <code>l = x</code> → 当 r = l + 1 时 x = l，check 假则 l 不动，本机实测卡死在 [4,5] 共 201 步；填 C <code>break</code> → 直接丢掉答案（实测停在第一个假 x 处）。', why: 'check(x) 假 → 答案严格大于 x → x 必须出局。', demo: { o: { updMode: 'B' } } }
+];
+function buildSum() {
+  const tb = document.getElementById('sumbody'); tb.innerHTML = '';
+  SUM.forEach(function (z, i) {
+    const tr = el('tr');
+    tr.appendChild(el('td', null, z.b));
+    tr.appendChild(el('td', null, ''));
+    tr.children[1].innerHTML = '<b>' + z.off + '</b>';
+    tr.appendChild(el('td', null, ''));
+    tr.children[2].innerHTML = z.alt;
+    tr.appendChild(el('td', null, ''));
+    tr.children[3].innerHTML = z.why;
+    const td = el('td');
+    const bt = el('button', 'warn', '放进动画');
+    bt.onclick = function () {
+      mode(0);
+      const o = Object.assign({}, DEF, z.demo.o || {});
+      setSC2({ data: (z.demo.data || SC.data).slice(), k: z.demo.k || SC.k, o: o, l0: 1 });
+      document.getElementById('loadmsg').innerHTML = '已把 <b>' + z.b + '</b> 的错误填法载入动画：' + z.alt;
+    };
+    td.appendChild(bt); tr.appendChild(td);
+    tb.appendChild(tr);
+  });
+}
+
+/* ============ 输入 / 控件 ============ */
+function loadFromInputs(silent) {
+  const nv = +document.getElementById('inN').value, kv = +document.getElementById('inK').value;
+  const vals = document.getElementById('inA').value.trim().split(/[\s,]+/).map(Number).filter(function (x) { return Number.isFinite(x); });
+  const msg = document.getElementById('loadmsg');
+  if (!(nv >= 1 && nv <= 12)) { msg.innerHTML = '<span class="o">n 必须是 1…12（演示用，真实 n ≤ 10⁵ 同理，只是画不清）</span>'; return; }
+  if (vals.length !== nv) { msg.innerHTML = '<span class="o">数组要正好 ' + nv + ' 个数，现在给了 ' + vals.length + ' 个</span>'; return; }
+  if (vals.some(function (v) { return v < 1 || v > 2000000000; })) { msg.innerHTML = '<span class="o">题面保证 1 ≤ a[i] ≤ 2×10⁹，改成 1…2000000000 之间</span>'; return; }
+  if (!(kv >= 1 && kv <= nv)) { msg.innerHTML = '<span class="o">k 必须落在 1…n</span>'; return; }
+  const o = Object.assign({}, DEF);
+  setSC({ data: vals, k: kv, o: o, l0: 1, cap: 200, custom: true });
+  msg.innerHTML = '数据 <b>' + vals.join(' ') + '</b>，k = ' + kv + ' → 正确答案 <b>' + kth(vals, kv) + '</b>（sort 后取第 k 小，与本机 fill1.exe 一致）。共 ' + steps.length + ' 步。';
+}
+document.getElementById('load').onclick = function () { loadFromInputs(); };
+document.getElementById('exp').onchange = function () {
+  const keepL = SC.l0, keepO = SC.o, keepD = SC.data, keepK = SC.k;
+  setSC({ data: keepD.slice(), k: keepK, o: keepO, l0: keepL, cap: 200, custom: SC.custom });
+};
+Array.prototype.forEach.call(document.querySelectorAll('.pre'), function (bt) {
+  bt.onclick = function () {
+    const p = PRESETS[+bt.dataset.i];
+    document.getElementById('inN').value = p.a.length;
+    document.getElementById('inK').value = p.k;
+    document.getElementById('inA').value = p.a.join(' ');
+    loadFromInputs();
+  };
+});
+document.getElementById('next').onclick = function () { if (t < steps.length - 1) { t++; render(); } };
+document.getElementById('prev').onclick = function () { if (t > 0) { t--; render(); } };
+document.getElementById('end').onclick = function () { t = steps.length - 1; render(); stop(); };
+document.getElementById('home').onclick = function () { t = 0; render(); stop(); };
+function stop() { if (timer) { clearInterval(timer); timer = null; document.getElementById('play').textContent = '自动播放'; } }
+document.getElementById('play').onclick = function (e) {
+  if (timer) { stop(); return; }
+  e.target.textContent = '暂停';
+  timer = setInterval(function () {
+    if (t >= steps.length - 1) { stop(); return; }
+    t++; render();
+  }, +document.getElementById('spd').value);
+};
+document.getElementById('spd').onchange = function () { if (timer) { clearInterval(timer); timer = null; document.getElementById('play').click(); } };
+document.addEventListener('keydown', function (e) {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') { e.preventDefault(); document.getElementById('next').click(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); document.getElementById('prev').click(); }
+  else if (e.key === ' ') { e.preventDefault(); document.getElementById('play').click(); }
+});
+
+/* ============ 启动 ============ */
+buildSum();
+CODE = buildCode(DEF);
+mode(0);
+</script>
+</body>
+</html>
