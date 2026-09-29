@@ -1,0 +1,139 @@
+# Agent 工作规范
+
+本文件约束 Agent 在此仓库内的所有操作。每次会话开始写代码前必须先读本文件。
+
+---
+
+## 1. 项目定位
+
+为**讲课**服务的 OI 题解知识库。每道题的输出对象是"正在听讲的初三到高中学生"，不是评测机。  
+写作质量标准见 [`notes/CONVENTIONS.md`](notes/CONVENTIONS.md)。
+
+---
+
+## 2. 目录规范
+
+```
+solutions/<主题>/<题号-slug>/   # 一题一目录，见 CONVENTIONS.md
+notes/                           # 跨题讲义、比赛规律总结、教案
+templates/                       # 写作模板，只读
+scripts/                         # 工具脚本
+```
+
+新增题目：  
+```bash
+bash scripts/new_problem.sh <P题号> <主题路径> <中文名>
+# 例：bash scripts/new_problem.sh P1048 dp/knapsack 采药
+```
+
+---
+
+## 3. 每道题的工作流
+
+按顺序完成以下步骤，不得跳过验证直接写答案：
+
+### 3.1 读题与代码验证
+
+1. 将用户提供的题面和代码写入 `programs/j1.cpp`（或对应编号）。
+2. **本地编译并运行**，记录确定输出：
+   ```bash
+   g++ -static -O2 -std=c++14 programs/j1.cpp -o programs/j1.exe
+   ./programs/j1.exe
+   ```
+   本机有两套 MinGW 路径冲突，**必须加 `-static`**，否则段错误。
+3. 输出结果与手推不符时，以程序实际输出为准，修改推导而不是修改程序。
+
+### 3.2 写题解 README.md
+
+结构固定（来自 `templates/solution-template.md`）：
+
+```
+题目大意 → 暴力想法 → 关键观察 → 算法设计 → 正确性论证 → 复杂度
+→ 可视化讲解 → 讲解代码 → 易错点 → 常见变式 → 一句话提炼
+```
+
+- **"一句话提炼"** 放在末尾，是讲课时板书用的，必须可独立引用。
+- 对用户原始代码的问题要**直接指出**，不能静默替换。
+
+### 3.3 写可视化
+
+单文件 `visualization.html`，约束：
+- 内联 CSS/JS，无外部 CDN，浏览器直接打开。
+- 控件：上一步 / 下一步 / 自动播放 / 跳到末尾。
+- 有代码行高亮 + 变量状态表（或数组条形图）。
+- 深色主题，沿用现有 HTML 配色（`--bg:#0f1220` 等）。
+
+### 3.4 更新索引
+
+新增题目后，在根目录 `README.md` 的题目列表表格追加一行。
+
+### 3.5 记录版本
+
+见第 4 节。
+
+---
+
+## 4. 版本管理规范
+
+### 4.1 Git 提交
+
+每次完成一个逻辑单元（新增一道题、修改一份讲义、修复一个可视化）后提交：
+
+```bash
+git add <files>
+git commit -m "<type>(<scope>): <subject>"
+```
+
+type 取值：`feat`（新题）、`fix`（纠错）、`docs`（讲义补充）、`style`（可视化调整）、`chore`（脚本/规范）。
+
+**不要 push**，除非用户明确说"推上去"。
+
+### 4.2 CHANGELOG.md
+
+仓库根目录维护 `CHANGELOG.md`，格式：
+
+```markdown
+## YYYY-MM-DD
+
+- **新增** P1048 采药（dp/knapsack）：完整题解 + 背包分步可视化
+- **修复** P14357 visualization.html 桶高度在 n>50 时溢出
+- **讲义** notes/cspjs-round1-2026/：CSP-J/S 第一轮模拟题，含 J/S 各 3 篇阅读程序可视化
+```
+
+每次 commit 前更新 CHANGELOG.md，把 CHANGELOG.md 和改动文件一起加入同一次提交。
+
+### 4.3 metadata.yml 状态字段
+
+`status` 字段说明真实情况，不得虚报：
+
+- `AC`：已通过洛谷/NOI 评测（需要用户提供截图或确认）
+- `未本地评测（原因）`：没有网络评测环境时的默认值
+- `对拍验证`：与暴力版随机对拍 N 组一致，写明 N
+
+---
+
+## 5. 洛谷题目抓取
+
+洛谷题目页需要登录，直接 WebFetch 拿不到题面。  
+用户可手动保存 HTML 后运行：
+
+```bash
+node scripts/parse_luogu.js <保存的html路径>
+```
+
+脚本从 SSR JSON 中提取题面字段，输出到 stdout。
+
+---
+
+## 6. 推送
+
+远端目前指向镜像 `gh-proxy.com`（直连 github.com 被重置）。  
+如需 push：
+
+```bash
+git remote set-url origin https://github.com/fenghuangyuan1412/oi-solutions.git
+git push origin main
+```
+
+推送前必须先跑 `git status` 和 `git log --oneline -5`，确认不会覆盖用户本地未 push 的改动。  
+**任何情况下不得 `--force`**，除非用户明确授权。
