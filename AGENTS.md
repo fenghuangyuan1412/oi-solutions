@@ -97,7 +97,8 @@ type 取值：`feat`（新题）、`fix`（纠错）、`docs`（讲义补充）�
 
 - **新增** P1048 采药（dp/knapsack）：完整题解 + 背包分步可视化
 - **修复** P14357 visualization.html 桶高度在 n>50 时溢出
-- **讲义** notes/cspjs-round1-2026/：CSP-J/S 第一轮模拟题，含 J/S 各 3 篇阅读程序可视化
+- **讲义** notes/zhenti-2026-j1/、notes/zhenti-2026-s1/：2026 第一轮卷子原文讲评（题面见 paper.md）
+- **讲义** notes/mock-cspjs-round1/：自编仿真题（非真题），含 J/S 各 3 篇阅读程序可视化
 ```
 
 每次 commit 前更新 CHANGELOG.md，把 CHANGELOG.md 和改动文件一起加入同一次提交。
@@ -122,6 +123,33 @@ node scripts/parse_luogu.js <保存的html路径>
 ```
 
 脚本从 SSR JSON 中提取题面字段，输出到 stdout。
+
+---
+
+## 5.5 真题卷（整卷 PDF）的题面流水线
+
+`notes/zhenti-2026-j1/`、`notes/zhenti-2026-s1/` 是**整卷讲评**，题面来自用户提供的 PDF。
+规则：**题目文字只允许出现在 `problem.txt` 里，别的地方一律由脚本机械生成**，
+这样"抄错题目"这种事不可能发生。
+
+| 文件 | 谁写的 | 作用 |
+|---|---|---|
+| `problem.txt` | 人手抄自 PDF | 唯一题面来源，保留卷面行号（空行也带行号） |
+| `paper.md` | `scripts/paper_from_text.js` | 整卷好读版：去页眉页脚和广告、程序包成代码块、卷面答案在最后 |
+| `README.md` 里的 `> **卷面原文**` / `> **卷面完整程序**` 引用块 | `scripts/inject_paper_text.js` | 逐题、逐篇把题面贴进讲评对应小节 |
+| `README.md` 的其余正文 | 人手写 | 讲评本体，脚本不碰 |
+
+```bash
+# 重新生成整卷题面（J 卷行号在行首，S 卷在行尾）
+node scripts/paper_from_text.js notes/zhenti-2026-j1 --num-at start --pdf "SCP2026 J1 全卷（附答案）.pdf" --paper SCP-J1
+node scripts/paper_from_text.js notes/zhenti-2026-s1 --num-at end   --pdf "SCP2026 S1 全卷（附答案）.pdf" --paper SCP-S1
+# 往 README 贴卷面原文（可反复执行，已贴过的小节会自动跳过）
+node scripts/inject_paper_text.js notes/zhenti-2026-j1 --blanks 33-37,38-42
+node scripts/inject_paper_text.js notes/zhenti-2026-s1 --blanks 34-38,39-43
+```
+
+注意：`> **卷面原文**` 引用块是生成内容，**不要手改**；要改题面就改 `problem.txt` 再重跑。
+自编仿真题在 `notes/mock-cspjs-round1/`，不是任何一年的真题，别混用。
 
 ---
 

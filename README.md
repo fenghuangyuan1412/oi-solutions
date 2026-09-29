@@ -49,9 +49,9 @@ GitHub 原生渲染 Markdown 中的 Mermaid 流程图与 `$$...$$` 公式，因�
 
 | 讲义 | 覆盖 | 可视化 |
 | --- | --- | --- |
-| [notes/cspjs-round1-2026/](notes/cspjs-round1-2026) | CSP-J / CSP-S 2026 第一轮 真题风格卷（含全部答案与程序实测） | [j-trace.html](notes/cspjs-round1-2026/j-trace.html)、[s-trace.html](notes/cspjs-round1-2026/s-trace.html) |
-| [notes/scp2026-j1/](notes/scp2026-j1) | 洛谷模拟卷 SCP-J1 2026 全 42 题零基础讲评 + `verify/` 实测证据 | 孪生素数、二维 dp 填表、九连环 dfs、二分第 k 小、分层 BFS 迷宫（共 5 个，见讲义 §0.1） |
-| [notes/scp2026-s1/](notes/scp2026-s1) | 洛谷模拟卷 SCP-S1 2026 全 43 题零基础讲评 + `verify/` 实测证据 | permanent 状压 dp、Fibonacci 词 + Zeckendorf、异或哈希必经边（共 3 个，见讲义 §0.1） |
+| ★ [notes/zhenti-2026-j1/](notes/zhenti-2026-j1) | **2026 第一轮 · SCP-J1 全卷（你提供的那份卷子原文）**，42 题零基础讲评，题面全文见 `paper.md` | 孪生素数、二维 dp 填表、九连环 dfs、二分第 k 小、分层 BFS 迷宫（共 5 个，见讲义 §0.1） |
+| ★ [notes/zhenti-2026-s1/](notes/zhenti-2026-s1) | **2026 第一轮 · SCP-S1 全卷（你提供的那份卷子原文）**，43 题零基础讲评，题面全文见 `paper.md` | permanent 状压 dp、Fibonacci 词 + Zeckendorf、异或哈希必经边（共 3 个，见讲义 §0.1） |
+| [notes/mock-cspjs-round1/](notes/mock-cspjs-round1) | 自编仿真题集（**不是任何一份真题**，按官方题型结构 100 分出的练习） | [j-trace.html](notes/mock-cspjs-round1/j-trace.html)、[s-trace.html](notes/mock-cspjs-round1/s-trace.html) |
 
 ## 参考项目
 
