@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T4 总选打投 · 分层 DP 与"减去 dp[s-v][v]"分步演示</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:20px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:16px 18px; margin-bottom:16px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 14px; font-size:14px; cursor:pointer; margin-right:8px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  textarea { background:#0d1020; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+             padding:8px 10px; font:13px/1.5 Consolas,monospace; width:300px; height:150px; resize:vertical; }
+  .topbar { display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .prog { color:var(--dim); font-size:13px; margin-left:auto; }
+  .err { color:var(--warn); font-size:13px; max-width:300px; }
+  .row { display:flex; gap:16px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:300px; }
+  .note { color:var(--dim); font-size:14px; min-height:104px; }
+  .note b { color:var(--ink); }
+  /* 状态表 */
+  #gridwrap { overflow-x:auto; }
+  table.g { border-collapse:separate; border-spacing:2px; font:12px Consolas,monospace; }
+  table.g th { color:var(--dim); font-weight:400; padding:2px 4px; text-align:center; }
+  table.g th.tot { color:#7dd3fc; }
+  td.h { color:#5f6a92; text-align:right; padding-right:6px; white-space:nowrap; }
+  td.c { min-width:40px; height:26px; padding:0 5px; text-align:center; border-radius:5px;
+         background:#232a4a; border:1px solid #333c66; color:#6f78a0; }
+  td.c.nz { background:#123a44; border-color:#1f6f7a; color:var(--acc); font-weight:700; }
+  td.c.srcrow { border-color:#4b5aa8; }
+  td.c.sub { background:#4a1c1c; border:2px solid var(--warn); color:var(--warn); font-weight:700; }
+  td.c.min { background:#123055; border:2px solid #7dd3fc; color:#7dd3fc; }
+  td.c.dst { background:#1a4a2a; border:2px solid var(--ok); color:var(--ok); font-weight:700; }
+  td.c.dst .old { color:#6f78a0; text-decoration:line-through; font-weight:400; font-size:10px; margin-right:3px; }
+  td.c.ansrow { box-shadow:inset 0 -2px 0 #6b4a22; }
+  td.t { min-width:44px; height:26px; padding:0 5px; text-align:center; border-radius:5px;
+         background:#0f1a2e; border:1px solid #2b3f66; color:#7dd3fc; }
+  td.t.nz { background:#123055; border-color:#7dd3fc; font-weight:700; }
+  td.t.ans { border:2px solid var(--ok); color:var(--ok); background:#1a4a2a; font-weight:700; }
+  td.t.srcrow { border:2px dashed #7dd3fc; }
+  /* 算式 */
+  .fx { font:15px/2 Consolas,monospace; }
+  .fx .m { color:#7dd3fc; font-weight:700; }
+  .fx .s { color:var(--warn); font-weight:700; background:#4a1c1c; border-radius:4px; padding:1px 5px; }
+  .fx .d { color:var(--ok); font-weight:700; }
+  .fx .r { color:#c9a227; }
+  .legend { font-size:12px; color:var(--dim); margin-top:10px; }
+  .legend i { display:inline-block; width:11px; height:11px; border-radius:3px; margin:0 4px 0 12px; vertical-align:-1px; }
+  table.vars { border-collapse:collapse; width:100%; font:13px Consolas,monospace; }
+  table.vars td, table.vars th { border:1px solid #2c3560; padding:5px 8px; text-align:left; }
+  table.vars th { color:var(--dim); font-weight:400; background:#141830; }
+  table.vars td.hot { color:var(--acc); font-weight:700; }
+  table.vars td.bad { color:var(--warn); font-weight:700; }
+  pre.code { margin:0; font:13px/1.65 Consolas,monospace; color:#c3cbee; overflow-x:auto; }
+  pre.code .ln { display:block; padding:0 8px; border-radius:4px; white-space:pre; color:#7d86ab; }
+  pre.code .ln.run { background:#173a4a; color:var(--acc); }
+  pre.code .ln.run2 { background:#3a1c1c; color:var(--warn); }
+  .daybar { display:flex; flex-wrap:wrap; gap:6px; font:12px Consolas,monospace; }
+  .dchip { padding:4px 8px; border-radius:6px; background:#232a4a; border:1px solid #333c66; color:#6f78a0; }
+  .dchip.on { outline:2px solid var(--acc); color:var(--ink); }
+  .dchip.done { opacity:.55; }
+</style>
+</head>
+<body>
+<h1>T4 总选打投 / vote —— 分层 DP：为什么减去 <span style="color:var(--warn)">dp[s-v][v]</span></h1>
+<div class="sub">CSP-J 第二轮模拟卷第 2 套 · 对齐 CSP-J 2024 T4 接龙 P11230 · 蓝格 = 被读的总数 tot[s-v]，红格 = 被挖掉的 dp[s-v][v]，绿格 = 正在写入的 ndp[s][v]</div>
+
+<div class="topbar">
+  <textarea id="src">3 6
+2 1 2
+2 2 3
+1 3</textarea>
+  <div>
+    <div><button id="load">载入样例 / 重新生成</button></div>
+    <div style="margin-top:8px">
+      <button id="prev">◀ 上一步</button>
+      <button id="next">下一步 ▶</button>
+      <button id="play">▶ 自动播放</button>
+      <button id="jump">跳到末尾</button>
+    </div>
+    <div class="err" id="err" style="margin-top:8px"></div>
+  </div>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="row">
+  <div class="card" style="flex:1.25"><h2>① 状态表 dp[s][v]（行 = 已用热度总和 s，列 = 最后一天的热度值 v，最右列 = tot[s]）</h2>
+    <div id="gridwrap"></div>
+    <div class="legend">
+      <i style="background:#123a44;border:1px solid #1f6f7a"></i>非零 dp
+      <i style="background:#123055;border:2px solid #7dd3fc"></i>tot[s-v] 被读的那格
+      <i style="background:#4a1c1c;border:2px solid #f87171"></i>dp[s-v][v] 被减掉的那格
+      <i style="background:#1a4a2a;border:2px solid #86efac"></i>ndp[s][v] 正在写入
+    </div>
+  </div>
+  <div class="card"><h2>讲解</h2>
+    <div class="note" id="note"></div>
+    <div class="daybar" id="daybar"></div>
+  </div>
+</div>
+
+<div class="card"><h2>② 本步转移算式</h2>
+  <div class="fx" id="fx"></div>
+</div>
+
+<div class="row">
+  <div class="card"><h2>③ 变量状态表</h2>
+    <table class="vars" id="vars"></table>
+  </div>
+  <div class="card" style="flex:1.2"><h2>④ 代码行高亮（solution.cpp 核心）</h2>
+    <pre class="code" id="code"></pre>
+  </div>
+</div>
+
+<script>
+const MOD = 998244353;
+const CODE = [
+  'const int MOD = 998244353, N = 5005, V = 105;',
+  'int dp[N][V], ndp[N][V], tot[N], cnt[V];',
+  'for (int i = 1; i <= m; i++) {',
+  '    读入当天 k 个值, cnt[v]++;          // 重复值分别计数',
+  '    if (i == 1) {',
+  '        for (v) dp[v][v] = cnt[v];      // 第一天没有相邻限制',
+  '    } else {',
+  '        for (v) if (cnt[v]) for (int s = v; s <= S; s++) {',
+  '            long long ways = tot[s-v] - dp[s-v][v];   // 挖掉"昨天也是 v"',
+  '            if (ways < 0) ways += MOD;  // 余数相减可能为负',
+  '            ndp[s][v] = ways * cnt[v] % MOD;',
+  '        }',
+  '        memcpy(dp, ndp, sizeof dp);     // 滚动到下一层',
+  '    }',
+  '    for (int s = 1; s <= S; s++) tot[s] = (Σ_v dp[s][v]) % MOD;',
+  '}',
+  'printf("%d\\n", tot[S]);'
+];
+const MAXS = 60, MAXM = 12, MAXV = 12, MAXSTEPS = 500;
+
+let m = 0, S = 0, days = [], allVals = [], steps = [], t = 0, timer = null;
+
+function el(tag, cls, txt) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (txt != null) e.textContent = txt;
+  return e;
+}
+function key(s, v) { return s + ',' + v; }
+
+// ---- 解析输入 ----
+function parse() {
+  const raw = document.getElementById('src').value;
+  const lines = raw.split(/\r?\n/).map(function (x) { return x.trim(); }).filter(function (x) { return x.length; });
+  if (lines.length < 2) return '至少要两行：第一行 m S，后面 m 行每天的项目';
+  const h = lines[0].split(/\s+/).map(Number);
+  if (h.length < 2 || !isFinite(h[0]) || !isFinite(h[1])) return '第一行要是两个整数：m S';
+  const mm = h[0], SS = h[1];
+  if (mm < 1 || SS < 1) return 'm 和 S 都要 ≥ 1';
+  if (mm > MAXM) return '演示版限制 m ≤ ' + MAXM + '（当前 ' + mm + '）';
+  if (SS > MAXS) return '演示版限制 S ≤ ' + MAXS + '（当前 ' + SS + '，格子太多画不下）';
+  if (lines.length < 1 + mm) return '只有 ' + (lines.length - 1) + ' 行数据，不足 m = ' + mm + ' 天';
+  const ds = [];
+  const set = {};
+  for (let i = 0; i < mm; i++) {
+    const p = lines[1 + i].split(/\s+/).map(Number);
+    if (p.some(function (x) { return !isFinite(x); })) return '第 ' + (i + 2) + ' 行有非数字';
+    const k = p[0];
+    if (k < 1) return '第 ' + (i + 2) + ' 行 k 要 ≥ 1';
+    if (p.length < 1 + k) return '第 ' + (i + 2) + ' 行说有 ' + k + ' 个值，实际只给了 ' + (p.length - 1);
+    const cnt = {};
+    for (let j = 0; j < k; j++) {
+      const v = p[1 + j];
+      if (v < 1) return '热度值要 ≥ 1';
+      if (v <= SS) { cnt[v] = (cnt[v] || 0) + 1; set[v] = 1; }
+    }
+    ds.push(cnt);
+  }
+  const vs = Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
+  if (vs.length > MAXV) return '演示版最多画 ' + MAXV + ' 列不同热度值（当前 ' + vs.length + ' 个）';
+  m = mm; S = SS; days = ds; allVals = vs;
+  return null;
+}
+
+// ---- 生成步骤：完全照 solution.cpp 的逻辑跑一遍 ----
+function snap(dp, tot) {
+  const a = {}, b = {};
+  for (const kk in dp) if (dp[kk]) a[kk] = dp[kk];
+  for (const kk in tot) if (tot[kk]) b[kk] = tot[kk];
+  return { dp: a, tot: b };
+}
+
+function build() {
+  steps = [];
+  let dp = {}, tot = {};
+  // 第 1 天
+  const c1 = days[0];
+  for (const v in c1) { const vv = +v; if (vv <= S) dp[key(vv, vv)] = c1[vv] % MOD; }
+  tot = {};
+  for (let s = 1; s <= S; s++) { let x = 0; for (const v in allVals) { const q = dp[key(s, allVals[v])]; if (q) x = (x + q) % MOD; } if (x) tot[s] = x; }
+  steps.push({ kind: 'day1', day: 1, line: [5], ...snap(dp, tot),
+    note: '第 1 天没有"相邻"限制：只选了一个项目，总和就等于它的热度值。'
+        + '所以只有对角线上的格子有值 —— <b>dp[v][v] = cnt[v]</b>（当天有 cnt[v] 个热度为 v 的项目）。' });
+
+  for (let i = 1; i < m; i++) {
+    const cnt = days[i];
+    steps.push({ kind: 'dayStart', day: i + 1, line: [2, 3], ...snap(dp, tot),
+      note: '进入第 <b>' + (i + 1) + '</b> 天。当天可投的热度值是 '
+          + Object.keys(cnt).map(function (v) { return v + '(×' + cnt[v] + ')'; }).join('、')
+          + '。表里现在是<b>前一天</b>的 dp 和 tot，接下来逐格算这一天的 ndp。' });
+    let ndp = {};
+    let emitted = 0;
+    for (let a = 0; a < allVals.length; a++) {
+      const v = allVals[a];
+      const cv = cnt[v] || 0;
+      if (!cv) continue;
+      for (let s = v; s <= S; s++) {
+        const prev = tot[s - v] || 0;
+        const sub = dp[key(s - v, v)] || 0;
+        let ways = prev - sub;
+        const neg = ways < 0;
+        if (neg) ways += MOD;
+        const val = ways * cv % MOD;
+        if (val) ndp[key(s, v)] = val;
+        if (sub || val) {
+          emitted++;
+          if (steps.length < MAXSTEPS) {
+            steps.push({ kind: 'trans', day: i + 1, line: neg ? [8, 9, 10] : [8, 10], v: v, s: s, sv: s - v,
+              prev: prev, sub: sub, ways: ways, cv: cv, val: val, neg: neg,
+              dp: snap(dp, tot).dp, tot: snap(dp, tot).tot,
+              note: '要算 <b>ndp[' + s + '][' + v + ']</b>：前一天总和是 <b>' + (s - v) + '</b>、'
+                  + '末尾<b>不等于</b> ' + v + ' 的方案数。<br>'
+                  + '蓝格 <b>tot[' + (s - v) + '] = ' + prev + '</b> 是"总和为 ' + (s - v) + '"的<b>全部</b>方案；'
+                  + '红格 <b>dp[' + (s - v) + '][' + v + '] = ' + sub + '</b> 是其中"昨天末尾恰好也是 ' + v
+                  + '"的那一部分 —— 相邻两天同值违反规则，<b>必须挖掉</b>。'
+                  + (sub ? '' : '（这一格是 0，也就是昨天根本没人以 ' + v + ' 收尾，挖不掉东西）')
+                  + '<br>剩下 ' + prev + ' − ' + sub + ' = <b>' + (prev - sub + (neg ? MOD : 0)) + '</b> 种，'
+                  + '再乘当天的 ' + cv + ' 个可选项目 → <b>' + val + '</b>。' });
+          }
+        }
+      }
+    }
+    if (!emitted) {
+      steps.push({ kind: 'empty', day: i + 1, line: [8], dp: snap(dp, tot).dp, tot: snap(dp, tot).tot,
+        note: '第 ' + (i + 1) + ' 天所有转移算出来都是 0（前面凑不出任何能接上的总和），这一层整张表清空。' });
+    }
+    dp = ndp;
+    tot = {};
+    for (let s = 1; s <= S; s++) { let x = 0; for (let a = 0; a < allVals.length; a++) { const q = dp[key(s, allVals[a])]; if (q) x = (x + q) % MOD; } if (x) tot[s] = x; }
+    steps.push({ kind: 'dayEnd', day: i + 1, line: [12, 14], ...snap(dp, tot),
+      note: '第 ' + (i + 1) + ' 天算完，<b>dp ← ndp</b>（滚动数组：旧那一层整张丢掉），'
+          + '再把每行的 <b>tot[s] = Σ_v dp[s][v]</b> 重建出来，供下一天当"总数"用。' });
+  }
+  const ans = tot[S] || 0;
+  steps.push({ kind: 'done', day: m, line: [16], dp: snap(dp, tot).dp, tot: snap(dp, tot).tot,
+    note: '最后一天过完，答案就是 <b>tot[' + S + '] = ' + ans + '</b>：'
+        + '恰好 ' + m + ' 天、热度总和正好 ' + S + '、相邻两天不同值的全部方案数（对 998244353 取模）。' });
+  t = 0;
+}
+
+// ---- 渲染 ----
+function render() {
+  const st = steps[t];
+  if (!st) return;
+  // ① 状态表
+  const wrap = document.getElementById('gridwrap');
+  wrap.innerHTML = '';
+  const tb = document.createElement('table');
+  tb.className = 'g';
+  const trh = document.createElement('tr');
+  trh.appendChild(el('th', null, 's \\ v'));
+  for (let a = 0; a < allVals.length; a++) trh.appendChild(el('th', null, String(allVals[a])));
+  trh.appendChild(el('th', 'tot', 'tot[s]'));
+  tb.appendChild(trh);
+  for (let s = 1; s <= S; s++) {
+    const tr = document.createElement('tr');
+    const lab = el('td', 'h', String(s));
+    if (st.kind === 'trans' && (s === st.s || s === st.sv)) lab.style.color = '#e8ecff';
+    tr.appendChild(lab);
+    for (let a = 0; a < allVals.length; a++) {
+      const v = allVals[a];
+      const val = st.dp[key(s, v)] || 0;
+      let cls = 'c';
+      let txt = val ? String(val) : '·';
+      if (val) cls += ' nz';
+      if (st.kind === 'trans') {
+        if (s === st.sv) cls += ' srcrow';
+        if (s === st.sv && v === st.v) { cls = 'c sub'; txt = String(st.sub); }
+        if (s === st.s) cls += ' srcrow';
+        if (s === st.s && v === st.v) {
+          cls = 'c dst';
+          const oldv = st.dp[key(s, v)] || 0;
+          tr.appendChild(el('td', cls));
+          const td = tr.lastChild;
+          if (oldv) td.appendChild(el('span', 'old', String(oldv)));
+          td.appendChild(document.createTextNode('→' + st.val));
+          continue;
+        }
+      }
+      if (s === S) cls += ' ansrow';
+      tr.appendChild(el('td', cls, txt));
+    }
+    // tot 列
+    const tv = st.tot[s] || 0;
+    let tc = 't' + (tv ? ' nz' : '');
+    if (st.kind === 'trans' && s === st.sv) tc += ' srcrow';
+    if (st.kind === 'done' && s === S) tc = 't ans';
+    tr.appendChild(el('td', tc, tv ? String(tv) : '·'));
+    tb.appendChild(tr);
+  }
+  wrap.appendChild(tb);
+
+  // ② 算式
+  const fx = document.getElementById('fx');
+  fx.innerHTML = '';
+  if (st.kind === 'trans') {
+    fx.innerHTML =
+      '<span class="d">ndp[' + st.s + '][' + st.v + ']</span> = cnt[' + st.v + '] × ( '
+      + '<span class="m">tot[' + st.sv + ']</span> − <span class="s">dp[' + st.sv + '][' + st.v + ']</span> )'
+      + ' = ' + st.cv + ' × ( ' + st.prev + ' − <span class="s">' + st.sub + '</span> )'
+      + ' = ' + st.cv + ' × ' + (st.prev - st.sub + (st.neg ? MOD : 0))
+      + ' = <span class="d">' + st.val + '</span>'
+      + (st.neg ? ' <span class="r">← 余数相减为负，先 +MOD</span>' : '')
+      + (st.sub ? ' <span class="r">← 这一格就是被排除的"昨天同值"</span>' : '');
+  } else if (st.kind === 'done') {
+    fx.innerHTML = '答案 = <span class="d">tot[' + S + '] = ' + (st.tot[S] || 0) + '</span>';
+  } else if (st.kind === 'day1') {
+    fx.innerHTML = '第 1 天：<span class="d">dp[v][v] = cnt[v]</span>，'
+      + Object.keys(days[0]).map(function (v) { return 'dp[' + v + '][' + v + ']=' + days[0][v]; }).join('，')
+      + '。相邻限制要"两天"才谈得上，所以第一天<b>不需要</b>减任何东西。';
+  } else {
+    fx.innerHTML = '<span style="color:#8b93b5">（这一步不在"单格转移"阶段，看右侧讲解）</span>';
+  }
+
+  // ③ 变量表
+  const vt = document.getElementById('vars');
+  const rows = [
+    ['i（天）', String(st.day), st.kind === 'trans'],
+    ['v（本列热度值）', st.kind === 'trans' ? String(st.v) : '—', st.kind === 'trans'],
+    ['s（本行总和）', st.kind === 'trans' ? String(st.s) : '—', st.kind === 'trans'],
+    ['s - v（查前一层的行号）', st.kind === 'trans' ? String(st.sv) : '—', st.kind === 'trans'],
+    ['cnt[v]（当天该值的项目数）', st.kind === 'trans' ? String(st.cv) : '—', false],
+    ['tot[s-v]（被读的总数）', st.kind === 'trans' ? String(st.prev) : '—', st.kind === 'trans'],
+    ['dp[s-v][v]（被减掉的）', st.kind === 'trans' ? String(st.sub) : '—', st.kind === 'trans && st.sub > 0'],
+    ['ways = tot-dp（修正后）', st.kind === 'trans' ? String(st.prev - st.sub + (st.neg ? MOD : 0)) : '—', st.neg],
+    ['ndp[s][v]（写入值）', st.kind === 'trans' ? String(st.val) : '—', st.kind === 'trans'],
+    ['tot[S]（当前答案）', String(st.tot[S] || 0), st.kind === 'done']
+  ];
+  let html = '<tr><th>变量</th><th>当前值</th><th>含义</th></tr>';
+  const mean = ['外层循环到第几天', '这一列固定枚举的热度值', '这一行的目标总和',
+    '前一天的总和应该是多少', '同值有多个项目就要乘几次', '"总和 s-v"的全部方案数',
+    '其中末尾也是 v 的非法方案数', '合法的前一天方案数', '本格的最终值', '最后要输出的那一格'];
+  for (let r = 0; r < rows.length; r++) {
+    const hot = rows[r][2];
+    html += '<tr><td>' + rows[r][0] + '</td><td class="' + (hot ? 'bad' : 'hot') + '">' + rows[r][1]
+          + '</td><td>' + mean[r] + '</td></tr>';
+  }
+  vt.innerHTML = html;
+
+  // ④ 代码行
+  const cp = document.getElementById('code');
+  cp.innerHTML = '';
+  for (let i = 0; i < CODE.length; i++) {
+    const ln = el('span', 'ln', String(i + 1).padStart(2, ' ') + '  ' + CODE[i]);
+    if (st.line && st.line.indexOf(i) >= 0) ln.className += (i === 8 ? ' run2' : ' run');
+    cp.appendChild(ln);
+  }
+
+  // 讲解 + 天进度
+  document.getElementById('note').innerHTML = st.note;
+  const db = document.getElementById('daybar');
+  db.innerHTML = '';
+  for (let i = 1; i <= m; i++) {
+    const d = el('div', 'dchip' + (i === st.day ? ' on' : (i < st.day ? ' done' : '')), '第 ' + i + ' 天');
+    db.appendChild(d);
+  }
+
+  document.getElementById('prog').textContent = '步骤 ' + (t + 1) + ' / ' + steps.length;
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t >= steps.length - 1;
+}
+
+function load() {
+  const e = document.getElementById('err');
+  e.textContent = '';
+  const msg = parse();
+  if (msg) { e.textContent = '输入不合法：' + msg; steps = []; t = 0; document.getElementById('gridwrap').innerHTML = ''; return; }
+  build();
+  if (timer) { clearInterval(timer); timer = null; document.getElementById('play').textContent = '▶ 自动播放'; }
+  render();
+}
+
+document.getElementById('load').addEventListener('click', load);
+document.getElementById('next').addEventListener('click', function () { if (t < steps.length - 1) { t++; render(); } });
+document.getElementById('prev').addEventListener('click', function () { if (t > 0) { t--; render(); } });
+document.getElementById('jump').addEventListener('click', function () { t = steps.length - 1; render(); });
+document.getElementById('play').addEventListener('click', function (e) {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+  e.target.textContent = '❚❚ 暂停';
+  timer = setInterval(function () {
+    if (t >= steps.length - 1) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+    t++; render();
+  }, 900);
+});
+
+load();
+</script>
+</body>
+</html>

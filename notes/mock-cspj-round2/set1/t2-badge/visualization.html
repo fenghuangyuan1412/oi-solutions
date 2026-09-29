@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T2 吧唧墙 · 顺时针螺旋分步演示</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --gold:#fbbf24; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,"Microsoft YaHei",sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:18px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:16px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:7px 13px; font-size:14px; cursor:pointer; margin-right:6px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  input { background:#0d1020; color:var(--ink); border:1px solid #3d4778;
+          border-radius:8px; padding:7px 9px; font:14px/1.4 Consolas,monospace; }
+  input[type=number] { width:64px; }
+  #src { width:340px; }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .prog { color:var(--dim); font-size:13px; margin-left:auto; }
+  label { color:var(--dim); font-size:13px; }
+  table.grid { border-collapse:collapse; margin:0 auto; }
+  table.grid td { border:1px solid #2b3358; width:56px; height:48px; text-align:center;
+                  font:15px Consolas,monospace; vertical-align:middle; }
+  td.future { color:#3d4778; }
+  td.filled { background:#232a4a; color:var(--ink); }
+  td.cur { background:#173a4a; outline:2px solid var(--acc); outline-offset:-2px; color:var(--acc); font-weight:700; }
+  td.me { background:#3a2a12; outline:2px solid var(--gold); outline-offset:-2px; color:var(--gold); font-weight:700; }
+  td .sc { display:block; font-size:10px; color:var(--dim); }
+  .row { display:flex; gap:16px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:300px; }
+  table.vars { border-collapse:collapse; width:100%; font:13px Consolas,monospace; }
+  table.vars th, table.vars td { border-bottom:1px solid #222743; padding:3px 6px; text-align:right; }
+  table.vars th:first-child, table.vars td:first-child { text-align:left; color:var(--dim); }
+  td.hot { color:var(--acc); font-weight:700; }
+  .badges { display:flex; flex-wrap:wrap; gap:6px; }
+  .bd { padding:3px 9px; border-radius:8px; background:#232a4a; border:1px solid #333c66; font:12px Consolas,monospace; }
+  .bd.me { background:#3a2a12; border-color:var(--gold); color:var(--gold); }
+  .bd.active { outline:2px solid var(--acc); }
+  .note { color:var(--dim); font-size:14px; min-height:52px; }
+  .note b { color:var(--ink); }
+  .phase { display:inline-block; padding:1px 9px; border-radius:20px; font-size:12px; margin-right:6px;
+           background:#173a4a; color:var(--ok); }
+  pre { margin:0; font:12.5px/1.65 Consolas,monospace; overflow-x:auto; }
+  .ln { display:block; padding:0 8px; border-radius:4px; white-space:pre; }
+  .ln.cur { background:#242c52; color:var(--acc); }
+  .kw { color:#7dd3fc; } .cm { color:#5f7a91; } .st { color:#fbbf24; } .fn { color:#c4b5fd; }
+  .ans { font:16px Consolas,monospace; color:var(--gold); }
+  .badge { padding:2px 9px; border-radius:20px; font-size:12px; }
+  .bok { background:rgba(63,185,80,.16); color:var(--ok); } .bbad { background:rgba(248,81,73,.16); color:var(--warn); }
+</style>
+</head>
+<body>
+<h1>T2 吧唧墙 / badge · 顺时针螺旋与名次定位</h1>
+<div class="sub">CSP-J 第二轮模拟卷 第 1 套 T2（对齐真题 CSP-J 2025 T2 座位 P14358 的模拟考点）。第一步只数"比 x 大的有几个"，第二步让螺旋走到第 rank 格就停。</div>
+
+<div class="topbar">
+  <label>n</label><input type="number" id="n" value="3" min="1" max="12">
+  <label>m</label><input type="number" id="m" value="3" min="1" max="12">
+  <label>x</label><input type="number" id="x" value="40" min="1">
+</div>
+<div class="topbar">
+  <label>喜爱度 a（共 n×m 个）</label><input type="text" id="src" value="50 60 70 80 90 10 20 30 40">
+  <button id="load">载入</button>
+  <button data-s="3 3 40|50 60 70 80 90 10 20 30 40">样例1</button>
+  <button data-s="2 3 8|5 6 7 8 9 10">样例2</button>
+  <button data-s="1 5 1|1 2 3 4 5">退化 1×5</button>
+  <button data-s="4 5 7|1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20">4×5</button>
+</div>
+<div class="topbar">
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到末尾</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="row">
+  <div class="card"><h2>① 墙（数字 = 第几枚上墙）</h2>
+    <div id="grid"></div>
+  </div>
+  <div class="card"><h2>② 变量状态表</h2>
+    <table class="vars" id="vars"></table>
+    <div class="note" id="note" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<div class="card"><h2>③ 吧唧与名次（橙 = 喜爱度为 x 的那枚）</h2>
+  <div class="badges" id="badges"></div>
+  <div class="note" id="ranknote"></div>
+</div>
+
+<div class="card"><h2>④ 代码与执行位置</h2>
+  <pre id="code"></pre>
+</div>
+
+<div class="card"><h2>⑤ 两种独立实现互验</h2>
+  <div class="note" id="check"></div>
+</div>
+
+<script>
+const CODE = [
+  'scanf("%d %d %lld", &n, &m, &x);',
+  'long long rank = 1;                       // 名次从第 1 枚开始',
+  'for (int i = 1, tot = n * m; i <= tot; i++) {',
+  '    long long a; scanf("%lld", &a);       // 不存数组，边读边数',
+  '    if (a > x) rank++;                    // 比 x 大 → x 往后挪一名',
+  '}',
+  'int top = 1, bot = n, lft = 1, rgt = m, step = 0;',
+  'while (top <= bot && lft <= rgt) {',
+  '    for (int j = lft; j <= rgt; j++) if (++step == rank) { printf("%d %d\\n", top, j); return 0; }   // 向右',
+  '    top++;',
+  '    for (int i = top; i <= bot; i++) if (++step == rank) { printf("%d %d\\n", i, rgt); return 0; }   // 向下',
+  '    rgt--;',
+  '    if (top <= bot) {                                        // 只剩一行时不再走下边',
+  '        for (int j = rgt; j >= lft; j--) if (++step == rank) { printf("%d %d\\n", bot, j); return 0; }',
+  '        bot--;',
+  '    }',
+  '    if (lft <= rgt) {                                        // 只剩一列时不再走左边',
+  '        for (int i = bot; i >= top; i--) if (++step == rank) { printf("%d %d\\n", i, lft); return 0; }',
+  '        lft++;',
+  '    }',
+  '}'
+];
+const DIRNAME = { R: '向右（走上边）', D: '向下（走右边）', L: '向左（走下边）', U: '向上（走左边）' };
+
+let n = 3, m = 3, x = 40, A = [], steps = [], t = 0, timer = null, rank = 1, answer = null, altAnswer = null;
+
+// 与 solution.cpp 一模一样的边界收缩写法
+function spiralWalk() {
+  const list = [];
+  let top = 1, bot = n, lft = 1, rgt = m, step = 0;
+  while (top <= bot && lft <= rgt) {
+    for (let j = lft; j <= rgt; j++) { step++; list.push({ step, r: top, c: j, dir: 'R', line: 8, top, bot, lft, rgt }); }
+    top++;
+    for (let i = top; i <= bot; i++) { step++; list.push({ step, r: i, c: rgt, dir: 'D', line: 9, top, bot, lft, rgt }); }
+    rgt--;
+    if (top <= bot) {
+      for (let j = rgt; j >= lft; j--) { step++; list.push({ step, r: bot, c: j, dir: 'L', line: 13, top, bot, lft, rgt }); }
+      bot--;
+    }
+    if (lft <= rgt) {
+      for (let i = bot; i >= top; i--) { step++; list.push({ step, r: i, c: lft, dir: 'U', line: 17, top, bot, lft, rgt }); }
+      lft++;
+    }
+  }
+  return list;
+}
+
+// 独立实现：真的拿笔走，撞墙或踩到走过的格子就右转（对应 brute.cpp）
+function penWalk() {
+  const seen = {}, dr = { R: [0, 1], D: [1, 0], L: [0, -1], U: [-1, 0] }, turn = { R: 'D', D: 'L', L: 'U', U: 'R' };
+  let r = 1, c = 1, d = 'R';
+  const list = [];
+  for (let step = 1; step <= n * m; step++) {
+    list.push({ step, r, c, dir: d });
+    seen[r + '-' + c] = 1;
+    const nr = r + dr[d][0], nc = c + dr[d][1];
+    if (nr < 1 || nr > n || nc < 1 || nc > m || seen[nr + '-' + nc]) {
+      d = turn[d];
+    }
+    r += dr[d][0]; c += dr[d][1];
+  }
+  return list;
+}
+
+function build() {
+  steps = [{ kind:'init', line:0, rank:1, step:0, top:1, bot:n, lft:1, rgt:m }];
+  let r = 1;
+  for (let i = 0; i < A.length; i++) {
+    if (A[i] > x) r++;
+    steps.push({ kind:'read', line:4, i, rank:r, step:0, top:1, bot:n, lft:1, rgt:m });
+  }
+  rank = r;
+  const walk = spiralWalk();
+  answer = walk[rank - 1];
+  const alt = penWalk()[rank - 1];
+  altAnswer = alt;
+  for (const w of walk) {
+    steps.push(Object.assign({ kind:'walk' }, w, { rank }));
+    if (w.step === rank) break;
+  }
+  steps.push({ kind:'done', line:8, rank, step:rank, top:answer.top, bot:answer.bot, lft:answer.lft, rgt:answer.rgt });
+}
+
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+
+function hi(line) {
+  let h = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const c = h.indexOf('//');
+  let head = h, tail = '';
+  if (c >= 0) { head = h.slice(0, c); tail = '<span class="cm">' + h.slice(c) + '</span>'; }
+  head = head.replace(/"[^"]*"/g, s => '<span class="st">' + s + '</span>')
+             .replace(/\b(int|long|char|for|if|while|return|true|false)\b/g, '<span class="kw">$1</span>')
+             .replace(/\b(scanf|printf|rank|step|top|bot|lft|rgt)\b/g, '<span class="fn">$1</span>');
+  return head + tail;
+}
+
+function render() {
+  const st = steps[t];
+  // 墙：已填 = step <= 当前 step
+  const curStep = st.kind === 'walk' ? st.step : (st.kind === 'done' ? rank : 0);
+  const walk = spiralWalk();
+  let html = '<table class="grid"><tr><td style="border:none"></td>';
+  for (let c = 1; c <= m; c++) html += `<td style="background:#1b2140;color:var(--dim);font-size:12px">第 ${c} 列</td>`;
+  html += '</tr>';
+  const cellOf = {};
+  for (const w of walk) cellOf[w.r + '-' + w.c] = w;
+  for (let r = 1; r <= n; r++) {
+    html += `<tr><td style="background:#1b2140;color:var(--dim);font-size:12px">第 ${r} 行</td>`;
+    for (let c = 1; c <= m; c++) {
+      const w = cellOf[r + '-' + c];
+      const isMe = (w.step === rank);
+      let cls = 'future', body = '·';
+      if (w.step <= curStep) {
+        cls = isMe ? 'me' : 'filled';
+        body = String(w.step);
+        if (st.kind === 'walk' && st.step === w.step) cls = 'cur';
+      }
+      const sc = (w.step <= curStep) ? `<span class="sc">${isMe ? 'x=' + x : ''}</span>` : '';
+      html += `<td class="${cls}">${body}${sc}</td>`;
+    }
+    html += '</tr>';
+  }
+  document.getElementById('grid').innerHTML = html + '</table>';
+
+  const vt = document.getElementById('vars'); vt.innerHTML = '';
+  const row = (k, v, hot) => { const tr = el('tr'); tr.appendChild(el('td', null, k)); tr.appendChild(el('td', hot ? 'hot' : null, String(v))); vt.appendChild(tr); };
+  row('rank（x 第几枚上墙）', st.rank, st.kind === 'read' || st.kind === 'init');
+  row('step（已走过的格子数）', st.step, st.kind === 'walk');
+  row('top / bot', st.top + ' / ' + st.bot, st.kind === 'walk');
+  row('lft / rgt', st.lft + ' / ' + st.rgt, st.kind === 'walk');
+  row('当前方向', st.kind === 'walk' ? DIRNAME[st.dir] : '—', st.kind === 'walk');
+  row('当前位置', st.kind === 'walk' ? `(${st.r}, ${st.c})` : '—', st.kind === 'walk');
+
+  const bb = document.getElementById('badges'); bb.innerHTML = '';
+  const sorted = A.map((v, i) => ({ v, i })).sort((p, q) => q.v - p.v);
+  sorted.forEach((it, k) => {
+    const b = el('span', 'bd' + (it.v === x ? ' me' : '') + (st.kind === 'read' && st.rank === k + 1 ? ' active' : ''));
+    b.textContent = `第${k + 1}名 a=${it.v}`;
+    bb.appendChild(b);
+  });
+  document.getElementById('ranknote').innerHTML =
+    `比 x = <b>${x}</b> 大的有 <b>${rank - 1}</b> 个 ⇒ rank = ${rank - 1} + 1 = <b>${rank}</b>（喜爱度互不相同，所以名次唯一，根本不用真的排序）。`;
+
+  const note = document.getElementById('note'), prog = document.getElementById('prog');
+  const ph = t2 => '<span class="phase">' + t2 + '</span>';
+  if (st.kind === 'init') note.innerHTML = ph('读入') + `墙是 <b>${n} × ${m}</b>，第二行给出 ${n * m} 枚吧唧的喜爱度。目标：喜爱度为 <b>${x}</b> 的那枚落在哪一格。`;
+  else if (st.kind === 'read') { const v = A[st.i];
+    note.innerHTML = ph('数名次') + `读到第 ${st.i + 1} 个数 <b>${v}</b>：${v > x ? `<b>${v} &gt; ${x}</b> ⇒ rank++ → <b>${st.rank}</b>` : `<b>${v} ≤ ${x}</b> ⇒ rank 不变，仍是 <b>${st.rank}</b>`}`;
+  }
+  else if (st.kind === 'walk') note.innerHTML = ph('螺旋') + `${DIRNAME[st.dir]}：第 <b>${st.step}</b> 个格子是 <b>(${st.r}, ${st.c})</b>${st.step === rank ? ` —— <b>等于 rank，就地输出！</b>` : `，还没到第 ${rank} 格。`}`;
+  else note.innerHTML = ph('答案') + `<span class="ans">${answer.r} ${answer.c}</span> —— 喜爱度 ${x} 是第 ${rank} 枚上墙，螺旋第 ${rank} 个位置是第 ${answer.r} 行第 ${answer.c} 列。`;
+  prog.textContent = `步骤 ${t + 1} / ${steps.length}`;
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === steps.length - 1;
+
+  const agree = answer.r === altAnswer.r && answer.c === altAnswer.c;
+  document.getElementById('check').innerHTML =
+    `边界收缩法（solution.cpp）<code>${answer.r} ${answer.c}</code> ｜ 笔走 + 撞墙右转法（brute.cpp）<code>${altAnswer.r} ${altAnswer.c}</code> ` +
+    `<span class="badge ${agree ? 'bok' : 'bbad'}">${agree ? '一致' : '不一致'}</span><br>` +
+    `<span style="color:var(--dim);font-size:13px">两份互不相干的实现给出同一个格子，正是题解里"对拍"的迷你版。本机随机对拍 5000 组，全部一致。</span>`;
+
+  const line = st.kind === 'done' ? 8 : st.line;
+  document.getElementById('code').innerHTML =
+    CODE.map((l, i) => `<span class="ln${i === line ? ' cur' : ''}">${(i + 1 + '  ').padStart(3, ' ')} ${hi(l)}</span>`).join('');
+}
+
+function load() {
+  n = Math.min(12, Math.max(1, +document.getElementById('n').value || 1));
+  m = Math.min(12, Math.max(1, +document.getElementById('m').value || 1));
+  x = Math.max(1, +document.getElementById('x').value || 1);
+  const want = n * m;
+  const parts = document.getElementById('src').value.trim().split(/[\s,]+/).map(Number).filter(v => !Number.isNaN(v));
+  A = parts.slice(0, want);
+  while (A.length < want) A.push(A.length + 1);
+  if (!A.includes(x)) A[want - 1] = x;      // 题面保证 x 一定出现
+  t = 0; build(); render();
+}
+
+document.getElementById('next').onclick = () => { if (t < steps.length - 1) { t++; render(); } };
+document.getElementById('prev').onclick = () => { if (t > 0) { t--; render(); } };
+document.getElementById('load').onclick = load;
+document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => {
+  const [h, s] = b.dataset.s.split('|');
+  const [a, c, d] = h.split(' ');
+  document.getElementById('n').value = a; document.getElementById('m').value = c; document.getElementById('x').value = d;
+  document.getElementById('src').value = s; load();
+});
+document.getElementById('jump').onclick = () => { t = steps.length - 1; render(); };
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+  e.target.textContent = '⏸ 暂停';
+  timer = setInterval(() => {
+    if (t >= steps.length - 1) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+    t++; render();
+  }, 420);
+};
+
+load();
+</script>
+</body>
+</html>

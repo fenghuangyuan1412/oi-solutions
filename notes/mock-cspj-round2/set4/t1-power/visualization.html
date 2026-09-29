@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T1 伤害溢出 · 溢出前判定 vs 硬算回绕</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --hard:#fbbf24; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:16px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 10px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:7px 13px; font-size:14px; cursor:pointer; margin:0 6px 6px 0; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.pre { background:#22304f; font-size:13px; }
+  input[type=number] { background:#0d1020; color:var(--ink); border:1px solid #3d4778;
+                       border-radius:8px; padding:7px 9px; font:14px/1.4 Consolas,monospace; width:130px; }
+  .topbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .prog { color:var(--dim); font-size:13px; margin-left:auto; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:320px; }
+  pre.code { margin:0; background:#0d1020; border:1px solid #262c4a; border-radius:10px;
+             padding:10px 12px; font:13px/1.7 Consolas,monospace; overflow:auto; }
+  pre.code .ln { display:block; padding:0 6px; border-radius:5px; color:#c3cbee; white-space:pre; }
+  pre.code .ln.hot { background:#123c3a; color:var(--acc); font-weight:700; }
+  pre.code .cmt { color:#6b7396; }
+  table.vars { width:100%; border-collapse:collapse; font:13px Consolas,monospace; }
+  table.vars td { padding:4px 6px; border-bottom:1px solid #262c4a; }
+  table.vars td.k { color:var(--dim); width:34%; }
+  table.vars td.v { color:var(--ink); word-break:break-all; }
+  table.vars td.v.hot { color:var(--acc); font-weight:700; }
+  table.vars td.v.bad { color:var(--warn); font-weight:700; }
+  table.vars td.v.warn2 { color:var(--hard); }
+  .tracks { display:flex; gap:14px; flex-wrap:wrap; }
+  .track { flex:1; min-width:320px; background:#141932; border:1px solid #2a3157; border-radius:10px; padding:10px 12px; }
+  .track h3 { margin:0 0 6px; font-size:14px; }
+  .track.safe h3 { color:var(--acc); }
+  .track.hard h3 { color:var(--hard); }
+  .big { font:22px/1.3 Consolas,monospace; word-break:break-all; min-height:30px; }
+  .small { color:var(--dim); font-size:13px; margin-top:4px; min-height:34px; }
+  .plot { position:relative; margin-top:6px; }
+  .bars { display:flex; align-items:flex-end; gap:4px; height:150px; margin-top:8px; overflow-x:auto; position:relative; }
+  .bcol { display:flex; flex-direction:column; align-items:center; justify-content:flex-end; min-width:26px; height:150px; }
+  .bar { width:22px; background:linear-gradient(180deg,var(--acc),#0891b2); border-radius:3px 3px 0 0; min-height:2px; }
+  .bar.neg { background:linear-gradient(180deg,var(--warn),#7f1d1d); }
+  .bar.zero { background:linear-gradient(180deg,var(--hard),#92400e); }
+  .bcol .t { font:10px/1.2 Consolas,monospace; color:var(--dim); margin-top:3px; height:14px; }
+  .bcol.hot .t { color:var(--ink); }
+  .lim { position:absolute; left:0; right:0; border-top:2px dashed var(--warn); pointer-events:none; }
+  .lim span { position:absolute; right:2px; top:-18px; font-size:11px; color:var(--warn); }
+  .note { color:var(--dim); font-size:14px; min-height:46px; }
+  .note b { color:var(--ink); }
+  .note .ok { color:var(--ok); } .note .bad { color:var(--warn); }
+  .ans { font:20px/1.4 Consolas,monospace; }
+</style>
+</head>
+<body>
+<h1>T1 伤害溢出 / power · 两条轨道一起跑</h1>
+<div class="sub">判定 a^b 是否超过 10^9：右轨"提前判"在乘法发生<b>之前</b>用 res &gt; LIM / a 收手；左轨"硬算"每次都真乘，并按 long long 的 64 位回绕规则显示 —— 它会变负数、会变 0</div>
+
+<div class="topbar">
+  a <input type="number" id="ina" value="10" min="1" max="1000000000" step="1">
+  b <input type="number" id="inb" value="10" min="0" max="1000000000" step="1">
+  <button id="load">载入</button>
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到末尾</button>
+  <span class="prog" id="prog"></span>
+</div>
+<div class="topbar">
+  <span style="color:var(--dim);font-size:13px;margin-right:6px">样例与翻车预设：</span>
+  <button class="pre" data-a="10" data-b="9">样例1 10 9（正好 1e9）</button>
+  <button class="pre" data-a="10" data-b="10">样例2 10 10</button>
+  <button class="pre" data-a="2" data-b="29">样例3 2 29</button>
+  <button class="pre" data-a="1" data-b="1000000000">样例4 1 1e9（特判）</button>
+  <button class="pre" data-a="3" data-b="40">3 40 硬算变负数</button>
+  <button class="pre" data-a="2" data-b="70">2 70 硬算绕成 0</button>
+</div>
+
+<div class="row">
+  <div class="card"><h2>① solution.cpp 关键代码（当前执行行高亮）</h2>
+    <pre class="code" id="code"></pre>
+  </div>
+  <div class="card"><h2>② 变量状态表</h2>
+    <table class="vars" id="vars"></table>
+  </div>
+</div>
+
+<div class="card"><h2>③ 两条轨道同步推进</h2>
+  <div class="tracks">
+    <div class="track hard"><h3>硬算轨道（long long 一路乘到底）</h3>
+      <div class="big" id="hardVal"></div>
+      <div class="small" id="hardMsg"></div>
+    </div>
+    <div class="track safe"><h3>提前判轨道（乘之前先比 LIM / a）</h3>
+      <div class="big" id="safeVal"></div>
+      <div class="small" id="safeMsg"></div>
+      <div class="plot">
+        <div class="bars" id="bars"></div>
+        <div class="lim" id="lim"><span>10^9 判定线（对数刻度）</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="card" style="flex:1.6"><h2>④ 讲解</h2><div class="note" id="note"></div></div>
+  <div class="card"><h2>⑤ 输出</h2><div class="ans" id="ans"></div></div>
+</div>
+
+<script>
+const LIM = 1000000000n, M64 = 1n << 64n, SIGN = 1n << 63n, MAXSHOW = 30;
+const CODE = [
+  ['const ll LIM = 1000000000LL;', 0],
+  ['if (b == 0 || a == 1) { printf("1\\n"); return 0; }', 1],
+  ['ll res = 1;', 2],
+  ['for (ll i = 0; i < b; i++) {', 3],
+  ['    if (res > LIM / a) { puts("over"); return 0; }', 4],
+  ['    res *= a;', 5],
+  ['}', 6],
+  ['printf("%lld\\n", res);', 7],
+];
+let a = 10n, b = 10n, steps = [], t = 0, timer = null;
+
+function wrap64(x) {           // 模拟 long long 的回绕：先 mod 2^64，再按符号位解释
+  let v = ((x % M64) + M64) % M64;
+  return v >= SIGN ? v - M64 : v;
+}
+function pow64(base, e) {      // 快速幂 mod 2^64：等价于连乘 e 次回绕后的结果
+  let r = 1n, x = wrap64(base), k = e;
+  while (k > 0n) { if (k & 1n) r = wrap64(r * x); x = wrap64(x * x); k >>= 1n; }
+  return r;
+}
+function s(n) { return n.toString(); }
+function digitsOf(base, e) {   // a^b 的真实十进制位数
+  if (e === 0n || base === 1n) return 1;
+  if (e <= 5000n) return (base ** e).toString().length;
+  return Math.floor(Number(e) * Math.log10(Number(base))) + 1;
+}
+
+function build() {
+  steps = [{ line:[0], kind:'init', shown:0 }];
+  if (b === 0n || a === 1n) {
+    steps.push({ line:[1], kind:'special', shown:0 });
+    steps.push({ line:[1], kind:'out1', shown:0 });
+    return;
+  }
+  const th = LIM / a;                       // 整数除法，下取整
+  let safe = 1n, hard = 1n, stopAt = -1n;
+  const hardTrail = [], safeTrail = [];
+  for (let i = 0n; i < b; i++) {
+    hardTrail.push(hard);
+    safeTrail.push(safe);
+    if (safe > th) { stopAt = i; break; }
+    safe = safe * a; hard = wrap64(hard * a);
+    steps.push({ line:[3,4], kind:'check', i, safe: safeTrail[i], th, hard: hardTrail[i],
+                 safeAfter: safe, hardAfter: hard, mulIdx: i + 1n, shown: Number(i) });
+    steps.push({ line:[5], kind:'mul', i, safe, hard, mulIdx: i + 1n, shown: Number(i) + 1 });
+  }
+  if (stopAt >= 0n) {
+    steps.push({ line:[3,4], kind:'detect', stopAt, th, shown: Number(stopAt),
+                 safe:safeTrail[Number(stopAt)], hard:hardTrail[Number(stopAt)] });
+    steps.push({ line:[4], kind:'over', b, shown: Number(stopAt), safe: safeTrail[Number(stopAt)],
+                 hardFinal: pow64(a, b), truncated: Number(b) > MAXSHOW });
+  } else {
+    steps.push({ line:[7], kind:'value', safe, hard, b, shown: Number(b) });
+  }
+}
+
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+
+function renderCode(lines) {
+  const box = document.getElementById('code'); box.innerHTML = '';
+  CODE.forEach((c, idx) => {
+    const sp = el('span', 'ln' + (lines.includes(idx) ? ' hot' : ''), c[0]);
+    box.appendChild(sp);
+  });
+}
+
+function renderVars(st) {
+  const rows = [];
+  rows.push(['LIM', '1000000000', '']);
+  rows.push(['a', s(a), '']);
+  rows.push(['b', s(b), '']);
+  let res = '', limdiv = '', verdict = '', hardv = '';
+  if (st.kind === 'init') { res = '—'; limdiv = '—'; verdict = '还没开始'; hardv = '—'; }
+  else if (st.kind === 'special' || st.kind === 'out1') { res = '1'; limdiv = st.kind==='special' ? '不进入循环' : '—'; verdict = '特判命中'; hardv = '—'; }
+  else if (st.kind === 'check') { res = s(st.safe); limdiv = s(st.th); verdict = s(st.safe) + ' > ' + s(st.th) + ' ? 否 → 继续乘'; hardv = s(st.hard); }
+  else if (st.kind === 'mul') { res = s(st.safe); limdiv = s(LIM / a); verdict = '第 ' + st.mulIdx + ' 次乘法已完成'; hardv = s(st.hard); }
+  else if (st.kind === 'detect') { res = s(st.safe); limdiv = s(st.th); verdict = s(st.safe) + ' > ' + s(st.th) + ' ? 是 → over'; hardv = s(st.hard); }
+  else if (st.kind === 'over') { res = s(st.safe) + '（停在这里）'; limdiv = s(LIM / a); verdict = '已输出 over，不再乘'; hardv = st.truncated ? '（还在乘，见下方）' : s(st.hardFinal); }
+  else { res = s(st.safe); limdiv = s(LIM / a); verdict = '循环跑满 b 次，未超线'; hardv = s(st.hard); }
+  rows.push(['res（提前判）', res, 'hot']);
+  rows.push(['LIM / a', limdiv, '']);
+  rows.push(['判定', verdict, '']);
+  rows.push(['硬算的 res', hardv, (st.kind === 'over' || st.kind === 'value') && st.hardFinal !== undefined && st.hardFinal < 0n ? 'bad' : 'warn2']);
+  const tb = document.getElementById('vars'); tb.innerHTML = '';
+  rows.forEach(r => { const tr = el('tr'); tr.appendChild(el('td','k',r[0])); tr.appendChild(el('td','v '+r[2],r[1])); tb.appendChild(tr); });
+}
+
+function renderBars(st) {
+  const box = document.getElementById('bars'); box.innerHTML = '';
+  const limit = st.shown === undefined ? 0 : st.shown;
+  const seq = [];
+  let cur = 1n; seq.push(cur);
+  for (let i = 0; i < limit; i++) { cur = cur * a; seq.push(cur); }
+  const logs = seq.map(v => Number(v <= 0n ? 0 : Math.log10(Number(v))));
+  const maxLog = Math.max(9, ...logs);
+  seq.forEach((v, i) => {
+    const col = el('div', 'bcol' + (i === seq.length - 1 ? ' hot' : ''));
+    const bar = el('div', 'bar');
+    bar.style.height = Math.max(2, logs[i] / maxLog * 108) + 'px';
+    col.appendChild(bar);
+    const tick = el('div', 't', String(i));
+    tick.title = s(a) + '^' + i + ' = ' + s(v);
+    col.appendChild(tick);
+    box.appendChild(col);
+  });
+  const lim = document.getElementById('lim');
+  lim.style.bottom = (17 + 9 / maxLog * 108) + 'px';
+  if (seq.length > 40) box.scrollLeft = 9999;
+}
+
+function render() {
+  const st = steps[t];
+  renderCode(st.line || []);
+  renderVars(st);
+  const hv = document.getElementById('hardVal'), hm = document.getElementById('hardMsg');
+  const sv = document.getElementById('safeVal'), sm = document.getElementById('safeMsg');
+  const ans = document.getElementById('ans'), note = document.getElementById('note');
+  hv.innerHTML = ''; sv.innerHTML = ''; hm.innerHTML = ''; sm.innerHTML = ''; note.innerHTML = ''; ans.innerHTML = '';
+  const hardAt = (st.kind === 'check') ? st.hard : (st.kind === 'mul') ? st.hard : (st.kind === 'detect') ? st.hard : (st.kind === 'over') ? null : (st.kind === 'value') ? st.hard : 1n;
+
+  if (st.kind === 'init') {
+    sv.innerHTML = 'res = <b>1</b>'; sm.innerHTML = '还没进循环';
+    hv.innerHTML = 'res = <b>1</b>'; hm.innerHTML = '还没进循环';
+    note.innerHTML = `输入 a=<b>${s(a)}</b>，b=<b>${s(b)}</b>。要回答的是"a^b 有没有<b>严格</b>超过 10^9"。<b>提前判</b>轨道每轮先算一次除法 <b>LIM / a = ${s(LIM/a)}</b> 再比较；<b>硬算</b>轨道什么判定都不做，闷头乘 b 次，最后才比 —— 中途早就绕回去了。`;
+    ans.innerHTML = '<span style="color:#8b93b5">（还没输出）</span>';
+  } else if (st.kind === 'special') {
+    sv.innerHTML = `命中特判：<b>b == 0 或 a == 1</b>`; sm.innerHTML = '根本不进循环';
+    hv.innerHTML = '暴力版要乘 <b>' + s(b) + '</b> 次'; hm.innerHTML = '每轮乘完还是 1';
+    note.innerHTML = `a=<b>${s(a)}</b>，b=<b>${s(b)}</b>。因为 ${s(a)} 的任意次方都是 1，"乘 b 次"这件事完全没意义。不特判就是<b>空转 ${s(b)} 次</b>：本机实测这份不特判的暴力版跑 <b>1.607 s</b>，特判版 <b>0.047 s</b>（几乎全是进程启动）。`;
+    ans.innerHTML = '<span style="color:#8b93b5">（下一屏出答案）</span>';
+  } else if (st.kind === 'out1') {
+    sv.innerHTML = '答案 = <b>1</b>'; sm.innerHTML = '特判直接输出';
+    hv.innerHTML = '答案 = <b>1</b>'; hm.innerHTML = '暴力乘完再比，结果一样，只是慢';
+    note.innerHTML = `输出 <b>1</b>。这一题的<b>正确性</b>没问题，问题全在<b>时间</b>上：子任务 15—20 无特殊限制，a=1 且 b 很大就是专门用来卡没特判的代码。`;
+    ans.innerHTML = `<span style="color:var(--acc)">1</span>`;
+  } else if (st.kind === 'check') {
+    sv.innerHTML = `res = <b>${s(st.safe)}</b>`; sm.innerHTML = `LIM / a = <b>${s(st.th)}</b>，${s(st.safe)} > ${s(st.th)} 不成立 → 允许再乘一次`;
+    hv.innerHTML = `res = <b>${s(st.hard)}</b>`; hm.innerHTML = '硬算轨道不知道自己在第几轮，反正一直在乘';
+    note.innerHTML = `第 <b>${Number(st.i)+1}</b> 轮进循环。判定写成除法：<b>res &gt; LIM / a</b> 意思是"再乘一个 a 就要超过 ${s(LIM)}"。这一步左边 <b>${s(st.safe)}</b>、右边 <b>${s(st.th)}</b>，比较在<b>乘法之前</b>完成，所以永远不会碰到溢出。`;
+    ans.innerHTML = '<span style="color:#8b93b5">（计算中）</span>';
+  } else if (st.kind === 'mul') {
+    sv.innerHTML = `res = <b>${s(st.safe)}</b>`; sm.innerHTML = `第 ${st.mulIdx} 次乘法：${s(st.safe / a)} × ${s(a)} = ${s(st.safe)}（≤ ${s(LIM)}，没绕）`;
+    hv.innerHTML = st.hard < 0n ? `res = <b style="color:var(--warn)">${s(st.hard)}</b> ← 已经绕成负数` : (st.hard === 0n ? `res = <b style="color:var(--hard)">0</b> ← 绕回 0 了` : `res = <b>${s(st.hard)}</b>`);
+    hm.innerHTML = st.hard > LIM ? '已超过 1e9，但它还要继续乘' : '目前还装得下';
+    note.innerHTML = `两边这一轮都做了同一次乘法，值是一样的。<b>区别在下一轮</b>：提前判会先看一眼 ${s(LIM)} / ${s(a)} = <b>${s(LIM/a)}</b>，而硬算直接乘。${s(a)}^${st.mulIdx} 现在有 <b>${(st.safe).toString().length}</b> 位。`;
+    ans.innerHTML = '<span style="color:#8b93b5">（计算中）</span>';
+  } else if (st.kind === 'detect') {
+    sv.innerHTML = `res = <b>${s(st.safe)}</b> 撞上判定线`; sm.innerHTML = `${s(st.safe)} > ${s(st.th)} → <b>成立</b>`;
+    hv.innerHTML = `res = <b>${s(st.hard)}</b>`; hm.innerHTML = '硬算这一轮还没乘，它完全没意识到危险';
+    note.innerHTML = `第 <b>${Number(st.stopAt)+1}</b> 轮：<b>${s(st.safe)} &gt; ${s(st.th)}</b> 成立。若真去乘，会得到 ${s(st.safe)} × ${s(a)} = <b>${s(st.safe * a)}</b>，已经越过 ${s(LIM)}。于是这里<b>立刻</b>输出 over 并 return —— 全程最大的中间值只有 <b>${s(st.safe)}</b>。`;
+    ans.innerHTML = '<span style="color:#8b93b5">（下一屏出答案）</span>';
+  } else if (st.kind === 'over') {
+    sv.innerHTML = '<b>over</b>（提前结束）'; sm.innerHTML = `只做了一部分乘法就收手`;
+    if (st.truncated) {
+      hv.innerHTML = `硬算还要乘到第 ${s(st.b)} 次`; hm.innerHTML = '评测机上这就超时了';
+      note.innerHTML = `提前判在 ${s(a)} 的第 ${st.shown + 1} 次方就报了 over；硬算轨道却必须把 <b>${s(st.b)}</b> 次乘法全做完才比较（本机实测不特判的暴力版跑 1 1000000000 要 1.607 s）。把回绕算到底，等价于先求 a^b 除以 2^64 的余数、再按有符号解释，结果是 <b>${s(st.hardFinal)}</b>${st.hardFinal <= LIM && st.hardFinal >= 0n ? ` —— 一个 0 到 10^9 之间的假数，硬算版会把它当成答案打印出来` : st.hardFinal < 0n ? ' —— <b class="bad">负数</b>，硬算版直接输出负数' : ' —— 碰巧还大于 1e9，勉强能报对 over'}。`;
+    } else {
+      hv.innerHTML = `硬算也乘完了 ${s(st.b)} 次：res = <b>${s(st.hardFinal)}</b>`; hm.innerHTML = st.hardFinal > LIM ? '比 1e9 大 → 也能报 over（这次侥幸没绕坏）' : '小于等于 1e9 → 会报错答案';
+      note.innerHTML = `本题 b=${s(st.b)} 不算大，硬算侥幸活到了最后：${s(a)}^${s(st.b)} 在 long long 里是 <b>${s(st.hardFinal)}</b>。把 a、b 换成 <b>3 40</b> 或 <b>2 70</b> 试试，硬算轨道会当场绕成<b>负数</b>和 <b>0</b>。`;
+    }
+    ans.innerHTML = `<span style="color:var(--warn)">over</span>`;
+  } else { // value
+    sv.innerHTML = `res = <b>${s(st.safe)}</b>`; sm.innerHTML = `乘满 ${s(st.b)} 次，全程未超线`;
+    hv.innerHTML = `res = <b>${s(st.hard)}</b>`; hm.innerHTML = '两种做法这次完全一致';
+    note.innerHTML = `${s(a)}^${s(st.b)} = <b>${s(st.safe)}</b>，不超过 ${s(LIM)}，按原值输出。这个数一共有 <b>${(st.safe).toString().length}</b> 位，刚好还塞得进 long long；判定用 &gt; 而不是 &gt;=，所以等于 10^9 的那一刻仍然输出数值。`;
+    ans.innerHTML = `<span style="color:var(--acc)">${s(st.safe)}</span>`;
+  }
+  renderBars(st);
+  document.getElementById('prog').textContent = `步骤 ${t + 1} / ${steps.length}`;
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === steps.length - 1;
+}
+
+function load() {
+  const va = document.getElementById('ina').value, vb = document.getElementById('inb').value;
+  a = BigInt(Math.max(1, Math.min(1000000000, Math.floor(Number(va) || 1))));
+  b = BigInt(Math.max(0, Math.min(1000000000, Math.floor(Number(vb) || 0))));
+  t = 0; build(); render();
+}
+
+document.getElementById('next').onclick = () => { if (t < steps.length - 1) { t++; render(); } };
+document.getElementById('prev').onclick = () => { if (t > 0) { t--; render(); } };
+document.getElementById('load').onclick = load;
+document.querySelectorAll('button.pre').forEach(btn => {
+  btn.onclick = () => { document.getElementById('ina').value = btn.dataset.a; document.getElementById('inb').value = btn.dataset.b; load(); };
+});
+document.getElementById('jump').onclick = () => { t = steps.length - 1; render(); };
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+  e.target.textContent = '⏸ 暂停';
+  timer = setInterval(() => {
+    if (t >= steps.length - 1) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+    t++; render();
+  }, 520);
+};
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T2 体力药水 · 前缀最小值贪心分步演示</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --gold:#fbbf24; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,"Microsoft YaHei",sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:18px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:16px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:7px 13px; font-size:14px; cursor:pointer; margin-right:6px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  input { background:#0d1020; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+          padding:7px 9px; font:14px/1.4 Consolas,monospace; }
+  #hd { width:90px; } #vv { width:230px; } #aa { width:230px; }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .prog { color:var(--dim); font-size:13px; margin-left:auto; }
+  label { color:var(--dim); font-size:13px; }
+  .row { display:flex; gap:16px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:300px; }
+  .road { display:flex; align-items:stretch; gap:0; flex-wrap:wrap; }
+  .node { width:56px; height:64px; border-radius:9px; background:#232a4a; border:1px solid #333c66;
+          display:flex; flex-direction:column; align-items:center; justify-content:center; font:14px Consolas,monospace; }
+  .node .p { font-size:12px; color:var(--dim); }
+  .node.cur { outline:2px solid var(--acc); }
+  .node.min { outline:2px solid var(--gold); }
+  .seg { min-width:64px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+         font:12px Consolas,monospace; color:var(--dim); padding:0 4px; }
+  .seg .bar { width:100%; height:5px; background:#3d4778; border-radius:3px; margin:4px 0; }
+  .seg.act .bar { background:var(--acc); }
+  .seg .c { color:var(--ink); }
+  .hist { display:flex; align-items:flex-end; gap:10px; height:150px; }
+  .h { flex:1; min-width:38px; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
+  .h .bar { width:100%; background:linear-gradient(180deg,#5b6bd6,#31397a); border-radius:5px 5px 0 0; min-height:2px; transition:height .2s; }
+  .h.min .bar { background:linear-gradient(180deg,var(--gold),#b45309); }
+  .h.use .bar { background:linear-gradient(180deg,var(--ok),#15803d); }
+  .h.dead .bar { background:#242a48; }
+  .h .n { font:13px Consolas,monospace; margin-bottom:3px; }
+  .h .d { font-size:11px; color:var(--dim); margin-top:5px; }
+  .h .b { font-size:11px; color:var(--acc); }
+  table.grid { border-collapse:collapse; width:100%; font:13px Consolas,monospace; }
+  table.grid th, table.grid td { border-bottom:1px solid #222743; padding:3px 7px; text-align:right; white-space:nowrap; }
+  table.grid th { color:var(--dim); font-weight:400; }
+  table.grid tr.cur { background:#242c52; }
+  table.grid tr.cur td { color:var(--acc); font-weight:700; }
+  .note { color:var(--dim); font-size:14px; min-height:64px; }
+  .note b { color:var(--ink); }
+  .phase { display:inline-block; padding:1px 9px; border-radius:20px; font-size:12px; margin-right:6px;
+           background:#173a4a; color:var(--ok); }
+  .big { display:flex; gap:14px; flex-wrap:wrap; }
+  .k { background:#141a2e; border:1px solid #2a3155; border-radius:10px; padding:8px 12px; min-width:110px; }
+  .k .lab { font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
+  .k .val { font:20px Consolas,monospace; }
+  .k.gold .val { color:var(--gold); } .k.good .val { color:var(--ok); } .k.acc .val { color:var(--acc); }
+  pre { margin:0; font:12.5px/1.7 Consolas,monospace; overflow-x:auto; }
+  .ln { display:block; padding:0 8px; border-radius:4px; white-space:pre; }
+  .ln.cur { background:#242c52; color:var(--acc); }
+  .kw { color:#7dd3fc; } .cm { color:#5f7a91; } .st { color:#fbbf24; } .fn { color:#c4b5fd; }
+  .badge { padding:2px 9px; border-radius:20px; font-size:12px; }
+  .bok { background:rgba(63,185,80,.16); color:var(--ok); } .bbad { background:rgba(248,81,73,.16); color:var(--warn); }
+</style>
+</head>
+<body>
+<h1>T2 体力药水 / potion · 一路记"历史最低价"</h1>
+<div class="sub">CSP-J 第二轮模拟卷 第 3 套 T2（对齐真题 CSP-J 2023 T2 公路 P9749）。一瓶跑 d 公里、只能整瓶买、背包无限大 ⇒ 第 i 段路的钱只由"前 i 个点的最低价 min(a[1..i])"决定。金框 = 当前历史最低价，绿色 = 本段实际付钱用的价格。</div>
+
+<div class="topbar">
+  <label>n d</label><input type="text" id="hd" value="5 10">
+  <label>v（n-1 个）</label><input type="text" id="vv" value="10 10 10 10">
+  <label>a（n 个）</label><input type="text" id="aa" value="9 8 9 6 5">
+  <button id="load">载入</button>
+</div>
+<div class="topbar">
+  <button data-s="5 10|10 10 10 10|9 8 9 6 5">样例1</button>
+  <button data-s="3 5|10 5|3 10 2">样例2</button>
+  <button data-s="5 5|5 5 5 5|10 1 10 10 10">中途暴跌</button>
+  <button data-s="5 4|4 8 4 12|9 7 5 3 1">一路降价</button>
+  <button data-s="4 3|3 6 9|2 5 8 1">一路涨价</button>
+  <span class="prog" id="prog2"></span>
+</div>
+<div class="topbar">
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到末尾</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="card"><h2>① 马路（点 i 卖 a[i] 元/瓶，段上写"公里数 → 需要几瓶"）</h2>
+  <div class="road" id="road"></div>
+</div>
+
+<div class="card"><h2>② 各点单价柱状图（金=历史最低，绿=本段付钱，灰=还没走到）</h2>
+  <div class="hist" id="hist"></div>
+</div>
+
+<div class="row">
+  <div class="card"><h2>③ 逐段结算</h2>
+    <table class="grid" id="tbl"></table>
+  </div>
+  <div class="card" style="flex:1.3"><h2>④ 变量状态与讲解</h2>
+    <div class="big" id="big"></div>
+    <div class="note" id="note" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<div class="card"><h2>⑤ 买药方案（哪个点买几瓶）与独立校验</h2>
+  <div class="note" id="plan"></div>
+</div>
+
+<div class="card"><h2>⑥ 代码与执行位置</h2>
+  <pre id="code"></pre>
+</div>
+
+<script>
+const CODE = [
+  'long long ans = 0;',
+  'int cheapest = a[1];                      // 历史最低价，起点先垫上',
+  'for (int i = 1; i < n; i++) {',
+  '    cheapest = min(cheapest, a[i]);       // 先并入本站价格（本站可以买药）',
+  '    ans += 1LL * (v[i] / d) * cheapest;   // 再结算这一段',
+  '}',
+  'printf("%lld\\n", ans);'
+];
+
+let n = 5, d = 10, V = [], A = [], steps = [], t = 0, timer = null, ans = 0, brute = 0, rows = [], buy = [];
+
+function build() {
+  steps = [{ kind:'init', line:1, i:-1, cheap:A[1], ans:0 }];
+  let cheap = A[1], acc = 0;
+  rows = []; buy = new Array(n + 1).fill(0);
+  let argmin = 1;
+  for (let i = 1; i < n; i++) {
+    const oldCheap = cheap;
+    if (A[i] < cheap) { cheap = A[i]; argmin = i; }
+    steps.push({ kind:'merge', line:3, i, cheap, oldCheap, ans:acc, argmin });
+    const bot = V[i] / d;
+    acc += bot * cheap;
+    buy[argmin] += bot;
+    rows.push({ i, bot, cheap, cost: bot * cheap, acc, argmin });
+    steps.push({ kind:'pay', line:4, i, cheap, ans:acc, argmin });
+  }
+  ans = acc;
+  steps.push({ kind:'done', line:6, i:n - 1, cheap, ans });
+}
+
+function bruteForce() {                     // 另一条路：每段回头扫 1..i 找最小（brute.cpp 的写法）
+  let s = 0;
+  for (let i = 1; i < n; i++) {
+    let b = A[1];
+    for (let j = 1; j <= i; j++) if (A[j] < b) b = A[j];
+    s += (V[i] / d) * b;
+  }
+  return s;
+}
+
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+
+function hi(line) {
+  let h = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const c = h.indexOf('//');
+  let head = h, tail = '';
+  if (c >= 0) { head = h.slice(0, c); tail = '<span class="cm">' + h.slice(c) + '</span>'; }
+  head = head.replace(/"[^"]*"/g, s => '<span class="st">' + s + '</span>')
+             .replace(/\b(long|int|for|if|printf|return)\b/g, '<span class="kw">$1</span>')
+             .replace(/\b(min|ans|cheapest|a|v|d|n|i|j)\b/g, '<span class="fn">$1</span>');
+  return head + tail;
+}
+
+function render() {
+  const st = steps[t];
+  const cur = st.i;
+
+  // ① 马路
+  const rd = document.getElementById('road'); rd.innerHTML = '';
+  for (let i = 1; i <= n; i++) {
+    const nd = el('div', 'node' + (i === cur + 1 && st.kind === 'merge' ? ' cur' : '') + (st.argmin === i && st.kind !== 'init' ? ' min' : ''));
+    nd.appendChild(el('span', null, '点' + i));
+    nd.appendChild(el('span', 'p', A[i] + '元'));
+    rd.appendChild(nd);
+    if (i < n) {
+      const show = st.kind !== 'init' && i <= cur;
+      const s = el('div', 'seg' + (st.kind === 'pay' && i === cur ? ' act' : ''));
+      s.appendChild(el('div', null, V[i] + 'km'));
+      s.appendChild(el('div', 'bar'));
+      s.appendChild(el('div', 'c', show ? (V[i] / d) + '瓶' : '?'));
+      rd.appendChild(s);
+    }
+  }
+
+  // ② 柱状图
+  const hb = document.getElementById('hist'); hb.innerHTML = '';
+  const mx = Math.max.apply(null, A.slice(1));
+  for (let i = 1; i <= n; i++) {
+    let cls = 'h';
+    if (st.kind === 'init' || i > cur + 1) cls += ' dead';
+    else if (i === st.argmin && st.kind !== 'init') cls += ' use';
+    else if (A[i] === st.cheap) cls += ' min';
+    const col = el('div', cls);
+    col.appendChild(el('div', 'n', A[i]));
+    const bar = el('div', 'bar'); bar.style.height = (A[i] / mx * 96) + 'px';
+    col.appendChild(bar);
+    col.appendChild(el('div', 'd', 'a[' + i + ']'));
+    col.appendChild(el('div', 'b', buy[i] && st.kind === 'done' ? '买' + buy[i] + '瓶' : ''));
+    hb.appendChild(col);
+  }
+
+  // ③ 结算表
+  const tb = document.getElementById('tbl'); tb.innerHTML = '';
+  const h1 = el('tr'); ['段 i', '瓶数 v/d', '历史最低', '本段花费', '累计 ans'].forEach(x => h1.appendChild(el('th', null, x)));
+  tb.appendChild(h1);
+  rows.forEach((r, idx) => {
+    if (st.kind === 'init' || idx > cur - 1) return;
+    const tr = el('tr', (st.kind === 'pay' && r.i === cur) ? 'cur' : '');
+    tr.appendChild(el('td', null, r.i)); tr.appendChild(el('td', null, r.bot));
+    tr.appendChild(el('td', null, r.cheap)); tr.appendChild(el('td', null, r.cost));
+    tr.appendChild(el('td', null, r.acc));
+    tb.appendChild(tr);
+  });
+
+  // ④ 变量 + 讲解
+  const big = document.getElementById('big'); big.innerHTML = '';
+  const kk = (lab, val, cls) => { const q = el('div', 'k' + (cls ? ' ' + cls : '')); q.appendChild(el('div', 'lab', lab)); q.appendChild(el('div', 'val', String(val))); big.appendChild(q); };
+  kk('i（第几段）', st.i < 0 ? '—' : st.i, 'acc');
+  kk('cheapest', st.cheap, 'gold');
+  kk('ans', st.ans, 'good');
+  const note = document.getElementById('note'), ph = x => '<span class="phase">' + x + '</span>';
+  if (st.kind === 'init') note.innerHTML = ph('起点') + `背包是空的，只能先按点 1 的价 <b>${A[1]}</b> 元买第 1 段要用的药。目标：让每一段都用"到目前为止见过的最低价"。`;
+  else if (st.kind === 'merge') note.innerHTML = ph('并入本站') + `走到点 <b>${st.i}</b>，本站价 <b>${A[st.i]}</b>。历史最低价 <code>cheapest = min(${st.oldCheap}, ${A[st.i]}) = ${st.cheap}</code>。<strong>先并入再结算</strong>，因为站在点上就能买药。`;
+  else if (st.kind === 'pay') note.innerHTML = ph('结算本段') + `第 <b>${st.i}</b> 段长 ${V[st.i]} 公里，一瓶跑 ${d} 公里 ⇒ 要 <b>${V[st.i] / d}</b> 瓶，全按最低价 <b>${st.cheap}</b> 元算（在点 ${st.argmin} 提前买好带着走）⇒ 花 ${V[st.i] / d} × ${st.cheap} = <b>${(V[st.i] / d) * st.cheap}</b>，累计 ans = <b>${st.ans}</b>。`;
+  else note.innerHTML = ph('结束') + `最小花费 <b>${ans}</b> 元。终点价 a[${n}] = ${A[n]} 用不上（到了就不用再走了）；各段之间互不干扰，所以"逐段取前缀最小值"就是全局最优。`;
+  document.getElementById('prog').textContent = `步骤 ${t + 1} / ${steps.length}`;
+
+  // ⑤ 方案 + 校验
+  const plan = document.getElementById('plan');
+  const parts = [];
+  for (let i = 1; i <= n; i++) if (buy[i] > 0) parts.push(`点 ${i}（${A[i]} 元/瓶）买 <b>${buy[i]}</b> 瓶`);
+  const agree = ans === brute;
+  plan.innerHTML = (st.kind === 'done' ? `一种等价买法：${parts.join('；')} ⇒ 总价 ${ans} 元。` : '走到最后一步才给出"每个点买几瓶"的等价方案。') +
+    `<br>前缀最小值 <code>${ans}</code> ｜ 每段回头重扫（brute.cpp 思路） <code>${brute}</code> ` +
+    `<span class="badge ${agree ? 'bok' : 'bbad'}">${agree ? '一致' : '不一致'}</span>` +
+    `<div style="color:var(--dim);font-size:13px;margin-top:4px">本机随机对拍全部一致（组数见 verify/RESULTS.md）；满数据 n = 10^5 时这份 O(n^2) 写法要 3.44 秒，O(n) 的前缀最小值只要 0.12 秒。</div>`;
+
+  document.getElementById('code').innerHTML =
+    CODE.map((l, i) => `<span class="ln${i === st.line ? ' cur' : ''}">${String(i + 1).padStart(2, ' ')} ${hi(l)}</span>`).join('');
+
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === steps.length - 1;
+  document.getElementById('prog2').textContent = `n = ${n}，d = ${d}，一瓶跑 ${d} 公里` +
+    (st.kind === 'done' ? ` ⇒ 最小花费 ${ans} 元` : ' ⇒ 答案跑完才揭晓');
+}
+
+function nums(s) { return s.trim().split(/[\s,]+/).map(Number).filter(v => Number.isFinite(v)); }
+
+function load() {
+  const h = nums(document.getElementById('hd').value);
+  n = Math.min(14, Math.max(2, h[0] || 5));
+  d = Math.max(1, h[1] || 10);
+  const vs = nums(document.getElementById('vv').value), as = nums(document.getElementById('aa').value);
+  V = new Array(n).fill(0);
+  for (let i = 1; i < n; i++) V[i] = (vs[i - 1] > 0 && vs[i - 1] % d === 0) ? vs[i - 1] : d;
+  A = new Array(n + 1).fill(0);
+  for (let i = 1; i <= n; i++) A[i] = as[i - 1] > 0 ? as[i - 1] : 1;
+  document.getElementById('hd').value = n + ' ' + d;
+  document.getElementById('vv').value = V.slice(1).join(' ');
+  document.getElementById('aa').value = A.slice(1).join(' ');
+  brute = bruteForce();
+  t = 0; build(); render();
+}
+
+document.getElementById('next').onclick = () => { if (t < steps.length - 1) { t++; render(); } };
+document.getElementById('prev').onclick = () => { if (t > 0) { t--; render(); } };
+document.getElementById('load').onclick = load;
+document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => {
+  const [h, v, a] = b.dataset.s.split('|');
+  document.getElementById('hd').value = h; document.getElementById('vv').value = v; document.getElementById('aa').value = a;
+  load();
+});
+document.getElementById('jump').onclick = () => { t = steps.length - 1; render(); };
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+  e.target.textContent = '⏸ 暂停';
+  timer = setInterval(() => {
+    if (t >= steps.length - 1) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+    t++; render();
+  }, 420);
+};
+
+load();
+</script>
+</body>
+</html>

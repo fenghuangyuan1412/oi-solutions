@@ -13,3 +13,8 @@ __pycache__/
 .verify_p14358.js
 /.verify_p*.js
 /.p*.html
+
+# 模拟卷的自动截图核对产物：跑 sheetshots.js / vizcheck.js 随时重生成，不入库
+notes/mock-cspj-round2/verify/sheets/
+notes/mock-cspj-round2/verify/viz/
+notes/mock-cspj-round2/**/verify-shot-*.png

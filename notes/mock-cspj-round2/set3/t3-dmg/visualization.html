@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T3 暴击阈值 · Δ→提平方因子→约分→拼串 四阶段演示</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --gold:#fbbf24; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,"Microsoft YaHei",sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:18px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:16px; }
+  .card.act { border-color:var(--acc); box-shadow:0 0 0 1px rgba(94,234,212,.35) inset; }
+  .card h2 { font-size:13px; letter-spacing:.06em; color:var(--dim); margin:0 0 12px; }
+  .card h2 .tag { color:var(--acc); font-weight:700; margin-right:6px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:7px 13px; font-size:14px; cursor:pointer; margin-right:6px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.fmt { background:#173a4a; border-color:#2b6a7a; }
+  input { background:#0d1020; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+          padding:7px 9px; font:14px/1.4 Consolas,monospace; width:78px; }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .prog { color:var(--dim); font-size:13px; margin-left:auto; }
+  label { color:var(--dim); font-size:13px; }
+  .row { display:flex; gap:16px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:320px; }
+  .eq { font:18px Consolas,monospace; margin-bottom:8px; }
+  .eq .v { color:var(--gold); }
+  table.grid { border-collapse:collapse; width:100%; font:13px Consolas,monospace; }
+  table.grid th, table.grid td { border-bottom:1px solid #222743; padding:3px 7px; text-align:right; white-space:nowrap; }
+  table.grid th { color:var(--dim); font-weight:400; }
+  table.grid td:first-child, table.grid th:first-child { text-align:left; }
+  table.grid tr.cur { background:#242c52; }
+  table.grid tr.cur td { color:var(--acc); font-weight:700; }
+  table.grid td.hit { color:var(--gold); font-weight:700; }
+  table.grid td.no { color:var(--dim); }
+  .note { color:var(--dim); font-size:14px; min-height:44px; }
+  .note b { color:var(--ink); }
+  .phase { display:inline-block; padding:1px 9px; border-radius:20px; font-size:12px; margin-right:6px;
+           background:#173a4a; color:var(--ok); }
+  pre { margin:0; font:12.5px/1.7 Consolas,monospace; overflow-x:auto; }
+  .ln { display:block; padding:0 8px; border-radius:4px; white-space:pre; }
+  .ln.cur { background:#242c52; color:var(--acc); }
+  .kw { color:#7dd3fc; } .cm { color:#5f7a91; } .fn { color:#c4b5fd; }
+  .big { display:flex; gap:12px; flex-wrap:wrap; }
+  .k { background:#141a2e; border:1px solid #2a3155; border-radius:10px; padding:7px 11px; min-width:82px; }
+  .k .lab { font-size:11px; color:var(--dim); letter-spacing:.04em; }
+  .k .val { font:18px Consolas,monospace; }
+  .k.gold .val { color:var(--gold); } .k.acc .val { color:var(--acc); } .k.dim .val { color:var(--dim); }
+  .badge { padding:2px 9px; border-radius:20px; font-size:12px; }
+  .bok { background:rgba(63,185,80,.16); color:var(--ok); } .bbad { background:rgba(248,81,73,.16); color:var(--warn); }
+  .binfo { background:#242c52; color:var(--acc); }
+  .ans { font:26px Consolas,monospace; color:var(--gold); background:#141a2e; border:1px solid #2a3155;
+         border-radius:10px; padding:10px 16px; display:inline-block; min-width:180px; }
+  .sw { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; font:13px Consolas,monospace; }
+  .sw span { background:#141a2e; border:1px solid #2a3155; border-radius:8px; padding:4px 9px; }
+  .sw b { color:var(--gold); }
+</style>
+</head>
+<body>
+<h1>T3 暴击阈值 / dmg · 四阶段流水线：① 算 Δ ② 提平方因子 ③ 三个量一起约 ④ 拼字符串</h1>
+<div class="sub">CSP-J 第二轮模拟卷 第 3 套 T3（对齐真题 CSP-J 2023 T3 一元二次方程 P9750）。解方程只有一行，分数全在"精确输出"上。四个卡片就是四个阶段，点"下一步"每次只推进一个阶段；上面五个按钮把 <b>整数 / p/q / √r / (p+q√r)/s / NO</b> 五种格式各演示一遍。</div>
+
+<div class="topbar">
+  <label>a</label><input type="text" id="inA" value="1">
+  <label>b</label><input type="text" id="inB" value="0">
+  <label>c</label><input type="text" id="inC" value="-2">
+  <button id="load">载入</button>
+  <span class="prog" style="margin-left:0">五种输出格式：</span>
+  <button class="fmt" data-s="1|-3|2">整数 → 2</button>
+  <button class="fmt" data-s="2|1|-1">p/q → 1/2</button>
+  <button class="fmt" data-s="1|0|-2">√r → √2</button>
+  <button class="fmt" data-s="1|1|-1">(p+q√r)/s</button>
+  <button class="fmt" data-s="1|0|1">NO</button>
+</div>
+<div class="topbar">
+  <span class="prog" style="margin-left:0">更多形态：</span>
+  <button data-s="1|0|-12">2√3（q&gt;1,s=1）</button>
+  <button data-s="2|0|-1">√2/2（p=0 不加括号）</button>
+  <button data-s="-1|1|1">a&lt;0 换支</button>
+  <button data-s="4|4|1">Δ=0 重根</button>
+  <button data-s="1|0|-18">3√2（连除两次）</button>
+  <button data-s="824|0|-590">brute 失效例</button>
+  <button data-s="1000|999|1">大根号例</button>
+</div>
+<div class="topbar">
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到末尾</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="card" id="c0"><h2><span class="tag">阶段①</span>算 Δ 并分支（Δ&lt;0 / 完全平方 / 其他）</h2>
+  <div class="eq" id="eq"></div>
+  <div id="dstep" class="note"></div>
+  <div class="sw" id="branch"></div>
+</div>
+
+<div class="row">
+  <div class="card" id="c1"><h2><span class="tag">阶段②</span>提取平方因子：Δ = r · k²（√Δ = k√r）</h2>
+    <table class="grid" id="tblE"></table>
+    <div class="note" id="enote" style="margin-top:8px"></div>
+  </div>
+  <div class="card" id="c2"><h2><span class="tag">阶段③</span>约分（有理支约两个量，无理支三个量一起约）</h2>
+    <table class="grid" id="tblG"></table>
+    <div class="note" id="gnote" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<div class="card" id="c3"><h2><span class="tag">阶段④</span>拼串：三个开关 q==1 / p==0 / s==1 决定写法</h2>
+  <div class="sw" id="swx"></div>
+  <div id="asmnote" class="note"></div>
+  <div style="margin-top:10px">最终输出：<span class="ans" id="ans">—</span> <span id="fmtname"></span></div>
+</div>
+
+<div class="row">
+  <div class="card"><h2>⑤ 变量状态</h2>
+    <div class="big" id="big"></div>
+    <div class="note" id="note" style="margin-top:10px"></div>
+  </div>
+  <div class="card" style="flex:1.4"><h2>⑥ 样例逐行对照（本页 JS 复现 vs 本机 solution.exe 实测）</h2>
+    <table class="grid" id="tblS"></table>
+    <div class="note" id="snote" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<div class="card"><h2>⑦ 代码与执行位置</h2>
+  <pre id="code"></pre>
+</div>
+
+<script>
+const CODE = [
+  'll D = b * b - 4 * a * c;',
+  'if (D < 0) { puts("NO"); continue; }        // 分支 1：无实根',
+  'll g = isqrt(D);                            // 整数开方：先估算再前后校正',
+  'if (g * g == D) {                           // 分支 2：完全平方 ⇒ 有理根',
+  '    ll N = -b + (a > 0 ? g : -g);           // a<0 时较大根在"减号"那一支',
+  '    ll Den = 2 * a;',
+  '    if (Den < 0) { Den = -Den; N = -N; }    // 分母必须为正，负号挪到分子',
+  '    ll h = gcdll(N, Den);',
+  '    N /= h;  Den /= h;',
+  '    printf(Den == 1 ? "%lld" : "%lld/%lld", N, Den);',
+  '    continue;',
+  '}',
+  'll k = 1, r = D;                            // 分支 3：Δ = r·k²，r 无平方因子',
+  'for (ll t = 2; t * t <= r; t++)',
+  '    while (r % (t * t) == 0) { r /= t * t; k *= t; }   // while 而不是 if',
+  'll A = absll(2 * a), P = (a > 0 ? -b : b), Q = k;      // 较大根 = (P+Q√r)/A',
+  'll h = gcdll(gcdll(P, Q), A);               // 三个量一起约，r 不参与',
+  'P /= h;  Q /= h;  ll S = A / h;',
+  'string root = (Q == 1 ? "" : to_string(Q)) + "√" + to_string(r);   // 开关 q==1',
+  'if (P == 0) return S == 1 ? root : root + "/" + to_string(S);      // 开关 p==0：不加括号',
+  'string body = to_string(P) + "+" + root;',
+  'return S == 1 ? body : "(" + body + ")/" + to_string(S);           // 开关 s==1'
+];
+const CLAMP = 20000;
+
+function absll(x) { return x < 0 ? -x : x; }
+function gcdll(x, y) { x = absll(x); y = absll(y); while (y) { const t = x % y; x = y; y = t; } return x; }
+function isqrt(x) {
+  if (x < 0) return -1;
+  let r = Math.floor(Math.sqrt(x));
+  while (r * r > x) r--;
+  while ((r + 1) * (r + 1) <= x) r++;
+  return r;
+}
+function fmtStr(P, Q, r, S) {
+  const root = (Q === 1 ? '' : String(Q)) + '√' + r;
+  if (P === 0) return S === 1 ? root : root + '/' + S;
+  const body = P + '+' + root;
+  return S === 1 ? body : '(' + body + ')/' + S;
+}
+// 与 solution.cpp 逐行等价的单组求解（本页演示与样例对照都走这里）
+function solveOne(a, b, c) {
+  const R = { a, b, c, D: b * b - 4 * a * c, rows: [] };
+  R.g = isqrt(R.D);
+  if (R.D < 0) { R.branch = 'no'; R.out = 'NO'; return R; }
+  if (R.g * R.g === R.D) {
+    R.branch = 'rat';
+    R.N0 = -b + (a > 0 ? R.g : -R.g);
+    R.Den0 = 2 * a;
+    R.N = R.N0; R.Den = R.Den0;
+    if (R.Den < 0) { R.Den = -R.Den; R.N = -R.N; R.fixed = true; }
+    R.h = gcdll(R.N, R.Den);
+    if (R.h === 0) R.h = 1;
+    R.p = R.N / R.h; R.q = R.Den / R.h;
+    R.out = R.q === 1 ? String(R.p) : R.p + '/' + R.q;
+    return R;
+  }
+  R.branch = 'irr';
+  let k = 1, r = R.D;
+  for (let t = 2; t * t <= r; t++) {
+    while (r % (t * t) === 0) {
+      const before = r;
+      r /= t * t; k *= t;
+      R.rows.push({ t, sq: t * t, before, after: r, k });
+    }
+  }
+  R.r = r; R.k = k;
+  R.A = absll(2 * a); R.P = (a > 0 ? -b : b); R.Q = k;
+  R.h1 = gcdll(R.P, R.Q); R.h = gcdll(R.h1, R.A);
+  R.p = R.P / R.h; R.q = R.Q / R.h; R.s = R.A / R.h;
+  R.root = (R.q === 1 ? '' : String(R.q)) + '√' + R.r;
+  R.out = fmtStr(R.p, R.q, R.r, R.s);
+  return R;
+}
+
+const SAMPLE = [
+  [1, 0, -2, '√2'], [1, 1, -1, '(-1+√5)/2'], [1, -3, 1, '(3+√5)/2'], [1, -2, -1, '1+√2'],
+  [1, -3, 2, '2'], [1, 0, 1, 'NO'], [-1, 1, 1, '(1+√5)/2'], [1, 0, 0, '0'],
+  [1, 0, -12, '2√3'], [1, 2, -1, '-1+√2'], [3, -6, 1, '(3+√6)/3'], [2, 0, -1, '√2/2']
+];
+
+let A = 1, B = 0, C = -2, R = null, steps = [], t = 0, timer = null;
+
+function sign(x) { return x < 0 ? '−' : '+'; }
+function eqText(a, b, c) {
+  return a + '·t² ' + sign(b) + ' ' + absll(b) + '·t ' + sign(c) + ' ' + absll(c) + ' = 0';
+}
+function fmtName(x) {
+  if (x.branch === 'no') return '格式：NO（无实根）';
+  if (x.branch === 'rat') return x.q === 1 ? '格式：整数 p' : '格式：最简分数 p/q';
+  if (x.p === 0 && x.s === 1) return '格式：√r（或 q√r），p=0 且 s=1';
+  if (x.p === 0) return '格式：根式/分母，p=0 不加括号';
+  if (x.s === 1) return '格式：p+q√r，s=1 不写分母';
+  return '格式：(p+q√r)/s 完整形';
+}
+
+function build() {
+  steps = [];
+  const add = (kind, line, stage, note) => {
+    steps.push({ kind, line, stage, note, snap: JSON.parse(JSON.stringify(R)), t: steps.length });
+  };
+  R = solveOne(A, B, C);
+  R.visD = 0; R.visBranch = 0; R.visE = 0; R.visRows = 0; R.visG = 0; R.visA = 0;
+  add('init', -1, 0, `系数 a=${A}、b=${B}、c=${C}。先算判别式 Δ，再决定走哪一支。`);
+  R.visD = 1;
+  add('d', 0, 0, `Δ = b² − 4ac = (${B})² − 4·(${A})·(${C}) = <b>${R.D}</b>。值域核对：|Δ| ≤ 1000² + 4·1000·1000 = 5×10⁶，int 都放得下，全程 long long 更稳。`);
+  if (R.branch === 'no') {
+    R.visBranch = 1;
+    add('no', 1, 0, `Δ = ${R.D} &lt; 0 ⇒ 方程没有实根，直接输出 <b>NO</b>，阶段②③④ 全部跳过。`);
+    R.visG = 0;
+    add('done', 1, 4, `输出 <b>NO</b>。这一支只有两行代码，但本机 5000 组全值域随机数据里约 37% 是 NO（实测 1846/5000），漏了这个分支就大面积失分。`);
+    return;
+  }
+  add('isq', 2, 0, `整数开方 g = isqrt(${R.D}) = <b>${R.g}</b>：因为 ${R.g}² = ${R.g * R.g} ≤ ${R.D} &lt; ${(R.g + 1) * (R.g + 1)} = ${R.g + 1}²。开方必须用整数版（先估算再用 while 前后校正），直接写 <code>(ll)sqrt(D)</code> 会因浮点误差差 1。`);
+  R.visBranch = 1;
+  if (R.branch === 'rat') {
+    add('sq', 3, 0, `g² = ${R.g}² = ${R.g * R.g} <b>== Δ</b> ⇒ Δ 是完全平方数，√Δ 是有理数 ⇒ 走<b>有理分支</b>，阶段② 跳过。`);
+    R.visG = 1;
+    add('rN', 4, 2, `较大根取哪一支要看 a 的符号：这里 a=${A} ${A > 0 ? '&gt; 0 ⇒ 取 +√Δ 那一支' : '&lt; 0 ⇒ 除以负数不等号翻向，取 −√Δ 那一支'}。N = −b ${A > 0 ? '+' : '−'} g = ${-B} ${A > 0 ? '+' : '−'} ${R.g} = <b>${R.N0}</b>，Den = 2a = <b>${R.Den0}</b>。`);
+    add('rden', 6, 2, `题面要求分母为正、负号只在分子上：${R.Den0 < 0 ? `Den = ${R.Den0} &lt; 0 ⇒ 分子分母同时翻符号，Den = ${absll(R.Den0)}，N = ${-R.N0}` : `Den = ${R.Den0} &gt; 0，已经是正分母，不用翻`}。`);
+    R.visG = 2;
+    add('rgcd', 7, 2, `h = gcd(|N|, Den) = gcd(${absll(R.N)}, ${R.Den}) = <b>${R.h}</b>。有理分支只有两个量，约这两个就够了（不像无理分支要三个量一起约）。`);
+    R.visG = 3;
+    add('rred', 8, 2, `同除 h：p = ${R.N}/${R.h} = <b>${R.p}</b>，q = ${R.Den}/${R.h} = <b>${R.q}</b>，此时 gcd(|p|,q)=1，确实是最简分数。`);
+    R.visA = 1;
+    add('rprint', 9, 3, `分母 ${R.q === 1 ? '== 1 ⇒ 只印分子，不写 /1' : '&gt; 1 ⇒ 印成 p/q'} ⇒ 输出 <b>${R.out}</b>。`);
+    add('done', 21, 4, `最终输出 <b>${R.out}</b>。${fmtName(R)}。有理分支的分数形态在 5000 组全值域随机数据里占 25 行（整数 4 + p/q 21），看着少，但它对应题面第 2 条规则和"全部有有理根"那 20 分子任务。`);
+    return;
+  }
+  add('nsq', 3, 0, `g² = ${R.g * R.g} ≠ Δ = ${R.D} ⇒ 无理分支：√Δ 必须写成 k√r，先把 r 里的平方因子提干净。`);
+  R.visE = 1;
+  add('exInit', 12, 1, `令 k = 1，r = Δ = ${R.D}。不变式：<b>Δ = r · k²</b> 全程成立；目标是让 r 不再含任何平方因子。`);
+  if (R.rows.length === 0) {
+    R.visRows = 0;
+    add('ex0', 14, 1, `从 t=2 一路试到 t² &gt; r（即 t ≤ √${R.D} ≈ ${Math.floor(Math.sqrt(R.D))}）都没能整除 ⇒ Δ 本身就无平方因子：r = ${R.r}，k = ${R.k}。`);
+  } else {
+    for (let i = 0; i < R.rows.length; i++) {
+      R.visRows = i + 1;
+      const w = R.rows[i];
+      add('ex', 14, 1, `t = ${w.t}：t² = ${w.sq} 整除 r = ${w.before} ⇒ r = ${w.before}/${w.sq} = <b>${w.after}</b>，k = ${i ? w.k / w.t : 1}·${w.t} = <b>${w.k}</b>。核对不变式 ${w.after}·${w.k}² = ${w.after * w.k * w.k} = Δ ✓（同一个 t 要用 while 连除，写成 if 就会漏掉 4²、2²·2² 这类情形）。`);
+    }
+  }
+  add('exDone', 15, 1, `循环停在 t² &gt; r ⇒ r = <b>${R.r}</b> 无平方因子，k = <b>${R.k}</b>，即 √${R.D} = ${R.k === 1 ? '' : R.k}√${R.r}。阶段② 结束。`);
+  R.visG = 1;
+  add('pqA', 15, 2, `把较大根统一写成"正分母"形态：A = 2|a| = <b>${R.A}</b>；P = (a&gt;0 ? −b : b) = <b>${R.P}</b>；Q = k = <b>${R.Q}</b>。也就是 t<sub>max</sub> = (${R.P} + ${R.Q}√${R.r}) / ${R.A}。`);
+  R.visG = 2;
+  add('gcd', 16, 2, `h = gcd(gcd(|P|, Q), A) = gcd(gcd(${absll(R.P)}, ${R.Q}), ${R.A}) = gcd(${R.h1}, ${R.A}) = <b>${R.h}</b>。三个量必须<b>一起</b>约：只约 (P,A) 或只约 (Q,A) 都会留下公因子；r = ${R.r} 不参与约分（它已经在阶段② 化到最简）。`);
+  R.visG = 3;
+  add('red', 17, 2, `同除 h：p = ${R.P}/${R.h} = <b>${R.p}</b>，q = ${R.Q}/${R.h} = <b>${R.q}</b>，s = ${R.A}/${R.h} = <b>${R.s}</b>。核对 gcd(|${R.p}|, ${R.q}, ${R.s}) = 1 ✓`);
+  R.visA = 1;
+  add('root', 18, 3, `开关 <b>q == 1</b>：q = ${R.q} ⇒ 根号项拼成 <b>${R.root}</b>${R.q === 1 ? '（q=1 时系数不写，写成 1√' + R.r + ' 是错的）' : '（q&gt;1 系数照写）'}。`);
+  R.visA = 2;
+  if (R.p === 0) {
+    add('shell', 19, 3, `开关 <b>p == 0</b>：常数项和加号都不写；再看 s=${R.s} ${R.s === 1 ? '== 1 ⇒ 不写分母' : '&gt; 1 ⇒ 写 /' + R.s + '，且因为 p=0 分子<b>不加括号</b>'} ⇒ 输出 <b>${R.out}</b>。`);
+  } else {
+    add('shell', 21, 3, `开关 <b>p ≠ 0</b>：body = ${R.p}+${R.root}；再看 s=${R.s} ${R.s === 1 ? '== 1 ⇒ 不写分母，也不加括号' : '&gt; 1 ⇒ 分子整体<b>加圆括号</b>'} ⇒ 输出 <b>${R.out}</b>。`);
+  }
+  add('done', 21, 4, `最终输出 <b>${R.out}</b>。${fmtName(R)}。本机 5000 组全值域随机实测：NO 1846 行、整数 4 行、p/q 21 行、s=1 形态 3 行、(p+q√r)/s 3126 行 —— 五个分支都会大量出现，漏一个就成片失分。`);
+}
+
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+
+function hi(line) {
+  let h = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const c = h.indexOf('//');
+  let head = h, tail = '';
+  if (c >= 0) { head = h.slice(0, c); tail = '<span class="cm">' + h.slice(c) + '</span>'; }
+  head = head.replace(/"[^"]*"/g, s => '<span class="fn">' + s + '</span>')
+             .replace(/\b(ll|if|else|for|while|return|continue|break|string|printf|puts|to_string|gcdll|absll|isqrt|sqrt)\b/g, '<span class="kw">$1</span>');
+  return head + tail;
+}
+
+function render() {
+  const st = steps[t], s = st.snap;
+  document.querySelectorAll('#c0,#c1,#c2,#c3').forEach(c => c.classList.remove('act'));
+  const actCard = ['', 'c0', 'c1', 'c2', 'c3', ''][st.stage];
+  if (actCard) document.getElementById(actCard).classList.add('act');
+
+  // ① Δ 与分支
+  document.getElementById('eq').innerHTML = 'f(t) = <span class="v">' + eqText(s.a, s.b, s.c) + '</span>';
+  let ds = '';
+  if (s.visD) {
+    ds = `Δ = b² − 4ac = (${s.b})² − 4·(${s.a})·(${s.c}) = <b>${s.D}</b>`;
+    if (s.visBranch && s.branch !== 'no') ds += `，整数开方 g = <b>${s.g}</b>，g² = <b>${s.g * s.g}</b>`;
+    ds += '。';
+  } else ds = 'Δ 还没算：点"下一步 ▶"。';
+  document.getElementById('dstep').innerHTML = ds;
+  const br = document.getElementById('branch'); br.innerHTML = '';
+  if (s.visBranch) {
+    const one = (txt, on) => { const e = el('span'); e.innerHTML = txt + ' <b>' + (on ? '✓ 走这支' : '×') + '</b>'; br.appendChild(e); };
+    one('Δ &lt; 0 ⇒ NO', s.branch === 'no');
+    one('Δ = g² ⇒ 有理根 p/q', s.branch === 'rat');
+    one('其他 ⇒ 无理根 (p+q√r)/s', s.branch === 'irr');
+  }
+
+  // ② 提取平方因子
+  const te = document.getElementById('tblE'); te.innerHTML = '';
+  const he = el('tr'); ['试除 t', 't²', '除前 r', '除后 r', '累计 k', 'r·k² 应等于 Δ'].forEach(x => he.appendChild(el('th', null, x)));
+  te.appendChild(he);
+  if (s.branch === 'irr' && s.visE) {
+    const shown = s.visRows || 0;
+    for (let i = 0; i < shown; i++) {
+      const w = s.rows[i];
+      const tr = el('tr', i === shown - 1 ? 'cur' : '');
+      tr.appendChild(el('td', null, w.t)); tr.appendChild(el('td', null, w.sq));
+      tr.appendChild(el('td', null, w.before)); tr.appendChild(el('td', null, w.after));
+      tr.appendChild(el('td', null, w.k)); tr.appendChild(el('td', 'hit', w.after * w.k * w.k));
+      te.appendChild(tr);
+    }
+    document.getElementById('enote').innerHTML = shown === s.rows.length
+      ? `循环停在 t² &gt; r ⇒ <b>r = ${s.r}，k = ${s.k}</b>，√${s.D} = ${s.k === 1 ? '' : s.k}√${s.r}。最后一列 ${s.r}·${s.k}² = <b>${s.r * s.k * s.k}</b> = Δ，不变式没破。`
+      : `还有平方因子没提干净：继续点"下一步 ▶"。`;
+  } else {
+    document.getElementById('enote').innerHTML = s.branch === 'irr'
+      ? '本阶段还没开始（先把 Δ 算完）。'
+      : (s.branch === 'no' ? '本例 Δ &lt; 0，阶段②③④ 全部跳过。' : '本例 Δ 是完全平方数，走有理分支，<b>不需要</b>提取平方因子。');
+  }
+
+  // ③ 约分
+  const tg = document.getElementById('tblG'); tg.innerHTML = '';
+  const hg = el('tr'); ['量', '约分前', 'h', '约分后'].forEach(x => hg.appendChild(el('th', null, x)));
+  tg.appendChild(hg);
+  if (s.branch === 'rat' && s.visG) {
+    const rows = [
+      ['分子 N', String(s.N) + (s.Den0 < 0 ? `（原 ${s.N0}，翻号）` : ''), s.p],
+      ['分母 Den', String(s.Den) + (s.Den0 < 0 ? `（原 ${s.Den0}，化正）` : ''), s.q]
+    ];
+    rows.forEach((rw, i) => {
+      const tr = el('tr', s.visG === 3 ? 'cur' : '');
+      tr.appendChild(el('td', null, rw[0])); tr.appendChild(el('td', null, rw[1]));
+      tr.appendChild(el('td', null, i === 0 ? (s.visG >= 2 ? s.h : '—') : ''));
+      tr.appendChild(el('td', s.visG === 3 ? 'hit' : null, s.visG === 3 ? rw[2] : '—'));
+      tg.appendChild(tr);
+    });
+    document.getElementById('gnote').innerHTML = s.visG === 1 ? `分母已经强制为正（负号只出现在分子上）。下一步算 h。`
+      : (s.visG === 2 ? `h = gcd(|N|, Den) = gcd(${absll(s.N)}, ${s.Den}) = <b>${s.h}</b>：有理分支只有<b>两个</b>量要一起约。`
+        : `同除 h=<b>${s.h}</b> ⇒ p=<b>${s.p}</b>，q=<b>${s.q}</b>，gcd(|${s.p}|,${s.q}) = 1 ⇒ 最简分数。`);
+  } else if (s.branch === 'irr' && s.visG) {
+    const rows = [
+      ['P（常数项）', s.P, s.p],
+      ['Q（根号系数）', s.Q, s.q],
+      ['A = 2|a|（分母）', s.A, s.s],
+      ['r（根号内）', s.r, s.r]
+    ];
+    rows.forEach((rw, i) => {
+      const tr = el('tr', s.visG === 3 && i < 3 ? 'cur' : '');
+      tr.appendChild(el('td', null, rw[0])); tr.appendChild(el('td', null, rw[1]));
+      tr.appendChild(el('td', null, i === 0 ? (s.visG >= 2 ? (i === 3 ? '不约' : s.h) : '—') : (i === 3 ? '不约' : '')));
+      tr.appendChild(el('td', s.visG === 3 && i < 3 ? 'hit' : (i === 3 ? 'no' : null),
+        s.visG === 3 ? rw[2] : (i === 3 ? s.r : '—')));
+      tg.appendChild(tr);
+    });
+    document.getElementById('gnote').innerHTML = s.visG === 1 ? `较大根 = (${s.P} + ${s.Q}√${s.r}) / ${s.A}，下一步算三个量的公共因子。`
+      : (s.visG === 2 ? `h = gcd(gcd(|P|,Q),A) = gcd(gcd(${absll(s.P)},${s.Q}),${s.A}) = gcd(${s.h1},${s.A}) = <b>${s.h}</b> —— 必须是<b>三者共同</b>的因子；只两两约会留下公因子，r 不参与（阶段② 已化简）。`
+        : `同除 h=<b>${s.h}</b> ⇒ p=<b>${s.p}</b>，q=<b>${s.q}</b>，s=<b>${s.s}</b>，r=${s.r} 不变；核对 gcd(|${s.p}|,${s.q},${s.s}) = 1 ✓`);
+  } else {
+    document.getElementById('gnote').innerHTML = s.branch === 'no' ? '本例无实根，不约分。' : '还没进入阶段③：先把分支结论看清楚。';
+  }
+
+  // ④ 拼串
+  const sw = document.getElementById('swx'); sw.innerHTML = '';
+  const asm = document.getElementById('asmnote');
+  if (s.branch === 'irr' && s.visA) {
+    const item = (lab, val, res, dim) => { const e = el('span'); e.innerHTML = lab + ' <b>' + val + '</b> ⇒ ' + (dim ? '<span style="color:var(--dim)">待判断</span>' : res); sw.appendChild(e); };
+    item('开关 q==1', s.q === 1 ? '是' : '否', s.q === 1 ? '根号前不写系数，root = "√' + s.r + '"' : '写系数，root = "' + s.q + '√' + s.r + '"', false);
+    item('开关 p==0', s.p === 0 ? '是' : '否', s.p === 0 ? '不写常数项、不写加号' : '写 "' + s.p + ' + root"', s.visA === 1);
+    item('开关 s==1', s.s === 1 ? '是' : '否', s.s === 1 ? '不写分母' : '写 "/' + s.s + '"' + (s.p === 0 ? '，p=0 ⇒ 分子<b>不加括号</b>' : '，p≠0 ⇒ 分子<b>加圆括号</b>'), s.visA === 1);
+    asm.innerHTML = s.visA === 1
+      ? `根号项先拼好：<b>root = ${s.root}</b>；外壳还要看 p、s 两个开关（下一步）。`
+      : `root = ${s.root} → 外壳（p=${s.p} ⇒ ${s.p === 0 ? '省常数项' : '保留 ' + s.p + '+'}；s=${s.s} ⇒ ${s.s === 1 ? '省分母' : '/ ' + s.s + (s.p === 0 ? '，不加括号' : '，加括号')}）→ <b>${s.out}</b>`;
+  } else if (s.branch === 'rat' && s.visG === 3) {
+    sw.innerHTML = '<span>有理分支只有一个开关：<b>q == 1</b> ' + (s.q === 1 ? '是' : '否') + ' ⇒ ' + (s.q === 1 ? '只印分子 p' : '印成 p/q') + '</span>';
+    asm.innerHTML = s.visA ? `输出 <b>${s.out}</b>${s.q === 1 ? '（分母为 1，不写 /1）' : '（最简分数，负号只出现在分子上）'}。` : '下一步才打印。';
+  } else if (s.branch === 'no') {
+    sw.innerHTML = '<span>无实根：三个开关都不用判断，直接 <b>NO</b>。</span>';
+    asm.innerHTML = '题面规则 1：方程没有实根 ⇒ 输出一行 <code>NO</code>（三个大写字母，不带引号、不带空格）。';
+  } else {
+    sw.innerHTML = '';
+    asm.innerHTML = '阶段④ 还没到：先把 Δ、平方因子、约分三步走完。';
+  }
+  const showAns = (s.branch === 'no' && st.kind === 'done') || (s.branch === 'rat' && s.visA) ||
+                  (s.branch === 'irr' && s.visA === 2);
+  document.getElementById('ans').textContent = showAns ? s.out : '—';
+  document.getElementById('fmtname').innerHTML = showAns
+    ? `<span class="badge binfo">${fmtName(s)}</span>` : '';
+
+  // ⑤ 变量
+  const big = document.getElementById('big'); big.innerHTML = '';
+  const kk = (lab, val, cls) => { const d = el('div', 'k' + (cls ? ' ' + cls : '')); d.appendChild(el('div', 'lab', lab)); d.appendChild(el('div', 'val', String(val))); big.appendChild(d); };
+  kk('a', s.a, 'dim'); kk('b', s.b, 'dim'); kk('c', s.c, 'dim');
+  kk('Δ', s.visD ? s.D : '?', 'acc');
+  if (s.branch === 'rat') {
+    kk('g = √Δ', s.visBranch ? s.g : '?');
+    kk('N', s.visG >= 1 ? s.N : '?'); kk('Den', s.visG >= 1 ? s.Den : '?');
+    kk('h', s.visG >= 2 ? s.h : '?');
+    kk('p/q', s.visG >= 3 ? s.p + '/' + s.q : '?', 'gold');
+    kk('输出', s.visA ? s.out : '?', 'gold');
+  }
+  if (s.branch === 'irr') {
+    const cur = (s.visRows || 0) > 0 ? s.rows[s.visRows - 1] : null;
+    kk('r', s.visE ? (s.rows.length && s.visRows < s.rows.length ? (cur ? cur.after : '?') : (s.visRows ? s.r : s.D)) : '?');
+    kk('k', s.visE ? (s.rows.length && s.visRows < s.rows.length ? (cur ? cur.k : '?') : (s.visRows ? s.k : 1)) : '?');
+    kk('P', s.visG >= 1 ? s.P : '?'); kk('Q', s.visG >= 1 ? s.Q : '?'); kk('A', s.visG >= 1 ? s.A : '?');
+    kk('h', s.visG >= 2 ? s.h : '?');
+    kk('p,q,s', s.visG >= 3 ? s.p + ',' + s.q + ',' + s.s : '?', 'gold');
+    kk('root', s.visA >= 1 ? s.root : '?');
+    kk('输出', s.visA >= 2 ? s.out : '?', 'gold');
+  }
+  if (s.branch === 'no') kk('输出', st.kind === 'done' ? 'NO' : '?', 'gold');
+  document.getElementById('note').innerHTML = '<span class="phase">' +
+    ['起点', '阶段① Δ', '阶段② 提平方因子', '阶段③ 约分', '阶段④ 拼串', '完成'][st.stage] + '</span>' + st.note;
+
+  // ⑥ 样例对照
+  const ts = document.getElementById('tblS'); ts.innerHTML = '';
+  const hs = el('tr'); ['a', 'b', 'c', '题面/实测期望', '本页算出', ''].forEach(x => hs.appendChild(el('th', null, x)));
+  ts.appendChild(hs);
+  let okAll = true;
+  SAMPLE.forEach(rw => {
+    const got = solveOne(rw[0], rw[1], rw[2]).out;
+    const ok = (got === rw[3]); if (!ok) okAll = false;
+    const tr = el('tr', (rw[0] === s.a && rw[1] === s.b && rw[2] === s.c) ? 'cur' : '');
+    tr.appendChild(el('td', null, rw[0])); tr.appendChild(el('td', null, rw[1])); tr.appendChild(el('td', null, rw[2]));
+    tr.appendChild(el('td', null, rw[3])); tr.appendChild(el('td', null, got));
+    tr.appendChild(el('td', null)).appendChild(el('span', 'badge ' + (ok ? 'bok' : 'bbad'), ok ? '一致' : '不符'));
+    ts.appendChild(tr);
+  });
+  document.getElementById('snote').innerHTML = (okAll ? '本页的 JS 与本机编译出的 <code>solution.exe</code> 在样例 1（8 行）+ 样例 2（4 行）上<b>逐字符一致</b>。' : '有行不一致，说明页面模型有问题，请核对。') +
+    ' 其中 <code>1 0 -2</code>→√2、<code>1 -3 2</code>→2、<code>2 1 -1</code>→1/2、<code>1 0 1</code>→NO 就是上面五个格式按钮的来源。';
+
+  document.getElementById('prog').textContent = `步骤 ${t + 1} / ${steps.length}`;
+  document.getElementById('code').innerHTML =
+    CODE.map((l, i) => `<span class="ln${i === st.line ? ' cur' : ''}">${String(i + 1).padStart(2, ' ')} ${hi(l)}</span>`).join('');
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === steps.length - 1;
+}
+
+function load() {
+  const rd = (id, dft) => {
+    const v = parseInt(document.getElementById(id).value, 10);
+    return Number.isFinite(v) ? Math.min(CLAMP, Math.max(-CLAMP, v)) : dft;
+  };
+  A = rd('inA', 1); if (A === 0) A = 1;
+  B = rd('inB', 0); C = rd('inC', -2);
+  document.getElementById('inA').value = A; document.getElementById('inB').value = B; document.getElementById('inC').value = C;
+  t = 0; build(); render();
+}
+
+document.getElementById('next').onclick = () => { if (t < steps.length - 1) { t++; render(); } };
+document.getElementById('prev').onclick = () => { if (t > 0) { t--; render(); } };
+document.getElementById('load').onclick = load;
+document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => {
+  const [x, y, z] = b.dataset.s.split('|');
+  document.getElementById('inA').value = x; document.getElementById('inB').value = y; document.getElementById('inC').value = z; load();
+});
+document.getElementById('jump').onclick = () => { t = steps.length - 1; render(); };
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+  e.target.textContent = '⏸ 暂停';
+  timer = setInterval(() => {
+    if (t >= steps.length - 1) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+    t++; render();
+  }, 600);
+};
+
+load();
+</script>
+</body>
+</html>

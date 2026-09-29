@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T2 谷仓机器人 · 撞墙右转网格模拟分步演示</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:20px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:16px 18px; margin-bottom:16px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 14px; font-size:14px; cursor:pointer; margin-right:8px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  textarea { background:#0d1020; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+             padding:8px 10px; font:13px/1.5 Consolas,monospace; width:300px; height:150px; resize:vertical; }
+  .topbar { display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .prog { color:var(--dim); font-size:13px; margin-left:auto; }
+  .err { color:var(--warn); font-size:13px; max-width:300px; }
+  /* 网格 */
+  #board { display:inline-block; }
+  .brow { display:flex; }
+  .bh { width:26px; height:26px; }
+  .cell { width:44px; height:44px; margin:2px; border-radius:6px; background:#232a4a; border:1px solid #333c66;
+          position:relative; font:11px Consolas,monospace; color:#8b93b5; }
+  .cell.wall { background:#3a2b1c; border-color:#6b4a22; color:#c9a227; }
+  .cell.wall::after { content:'x'; position:absolute; left:0; right:0; top:0; bottom:0;
+                      display:flex; align-items:center; justify-content:center; font:15px Consolas,monospace; }
+  .cell.seen { background:#123a44; border-color:#1f6f7a; }
+  .cell .ord { position:absolute; left:3px; top:1px; font-size:10px; color:var(--acc); }
+  .cell .co { position:absolute; right:3px; bottom:1px; font-size:9px; color:#5f6a92; }
+  .cell.bot { outline:2px solid var(--acc); outline-offset:-2px; background:#173a4a; }
+  .cell.bot .arrow { position:absolute; left:0; right:0; top:0; bottom:0; display:flex;
+                     align-items:center; justify-content:center; font:22px/1 Consolas,monospace; color:var(--acc); }
+  .cell.target { outline:2px dashed var(--warn); outline-offset:-2px; }
+  .cell.target.bad { outline-style:solid; background:#4a1c1c; }
+  .ops { display:flex; flex-wrap:wrap; gap:4px; }
+  .op { width:26px; height:32px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+        border-radius:5px; background:#232a4a; border:1px solid #333c66; font:14px Consolas,monospace; }
+  .op.mv { border-color:#4b5aa8; }
+  .op.rot { color:#c9a227; }
+  .op.active { outline:2px solid var(--acc); transform:translateY(-3px); }
+  .op.done { opacity:.55; }
+  table.vars { border-collapse:collapse; width:100%; font:13px Consolas,monospace; }
+  table.vars td, table.vars th { border:1px solid #2c3560; padding:5px 8px; text-align:left; }
+  table.vars th { color:var(--dim); font-weight:400; background:#141830; }
+  table.vars td.hot { color:var(--acc); font-weight:700; }
+  table.vars td.bad { color:var(--warn); font-weight:700; }
+  pre.code { margin:0; font:13px/1.65 Consolas,monospace; color:#c3cbee; overflow-x:auto; }
+  pre.code .ln { display:block; padding:0 8px; border-radius:4px; white-space:pre; color:#7d86ab; }
+  pre.code .ln.run { background:#173a4a; color:var(--acc); }
+  .note { color:var(--dim); font-size:14px; min-height:96px; }
+  .note b { color:var(--ink); }
+  .row { display:flex; gap:16px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:300px; }
+  .dname { color:var(--acc); font-weight:700; }
+</style>
+</head>
+<body>
+<h1>T2 谷仓机器人 / robot —— 撞墙就右转的网格模拟</h1>
+<div class="sub">CSP-J 第二轮模拟卷第 2 套 · 对齐 CSP-J 2024 T2 地图探险 P11228 · 绿框 = 机器人，虚线框 = 这一步想去的格子</div>
+
+<div class="topbar">
+  <textarea id="src">3 3 5
+...
+.x.
+...
+1 1 0
+FFFRF</textarea>
+  <div>
+    <div><button id="load">载入样例 / 重新生成</button></div>
+    <div style="margin-top:8px">
+      <button id="prev">◀ 上一步</button>
+      <button id="next">下一步 ▶</button>
+      <button id="play">▶ 自动播放</button>
+      <button id="jump">跳到末尾</button>
+    </div>
+    <div class="err" id="err" style="margin-top:8px"></div>
+  </div>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="row">
+  <div class="card"><h2>① 网格（行号在左上，格内数字 = 第几个新走到的格子）</h2>
+    <div id="board"></div>
+    <div class="sub" id="boardinfo" style="margin:10px 0 0"></div>
+  </div>
+  <div class="card" style="flex:1.1"><h2>讲解</h2>
+    <div class="note" id="note"></div>
+  </div>
+</div>
+
+<div class="card"><h2>② 指令串 op[1..k]（F = 前进 / 撞墙右转，R = 主动右转）</h2>
+  <div class="ops" id="ops"></div>
+</div>
+
+<div class="row">
+  <div class="card"><h2>③ 变量状态表</h2>
+    <table class="vars" id="vars"></table>
+  </div>
+  <div class="card" style="flex:1.2"><h2>④ 代码行高亮（solution.cpp 核心）</h2>
+    <pre class="code" id="code"></pre>
+  </div>
+</div>
+
+<script>
+const CODE = [
+  'int dr[4] = {0, 1, 0, -1}, dc[4] = {1, 0, -1, 0};',
+  'seen[r][c] = true;  cnt = 1;          // 出发格算走过',
+  'for (int t = 0; t < k; t++) {',
+  '    if (op[t] == \'R\') {',
+  '        d = (d + 1) & 3;              // 主动右转',
+  '    } else {',
+  '        int nr = r + dr[d], nc = c + dc[d];',
+  '        if (合法(nr, nc)) {           // 在网格内且不是货架',
+  '            r = nr; c = nc;',
+  '            if (!seen[r][c]) { seen[r][c] = true; cnt++; }',
+  '        } else {',
+  '            d = (d + 1) & 3;          // 撞了：只转向，不移动',
+  '        }',
+  '    }',
+  '}',
+  'printf("%d %d %d %d\\n", r, c, d, cnt);'
+];
+const DN = ['东', '南', '西', '北'];
+const ARROW = ['→', '↓', '←', '↑'];
+let n = 0, m = 0, k = 0, G = [], op = '', steps = [], t = 0, timer = null;
+
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+function legal(r, c) { return r >= 1 && r <= n && c >= 1 && c <= m && G[r][c] !== 'x'; }
+
+function build() {
+  steps = [];
+  const seen = [];
+  for (let i = 0; i <= n; i++) { seen.push(new Array(m + 1).fill(false)); }
+  let r = steps0.r, c = steps0.c, d = steps0.d, cnt = 1;
+  seen[r][c] = true;
+  const order = [];
+  order.push(r + ',' + c);
+  steps.push({ kind:'init', r, c, d, cnt, seen:seen.map(x => x.slice()), order:order.slice() });
+  for (let i = 0; i < k; i++) {
+    const ch = op[i];
+    if (ch === 'R') {
+      d = (d + 1) & 3;
+      steps.push({ kind:'rot', i, ch, r, c, d, cnt, seen:seen.map(x => x.slice()), order:order.slice(), note:'R' });
+    } else {
+      const nr = r + [0,1,0,-1][d], nc = c + [1,0,-1,0][d];
+      if (legal(nr, nc)) {
+        r = nr; c = nc;
+        const fresh = !seen[r][c];
+        if (fresh) { seen[r][c] = true; cnt++; order.push(r + ',' + c); }
+        steps.push({ kind:'move', i, ch, r, c, d, cnt, fresh, tr:nr, tc:nc, ok:true,
+                     seen:seen.map(x => x.slice()), order:order.slice() });
+      } else {
+        const why = (nr < 1 || nr > n || nc < 1 || nc > m) ? '出界' : '货架';
+        d = (d + 1) & 3;
+        steps.push({ kind:'block', i, ch, r, c, d, cnt, tr:nr, tc:nc, ok:false, why,
+                     seen:seen.map(x => x.slice()), order:order.slice() });
+      }
+    }
+  }
+  steps.push({ kind:'done', r, c, d, cnt, seen:seen.map(x => x.slice()), order:order.slice() });
+}
+
+let steps0 = { r:1, c:1, d:0 };
+
+function render() {
+  const st = steps[t];
+
+  // ① 网格
+  const bd = document.getElementById('board'); bd.innerHTML = '';
+  for (let i = 1; i <= n; i++) {
+    const row = el('div', 'brow');
+    row.appendChild(el('div', 'bh', null));
+    for (let j = 1; j <= m; j++) {
+      const isWall = G[i][j] === 'x';
+      const isBot = st.r === i && st.c === j;
+      const isTarget = (st.kind === 'block' || (st.kind === 'move')) && st.tr === i && st.tc === j;
+      let cls = 'cell' + (isWall ? ' wall' : '') + (st.seen[i][j] ? ' seen' : '') + (isBot ? ' bot' : '') +
+                (isTarget && !isBot ? ' target' : '') + (isTarget && !st.ok ? ' bad' : '');
+      const cell = el('div', cls);
+      const oi = st.order.indexOf(i + ',' + j);
+      if (!isWall && oi >= 0) cell.appendChild(el('span', 'ord', oi === 0 ? '起' : String(oi)));
+      cell.appendChild(el('span', 'co', i + ',' + j));
+      if (isBot) cell.appendChild(el('span', 'arrow', ARROW[st.d]));
+      row.appendChild(cell);
+    }
+    bd.appendChild(row);
+  }
+  document.getElementById('boardinfo').textContent =
+    `n = ${n} 行, m = ${m} 列；当前朝向 d = ${st.d}（${DN[st.d]} ${ARROW[st.d]}）；走过不同格子 cnt = ${st.cnt}。`;
+
+  // ② 指令串
+  const ob = document.getElementById('ops'); ob.innerHTML = '';
+  for (let i = 0; i < k; i++) {
+    let cls = 'op ' + (op[i] === 'F' ? 'mv' : 'rot');
+    const walking = (st.kind === 'move' || st.kind === 'block' || st.kind === 'rot');
+    if (walking && i <= st.i) cls += ' done';
+    if (walking && i === st.i) cls += ' active';
+    const b = el('div', cls, op[i]);
+    ob.appendChild(b);
+  }
+
+  // ③ 变量表
+  const vt = document.getElementById('vars'); vt.innerHTML = '';
+  const head = el('tr'); ['变量', '当前值', '含义'].forEach(x => head.appendChild(el('th', null, x)));
+  vt.appendChild(head);
+  const legalTxt = st.kind === 'move' ? '是 → 前进一格'
+                 : (st.kind === 'block' ? '否（' + st.why + '）→ 只右转，不移动' : '—');
+  const rows = [
+    ['t', st.kind === 'init' ? 0 : (st.kind === 'done' ? k : st.i + 1), '已经执行到第几条指令', true],
+    ['op[t]', st.kind === 'init' || st.kind === 'done' ? '—' : op[st.i], '本条指令', false],
+    ['r', st.r, '当前行', true],
+    ['c', st.c, '当前列', true],
+    ['d', st.d + ' (' + DN[st.d] + ')', '当前朝向', true],
+    ['目标格 (nr,nc)', (st.kind === 'move' || st.kind === 'block') ? st.tr + ',' + st.tc : '—',
+     'F 想去的那格', st.kind === 'block'],
+    ['该格合法?', legalTxt, '越界 / 货架都算不合法', st.kind === 'block'],
+    ['新格子?', st.kind === 'move' ? (st.fresh ? '是 → cnt++' : '否 → cnt 不变') : '—', '判重 seen[r][c]', st.kind === 'move' && st.fresh],
+    ['cnt', st.cnt, '走过的不同格子数', true]
+  ];
+  rows.forEach(([kk, v, mean, hot]) => {
+    const tr = el('tr');
+    tr.appendChild(el('td', null, kk));
+    tr.appendChild(el('td', hot ? 'hot' : null, v));
+    tr.appendChild(el('td', null, mean));
+    vt.appendChild(tr);
+  });
+
+  // ④ 代码
+  const cp = document.getElementById('code'); cp.innerHTML = '';
+  let run = 1;
+  if (st.kind === 'rot') run = 4;
+  else if (st.kind === 'move') run = st.fresh ? 9 : 8;
+  else if (st.kind === 'block') run = 11;
+  else if (st.kind === 'done') run = 15;
+  CODE.forEach((line, idx) => cp.appendChild(el('span', 'ln' + (idx === run ? ' run' : ''), (idx + 1) + '  ' + line)));
+
+  // 讲解
+  const note = document.getElementById('note'), prog = document.getElementById('prog');
+  if (st.kind === 'init')
+    note.innerHTML = `机器人站在 <b>(${st.r},${st.c})</b>，朝 <b class="dname">${DN[st.d]}</b>。出发格直接算"走过"，所以 <b>cnt = 1</b>。` +
+      `一共要执行 <b>${k}</b> 条指令：<b>${op.split('').join(' ')}</b>。`;
+  else if (st.kind === 'rot')
+    note.innerHTML = `第 <b>${st.i + 1}</b> 条是 <b>R</b>：原地右转 90°，朝向 <b>${DN[(st.d + 3) & 3]}</b> → <b class="dname">${DN[st.d]}</b>。` +
+      `位置仍是 (${st.r},${st.c})，<b>cnt 不变</b>（${st.cnt}）。`;
+  else if (st.kind === 'move')
+    note.innerHTML = st.fresh
+      ? `第 <b>${st.i + 1}</b> 条是 <b>F</b>：朝 <b class="dname">${DN[st.d]}</b> 前进到 <b>(${st.r},${st.c})</b>，` +
+        `这个格子以前没来过 → <b>seen 置 true，cnt 变成 ${st.cnt}</b>。`
+      : `第 <b>${st.i + 1}</b> 条是 <b>F</b>：朝 <b class="dname">${DN[st.d]}</b> 前进到 <b>(${st.r},${st.c})</b>，` +
+        `但这个格子<b>已经走过</b>了 → <b>cnt 保持 ${st.cnt}</b>，题目要的是"不同格子数"。`;
+  else if (st.kind === 'block')
+    note.innerHTML = `第 <b>${st.i + 1}</b> 条是 <b>F</b>：想去的 <b>(${st.tr},${st.tc})</b> ${st.why === '出界' ? '<b>跑出网格了</b>' : '<b>立着货架 x</b>'}。` +
+      `按题面：<b>原地右转 90°，这一步不移动</b> → 朝向变成 <b class="dname">${DN[st.d]}</b>，人还在 (${st.r},${st.c})，<b>cnt 不变</b>（${st.cnt}）。`;
+  else
+    note.innerHTML = `<b>${k}</b> 条指令全部执行完。最终位置 <b>第 ${st.r} 行 第 ${st.c} 列</b>，朝向 <b class="dname">${st.d}（${DN[st.d]}）</b>，` +
+      `走过的不同格子 <b>${st.cnt}</b> 个。输出：<b>${st.r} ${st.c} ${st.d} ${st.cnt}</b>` +
+      (n * m <= 1200 ? `（按到达顺序：${st.order.slice(0, 12).join(' → ')}${st.order.length > 12 ? ' …' : ''}）` : '');
+  prog.textContent = `步骤 ${t + 1} / ${steps.length}`;
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === steps.length - 1;
+}
+
+function parse() {
+  const err = document.getElementById('err'); err.textContent = '';
+  const lines = document.getElementById('src').value.replace(/\r/g, '').split('\n').map(x => x.trim()).filter(x => x.length);
+  if (lines.length < 1) { err.textContent = '至少要有第一行 n m k'; return false; }
+  const a = lines[0].split(/\s+/).map(Number);
+  if (a.length < 3 || a.some(x => !isFinite(x))) { err.textContent = '第一行需要三个整数 n m k'; return false; }
+  n = Math.floor(a[0]); m = Math.floor(a[1]); k = Math.floor(a[2]);
+  if (n < 1 || m < 1 || n > 30 || m > 30) { err.textContent = '演示用 1 ≤ n, m ≤ 30'; return false; }
+  if (k < 1 || k > 400) { err.textContent = '演示用 1 ≤ k ≤ 400'; return false; }
+  if (lines.length < 1 + n + 1 + 1) { err.textContent = `还缺地图行（需要 ${n} 行）`; return false; }
+  G = [];
+  for (let i = 0; i <= n; i++) G.push([]);
+  for (let i = 1; i <= n; i++) {
+    const s = lines[i];
+    if (s.length < m) { err.textContent = `第 ${i} 行地图只有 ${s.length} 个字符，需要 ${m} 个`; return false; }
+    G[i] = ' ' + s.slice(0, m);
+  }
+  const b = lines[1 + n].split(/\s+/).map(Number);
+  if (b.length < 3 || b.some(x => !isFinite(x))) { err.textContent = '起点行需要三个整数 r0 c0 d0'; return false; }
+  let r0 = Math.floor(b[0]), c0 = Math.floor(b[1]), d0 = Math.floor(b[2]);
+  if (r0 < 1 || r0 > n) r0 = Math.min(Math.max(r0, 1), n);
+  if (c0 < 1 || c0 > m) c0 = Math.min(Math.max(c0, 1), m);
+  if (G[r0][c0] === 'x') { err.textContent = `起点 (${r0},${c0}) 是货架，题面保证不会这样`; return false; }
+  d0 = ((d0 % 4) + 4) % 4;
+  steps0 = { r:r0, c:c0, d:d0 };
+  op = (lines[2 + n] || '').toUpperCase().replace(/[^FR]/g, '');
+  if (!op.length) { err.textContent = '最后一行指令串只含 F 和 R'; return false; }
+  if (op.length !== k) { err.textContent = `指令串实际 ${op.length} 条，按 ${op.length} 条演示（题面 k = ${k}）`; k = op.length; }
+  return true;
+}
+
+function load() {
+  if (!parse()) return;
+  if (timer) { clearInterval(timer); timer = null; document.getElementById('play').textContent = '▶ 自动播放'; }
+  t = 0; build(); render();
+}
+
+document.getElementById('next').onclick = () => { if (t < steps.length - 1) { t++; render(); } };
+document.getElementById('prev').onclick = () => { if (t > 0) { t--; render(); } };
+document.getElementById('load').onclick = load;
+document.getElementById('jump').onclick = () => { t = steps.length - 1; render(); };
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+  e.target.textContent = '⏸ 暂停';
+  timer = setInterval(() => {
+    if (t >= steps.length - 1) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+    t++; render();
+  }, 420);
+};
+
+load();
+</script>
+</body>
+</html>

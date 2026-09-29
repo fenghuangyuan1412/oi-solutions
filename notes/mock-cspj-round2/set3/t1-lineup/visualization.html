@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T1 无料排队 · 位置递推分步演示</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --gold:#fbbf24; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,"Microsoft YaHei",sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:18px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:16px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:7px 13px; font-size:14px; cursor:pointer; margin-right:6px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  input { background:#0d1020; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+          padding:7px 9px; font:14px/1.4 Consolas,monospace; width:130px; }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .prog { color:var(--dim); font-size:13px; margin-left:auto; }
+  label { color:var(--dim); font-size:13px; }
+  .row { display:flex; gap:16px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:300px; }
+  .q { display:flex; gap:5px; flex-wrap:wrap; }
+  .cell { width:44px; height:52px; border-radius:7px; background:#232a4a; border:1px solid #333c66;
+          display:flex; flex-direction:column; align-items:center; justify-content:center; font:15px Consolas,monospace; }
+  .cell .p { font-size:10px; color:var(--dim); }
+  .cell.take { background:#4a1c1c; border-color:#7f2b2b; color:#fca5a5; text-decoration:line-through; }
+  .cell.me { outline:2px solid var(--gold); }
+  .cell.gone { display:none; }
+  table.grid { border-collapse:collapse; width:100%; font:13px Consolas,monospace; }
+  table.grid th, table.grid td { border-bottom:1px solid #222743; padding:3px 7px; text-align:right; white-space:nowrap; }
+  table.grid th { color:var(--dim); font-weight:400; text-align:right; }
+  table.grid td:first-child, table.grid th:first-child { text-align:left; }
+  table.grid tr.cur { background:#242c52; }
+  table.grid tr.cur td { color:var(--acc); font-weight:700; }
+  table.grid td.hit { color:var(--gold); font-weight:700; }
+  .note { color:var(--dim); font-size:14px; min-height:60px; }
+  .note b { color:var(--ink); }
+  .phase { display:inline-block; padding:1px 9px; border-radius:20px; font-size:12px; margin-right:6px;
+           background:#173a4a; color:var(--ok); }
+  pre { margin:0; font:12.5px/1.7 Consolas,monospace; overflow-x:auto; }
+  .ln { display:block; padding:0 8px; border-radius:4px; white-space:pre; }
+  .ln.cur { background:#242c52; color:var(--acc); }
+  .kw { color:#7dd3fc; } .cm { color:#5f7a91; } .fn { color:#c4b5fd; }
+  .big { display:flex; gap:14px; flex-wrap:wrap; }
+  .k { background:#141a2e; border:1px solid #2a3155; border-radius:10px; padding:8px 12px; min-width:110px; }
+  .k .lab { font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
+  .k .val { font:20px Consolas,monospace; }
+  .k.gold .val { color:var(--gold); } .k.good .val { color:var(--ok); } .k.acc .val { color:var(--acc); }
+  .badge { padding:2px 9px; border-radius:20px; font-size:12px; }
+  .bok { background:rgba(63,185,80,.16); color:var(--ok); } .bbad { background:rgba(248,81,73,.16); color:var(--warn); }
+</style>
+</head>
+<body>
+<h1>T1 无料排队 / lineup · 将"整支队伍"压成两条 O(1) 递推</h1>
+<div class="sub">CSP-J 第二轮模拟卷 第 3 套 T1（对齐真题 CSP-J 2023 T1 小苹果 P9748）。每轮取走<strong>本轮位置</strong>为 1、4、7、…（即 <code>p mod 3 == 1</code>）的人，剩下的人重新编号。上半屏是真队列，下半屏是正解用到的两个变量。</div>
+
+<div class="topbar">
+  <label>n（队伍人数）</label><input type="text" id="inN" value="6">
+  <label>x（要追踪的编号）</label><input type="text" id="inX" value="1">
+  <button id="load">载入</button>
+  <button data-s="6|1">样例1 6 1</button>
+  <button data-s="6|5">样例2 6 5</button>
+  <button data-s="1|1">样例3 1 1</button>
+  <button data-s="30|27">n=30 x=27</button>
+  <button data-s="1000000000|999999998">n=1e9</button>
+</div>
+<div class="topbar">
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到末尾</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="card"><h2>① 真队列（红=本轮被取走，金框=编号 x 本人）</h2>
+  <div class="q" id="queue"></div>
+  <div class="note" id="qnote" style="margin-top:10px;min-height:0;font-size:13px"></div>
+</div>
+
+<div class="row">
+  <div class="card"><h2>② 递推 A：总轮数（变量 t）</h2>
+    <table class="grid" id="tblR"></table>
+  </div>
+  <div class="card"><h2>③ 递推 B：编号 x 的位置（变量 p）</h2>
+    <table class="grid" id="tblP"></table>
+  </div>
+</div>
+
+<div class="row">
+  <div class="card"><h2>④ 变量状态</h2>
+    <div class="big" id="big"></div>
+    <div class="note" id="vars" style="margin-top:10px"></div>
+  </div>
+  <div class="card" style="flex:1.5"><h2>⑤ 讲解</h2>
+    <div class="note" id="note"></div>
+    <div class="note" id="check" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<div class="card"><h2>⑥ 代码与执行位置</h2>
+  <pre id="code"></pre>
+</div>
+
+<script>
+const CODE = [
+  'long long t = n, rounds = 0;',
+  'while (t > 0) {',
+  '    rounds++;',
+  '    t -= (t + 2) / 3;              // ceil(t/3) 人本轮出列',
+  '}',
+  'long long p = x, mine = 0;',
+  'while (true) {',
+  '    mine++;',
+  '    if (p % 3 == 1) break;         // 位置 1,4,7,... 被取走',
+  '    p -= (p + 2) / 3;              // 换成下一轮的新位置',
+  '}',
+  'printf("%lld %lld\\n", rounds, mine);'
+];
+const CEIL3 = t => Math.floor((t + 2) / 3);
+
+let N = 6, X = 1, RMAX = 40, rounds = 0, mine = 0, rRows = [], pRows = [], steps = [], t = 0, timer = null;
+let brR = 0, brM = 0, brOK = true;
+
+function simQueue() {                        // 真正的重排模拟（仅小规模用于上半屏与互验）
+  let q = []; for (let i = 1; i <= N; i++) q.push(i);
+  const frames = []; rounds = 0; mine = 0;
+  while (q.length) {
+    rounds++;
+    const taken = [], rest = [];
+    for (let i = 0; i < q.length; i++) {
+      if (i % 3 === 0) { taken.push(q[i]); if (q[i] === X && mine === 0) mine = rounds; }
+      else rest.push(q[i]);
+    }
+    frames.push({ r: rounds, q: q.slice(), taken, rest });
+    q = rest;
+  }
+  brR = rounds; brM = mine; brOK = mine > 0;
+  return frames;
+}
+
+function build() {
+  steps = [];
+  let frames = [];
+  RMAX = 40;
+  if (N <= RMAX) {
+    frames = simQueue();
+    steps.push({ kind:'init', line:-1, fi:-1, ri:-1, pi:-1, tr:0, tm:0 });
+    for (let i = 0; i < frames.length; i++)
+      steps.push({ kind:'sim', line:-1, fi:i, ri:-1, pi:-1, tr:0, tm:0 });
+    steps.push({ kind:'simdone', line:-1, fi:frames.length - 1, ri:-1, pi:-1, tr:0, tm:0 });
+  } else {
+    steps.push({ kind:'toolarge', line:-1, fi:-1, ri:-1, pi:-1, tr:0, tm:0 });
+  }
+  // 递推 A：人数
+  let tt = N, r = 0; rounds = 0;
+  rRows = [];
+  while (tt > 0) {
+    r++;
+    const out = CEIL3(tt), after = tt - out;
+    rRows.push({ r, t: tt, out, after });
+    steps.push({ kind:'rd', line:r < rRows.length ? 3 : 3, ri:r - 1, pi:-1, tr:r, tm:0, curT:tt, curOut:out, curA:after });
+    tt = after;
+  }
+  rounds = r;
+  steps.push({ kind:'rddone', line:5, ri:rRows.length - 1, pi:-1, tr:rounds, tm:0 });
+  // 递推 B：位置
+  let p = X, m = 0;
+  pRows = [];
+  while (true) {
+    m++;
+    const hit = p % 3 === 1;
+    const out = CEIL3(p), after = p - out;
+    pRows.push({ r:m, p, mod:p % 3, out, after: hit ? null : after, hit });
+    steps.push({ kind:'tr', line:hit ? 8 : 7, ri:rRows.length - 1, pi:m - 1, tr:rounds, tm:m, hit });
+    if (hit) { mine = m; break; }
+    p = after;
+  }
+  steps.push({ kind:'trdone', line:11, ri:rRows.length - 1, pi:pRows.length - 1, tr:rounds, tm:mine });
+}
+
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+
+function hi(line) {
+  let h = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const c = h.indexOf('//');
+  let head = h, tail = '';
+  if (c >= 0) { head = h.slice(0, c); tail = '<span class="cm">' + h.slice(c) + '</span>'; }
+  head = head.replace(/"[^"]*"/g, s => '<span class="fn">' + s + '</span>')
+             .replace(/\b(long|while|if|break|return|printf)\b/g, '<span class="kw">$1</span>');
+  return head + tail;
+}
+
+function render() {
+  const st = steps[t];
+
+  // ① 队列
+  const qb = document.getElementById('queue'); qb.innerHTML = '';
+  const qn = document.getElementById('qnote');
+  if (st.kind === 'sim' || st.kind === 'simdone') {
+    const f = simQueue()[st.fi];
+    for (let i = 0; i < f.q.length; i++) {
+      const id = f.q[i];
+      const take = (st.kind === 'sim') && (i % 3 === 0);
+      const c = el('div', 'cell' + (take ? ' take' : '') + (id === X ? ' me' : ''));
+      c.appendChild(el('span', null, id));
+      c.appendChild(el('span', 'p', '位' + (i + 1)));
+      qb.appendChild(c);
+    }
+    qn.innerHTML = st.kind === 'sim'
+      ? `本轮共 ${f.q.length} 人，取走位置 1、4、7、… 共 <b>${f.taken.length}</b> 人（编号 ${f.taken.join(', ')}），剩下 <b>${f.rest.length}</b> 人重新从 1 开始编号。`
+      : `队列清空：真模拟得到总轮数 <b>${brR}</b>，编号 ${X} 在第 <b>${brM}</b> 轮被取走。`;
+  } else {
+    qn.innerHTML = (st.kind === 'toolarge')
+      ? `n = ${N} > ${RMAX}，真队列会画不下（也存不下），这里直接看下面两条递推表 —— 这正是正解的意义。`
+      : (st.kind === 'init'
+        ? `初始队伍：编号 1…${N} 站成一排，此时"位置"和"编号"还完全一样。点"下一步"看第一轮谁被取走。`
+        : `队列模拟已结束，下面是正解实际执行的两条递推（它们不再依赖上面这张图）。`);;
+    for (let i = 1; i <= Math.min(N, RMAX); i++) {
+      const c = el('div', 'cell' + (i === X ? ' me' : ''));
+      c.appendChild(el('span', null, i)); c.appendChild(el('span', 'p', '位' + i));
+      qb.appendChild(c);
+    }
+    if (N > RMAX) qb.appendChild(el('div', 'cell', '…'));
+  }
+
+  // ② 递推 A
+  const tr = document.getElementById('tblR'); tr.innerHTML = '';
+  const h2 = el('tr'); ['轮 r', '本轮人数 t', '(t+2)/3 出列', '下一轮 t'].forEach(x => h2.appendChild(el('th', null, x)));
+  tr.appendChild(h2);
+  rRows.forEach((row, i) => {
+    if (st.ri < 0 || i > st.ri) return;
+    const r2 = el('tr', i === st.ri ? 'cur' : '');
+    r2.appendChild(el('td', null, row.r)); r2.appendChild(el('td', null, row.t));
+    r2.appendChild(el('td', null, row.out)); r2.appendChild(el('td', null, row.after));
+    tr.appendChild(r2);
+  });
+  if (st.tr > 0) { const r2 = el('tr'); r2.appendChild(el('td', null, '⇒')); r2.appendChild(el('td', null, '总轮数 rounds'));
+    r2.appendChild(el('td', 'hit', st.tr)); r2.appendChild(el('td', null, '')); tr.appendChild(r2); }
+
+  // ③ 递推 B
+  const tp = document.getElementById('tblP'); tp.innerHTML = '';
+  const h3 = el('tr'); ['轮 r', 'x 的位置 p', 'p mod 3', '(p+2)/3', '新位置 p'].forEach(x => h3.appendChild(el('th', null, x)));
+  tp.appendChild(h3);
+  pRows.forEach((row, i) => {
+    if (st.pi < 0 || i > st.pi) return;
+    const r3 = el('tr', i === st.pi ? 'cur' : '');
+    r3.appendChild(el('td', null, row.r)); r3.appendChild(el('td', null, row.p));
+    r3.appendChild(el('td', row.hit ? 'hit' : null, row.mod + (row.hit ? ' ==1 取走!' : '')));
+    r3.appendChild(el('td', null, row.out)); r3.appendChild(el('td', null, row.after === null ? '—' : row.after));
+    tp.appendChild(r3);
+  });
+  if (st.tm > 0) { const r3 = el('tr'); r3.appendChild(el('td', null, '⇒')); r3.appendChild(el('td', null, 'x 的轮数 mine'));
+    r3.appendChild(el('td', 'hit', st.tm)); r3.appendChild(el('td', null, '')); r3.appendChild(el('td', null, '')); tp.appendChild(r3); }
+
+  // ④ 变量
+  const big = document.getElementById('big'); big.innerHTML = '';
+  const kk = (lab, val, cls) => { const d = el('div', 'k' + (cls ? ' ' + cls : '')); d.appendChild(el('div', 'lab', lab)); d.appendChild(el('div', 'val', String(val))); big.appendChild(d); };
+  kk('t（本轮人数）', st.kind === 'rd' ? st.curT : (st.ri >= 0 ? rRows[st.ri].after : N), 'acc');
+  kk('rounds', st.tr || 0, 'gold');
+  kk('p（x 的位置）', st.pi >= 0 ? pRows[st.pi].p : X, 'acc');
+  kk('mine', st.tm || 0, 'gold');
+  document.getElementById('vars').innerHTML = (st.kind === 'trdone')
+    ? `输出 <code>${rounds} ${mine}</code>` : '跑完两条循环后才有输出。';
+
+  // ⑤ 讲解
+  const note = document.getElementById('note');
+  const ph = x => '<span class="phase">' + x + '</span>';
+  if (st.kind === 'init') note.innerHTML = ph('起点') + `<code>n = ${N}</code>、<code>x = ${X}</code>。看清"位置"和"编号"不是一回事：编号 ${X} 只有第 1 轮时位置也等于 ${X}。`;
+  else if (st.kind === 'toolarge') note.innerHTML = ph('规模') + `<code>n = ${N}</code>：一支这么大的队伍根本存不进内存（int 数组要 ${Math.ceil(N * 4 / 1073741824 * 10) / 10} GB），所以必须把整支队伍压成两个变量。`;
+  else if (st.kind === 'sim') note.innerHTML = ph('第 ' + st.fi + ' 轮') + `取走位置 1、4、7、…（<code>i % 3 == 0</code>，也就是位置 mod 3 余 1）。剩下的人 <strong>重新从 1 开始编号</strong>，这就是"位置"会跳变的原因。`;
+  else if (st.kind === 'simdone') note.innerHTML = ph('模拟结束') + `小规模这样写没问题（<code>n ≤ 10^6</code> 本机 0.023 秒），但 <code>n = 10^9</code> 要 27 秒、还要 3.7 GB 内存 —— 满分必须换成下面的递推。`;
+  else if (st.kind === 'rd') note.innerHTML = ph('递推 A · 第 ' + (st.ri + 1) + ' 轮') + `本轮 <b>${st.curT}</b> 人，出列 ceil(${st.curT}/3) = <code>(${st.curT}+2)/3</code> = <b>${st.curOut}</b> 人，剩 <b>${st.curA}</b> 人。人数每轮至少乘 <b>2/3</b>，所以整个循环只跑 <b>${rounds}</b> 次。`;
+  else if (st.kind === 'rddone') note.innerHTML = ph('递推 A 完成') + `总轮数 <b>rounds = ${rounds}</b>。注意它跟 x 无关，纯粹是"人数按 2/3 衰减到 0"所需的步数。`;
+  else if (st.kind === 'tr') {
+    const row = pRows[st.pi];
+    note.innerHTML = ph('递推 B · 第 ' + row.r + ' 轮') + (row.hit
+      ? `位置 <b>${row.p}</b>，<code>${row.p} % 3 == 1</code> ⇒ 本轮就在"1、4、7、…"之列，<strong>被取走</strong>，答案就是第 <b>${row.r}</b> 轮。`
+      : `位置 <b>${row.p}</b>（mod 3 = ${row.mod}，本轮不走）。排在他前面出列的有 ceil(${row.p}/3) = <code>(${row.p}+2)/3</code> = <b>${row.out}</b> 人，重排后他前移：<b>${row.p} − ${row.out} = ${row.after}</b>。`);
+  }
+  else note.innerHTML = ph('完成') + `输出 <b>${rounds} ${mine}</b>。整个过程只用了 <code>t</code>、<code>rounds</code>、<code>p</code>、<code>mine</code> 四个变量 —— 对数级时间、常数空间。`;
+  document.getElementById('prog').textContent = `步骤 ${t + 1} / ${steps.length}`;
+
+  // 互验
+  const chk = document.getElementById('check');
+  if (brOK) {
+    const agree = (brR === rounds && brM === mine);
+    chk.innerHTML = `真模拟（相当于 brute.cpp） <code>${brR} ${brM}</code> ｜ 递推 <code>${rounds} ${mine}</code> ` +
+      `<span class="badge ${agree ? 'bok' : 'bbad'}">${agree ? '一致' : '不一致'}</span>` +
+      `<div style="color:var(--dim);font-size:13px;margin-top:4px">本机随机对拍 5000 组（n ≤ 400）全部一致；n = 10^9、x = 999999998 时递推给出 <code>50 6</code>，0.006 秒。</div>`;
+  } else {
+    chk.innerHTML = `n &gt; ${RMAX}，不做真模拟互验（队伍存不下）。递推结果：<code>${rounds} ${mine}</code>。` +
+      `<div style="color:var(--dim);font-size:13px;margin-top:4px">本机实测 n = 10^9：x = 1 → <code>50 1</code>、x = 10^9 → <code>50 1</code>、x = 5×10^8 → <code>50 8</code>、x = 999999998 → <code>50 6</code>。</div>`;
+  }
+
+  document.getElementById('code').innerHTML =
+    CODE.map((l, i) => `<span class="ln${i === st.line ? ' cur' : ''}">${String(i + 1).padStart(2, ' ')} ${hi(l)}</span>`).join('');
+
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === steps.length - 1;
+}
+
+function load() {
+  const nv = parseInt(document.getElementById('inN').value, 10);
+  const xv = parseInt(document.getElementById('inX').value, 10);
+  N = Number.isFinite(nv) ? Math.min(1000000000, Math.max(1, nv)) : 6;
+  X = Number.isFinite(xv) ? Math.min(N, Math.max(1, xv)) : 1;
+  document.getElementById('inN').value = N; document.getElementById('inX').value = X;
+  brOK = false; brR = 0; brM = 0;      // 换数据后先作废上一次的互验结论
+  t = 0; build(); render();
+}
+
+document.getElementById('next').onclick = () => { if (t < steps.length - 1) { t++; render(); } };
+document.getElementById('prev').onclick = () => { if (t > 0) { t--; render(); } };
+document.getElementById('load').onclick = load;
+document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => {
+  const [a, c] = b.dataset.s.split('|');
+  document.getElementById('inN').value = a; document.getElementById('inX').value = c; load();
+});
+document.getElementById('jump').onclick = () => { t = steps.length - 1; render(); };
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+  e.target.textContent = '⏸ 暂停';
+  timer = setInterval(() => {
+    if (t >= steps.length - 1) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+    t++; render();
+  }, 420);
+};
+
+load();
+</script>
+</body>
+</html>

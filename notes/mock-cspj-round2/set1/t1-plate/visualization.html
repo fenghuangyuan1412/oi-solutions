@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T1 痛车车牌 · 最小车牌号分步演示</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --gold:#fbbf24; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,"Microsoft YaHei",sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:18px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:16px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:7px 13px; font-size:14px; cursor:pointer; margin-right:6px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  input[type=text] { background:#0d1020; color:var(--ink); border:1px solid #3d4778;
+                     border-radius:8px; padding:8px 10px; font:14px/1.4 Consolas,monospace; width:300px; }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .prog { color:var(--dim); font-size:13px; margin-left:auto; }
+  .chars { display:flex; flex-wrap:wrap; gap:6px; }
+  .ch { width:34px; height:42px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+        border-radius:7px; background:#232a4a; border:1px solid #333c66; font:16px Consolas,monospace; }
+  .ch.digit { border-color:#4b5aa8; }
+  .ch.letter { color:#6b7396; background:#171b2e; text-decoration:line-through; }
+  .ch.active { outline:2px solid var(--acc); outline-offset:1px; transform:translateY(-3px); }
+  .ch .k { font-size:9px; color:var(--dim); margin-top:1px; }
+  .buckets { display:flex; align-items:flex-end; gap:10px; height:120px; }
+  .b { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
+  .bar { width:100%; background:linear-gradient(180deg,var(--acc),#0891b2); border-radius:5px 5px 0 0;
+         min-height:2px; transition:height .2s ease; }
+  .b.zero .bar { background:linear-gradient(180deg,var(--gold),#b45309); }
+  .b .n { font-size:14px; font-weight:700; margin-bottom:3px; }
+  .b .d { font-size:13px; color:var(--dim); margin-top:5px; }
+  .b.hot .d { color:var(--acc); font-weight:700; }
+  .out { font:24px/1.4 Consolas,monospace; word-break:break-all; letter-spacing:1px; min-height:34px; }
+  .out .first { color:var(--ok); font-weight:700; }
+  .out .zero { color:var(--gold); }
+  .out .new { color:var(--acc); }
+  .note { color:var(--dim); font-size:14px; min-height:52px; }
+  .note b { color:var(--ink); }
+  .row { display:flex; gap:16px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:300px; }
+  table { border-collapse:collapse; width:100%; font:13px Consolas,monospace; }
+  th, td { border-bottom:1px solid #222743; padding:3px 6px; text-align:right; }
+  th:first-child, td:first-child { text-align:left; color:var(--dim); }
+  td.hot { color:var(--acc); font-weight:700; }
+  pre { margin:0; font:12.5px/1.7 Consolas,monospace; overflow-x:auto; }
+  .ln { display:block; padding:0 8px; border-radius:4px; white-space:pre; }
+  .ln.cur { background:#242c52; color:var(--acc); }
+  .kw { color:#7dd3fc; } .cm { color:#5f7a91; } .st { color:#fbbf24; } .fn { color:#c4b5fd; }
+  .phase { display:inline-block; padding:1px 9px; border-radius:20px; font-size:12px; margin-right:6px;
+           background:#173a4a; color:var(--ok); }
+</style>
+</head>
+<body>
+<h1>T1 痛车车牌 / plate · 拼最小车牌号</h1>
+<div class="sub">CSP-J 第二轮模拟卷 第 1 套 T1（对齐真题 CSP-J 2025 T1 拼数 P14357，但反向拼<strong>最小</strong>）。丢掉字母，10 个计数桶，然后"最小非零数字 → 全部 0 → 其余升序"。</div>
+
+<div class="topbar">
+  <input type="text" id="src" value="a1b0c2" maxlength="200">
+  <button id="load">载入</button>
+  <button data-s="a1b0c2">样例1</button>
+  <button data-s="x000y5">样例2</button>
+  <button data-s="9z8k7">样例3</button>
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到末尾</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="card"><h2>① 扫描：逐个字符判断是不是数字</h2>
+  <div class="chars" id="chars"></div>
+</div>
+
+<div class="row">
+  <div class="card"><h2>② 计数桶 cnt[0..9]</h2>
+    <div class="buckets" id="buckets"></div>
+  </div>
+  <div class="card"><h2>③ 变量状态表</h2>
+    <table id="vars"></table>
+  </div>
+</div>
+
+<div class="card"><h2>④ 输出（按三段拼出答案）</h2>
+  <div class="out" id="out"></div>
+  <div class="note" id="note"></div>
+</div>
+
+<div class="card"><h2>⑤ 代码与执行位置</h2>
+  <pre id="code"></pre>
+</div>
+
+<script>
+const CODE = [
+  'int cnt[10];',
+  'string s;',
+  'cin >> s;',
+  'for (char c : s) {',
+  "    if (c >= '0' && c <= '9') cnt[c - '0']++;   // 过滤字母",
+  '}',
+  'int first = -1;',
+  'for (int d = 1; d <= 9; d++) {',
+  '    if (cnt[d]) { first = d; break; }           // 首位取最小非零数字',
+  '}',
+  "putchar('0' + first);",
+  'cnt[first]--;',
+  "for (int i = 0; i < cnt[0]; i++) putchar('0');  // 第二位起把所有 0 放完",
+  'for (int d = 1; d <= 9; d++)',
+  "    for (int i = 0; i < cnt[d]; i++) putchar('0' + d);  // 其余升序",
+  "putchar('\\n');"
+];
+
+let S = '', steps = [], t = 0, timer = null;
+
+function build() {
+  steps = [{ kind:'init', line:2, cnt:new Array(10).fill(0), out:[], first:-1 }];
+  const cnt = new Array(10).fill(0);
+  for (let i = 0; i < S.length; i++) {
+    const c = S[i];
+    const isD = (c >= '0' && c <= '9');
+    if (isD) cnt[+c]++;
+    steps.push({ kind:'scan', i, line:4, cnt:cnt.slice(), out:[], first:-1 });
+  }
+  let first = -1;
+  for (let d = 1; d <= 9; d++) if (cnt[d] > 0) { first = d; break; }
+  steps.push({ kind:'pick', line:8, cnt:cnt.slice(), out:[], first });
+  const out = [];
+  cnt[first]--; out.push(first);
+  steps.push({ kind:'emitFirst', line:10, cnt:cnt.slice(), out:out.slice(), first });
+  for (let i = 0; i < cnt[0]; i++) { cnt[0]--; out.push(0);
+    steps.push({ kind:'emitZero', line:12, cnt:cnt.slice(), out:out.slice(), first }); }
+  for (let d = 1; d <= 9; d++) {
+    while (cnt[d] > 0) { cnt[d]--; out.push(d);
+      steps.push({ kind:'emit', line:14, d, cnt:cnt.slice(), out:out.slice(), first }); }
+  }
+  steps.push({ kind:'done', line:15, cnt:cnt.slice(), out:out.slice(), first });
+}
+
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+
+function hi(line) {
+  let h = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const c = h.indexOf('//');
+  let head = h, tail = '';
+  if (c >= 0) { head = h.slice(0, c); tail = '<span class="cm">' + h.slice(c) + '</span>'; }
+  head = head.replace(/'([^']*)'/g, "<span class=\"st\">'$1'</span>")
+             .replace(/\b(int|string|for|if|break|return|char)\b/g, '<span class="kw">$1</span>')
+             .replace(/\b(cin|cout|cnt|putchar)\b/g, '<span class="fn">$1</span>');
+  return head + tail;
+}
+
+function render() {
+  const st = steps[t];
+  const charsBox = document.getElementById('chars'); charsBox.innerHTML = '';
+  for (let i = 0; i < S.length; i++) {
+    const c = S[i], isD = (c >= '0' && c <= '9');
+    const box = el('div', 'ch ' + (isD ? 'digit' : 'letter') + (st.kind === 'scan' && st.i === i ? ' active' : ''));
+    box.appendChild(el('span', null, c));
+    box.appendChild(el('span', 'k', isD ? 'cnt[' + (+c) + ']' : '跳过'));
+    charsBox.appendChild(box);
+  }
+
+  const cnt = st.cnt, max = Math.max(1, ...cnt);
+  const bb = document.getElementById('buckets'); bb.innerHTML = '';
+  for (let d = 0; d <= 9; d++) {
+    const hot = (st.kind === 'scan' && S[st.i] === String(d)) || (st.kind === 'emit' && st.d === d) ||
+                (st.kind === 'pick' && st.first === d) || (st.kind === 'emitFirst' && st.first === d);
+    const col = el('div', 'b' + (d === 0 ? ' zero' : '') + (hot ? ' hot' : ''));
+    col.appendChild(el('div', 'n', cnt[d]));
+    const bar = el('div', 'bar'); bar.style.height = (cnt[d] / max * 74) + 'px';
+    col.appendChild(bar); col.appendChild(el('div', 'd', d));
+    bb.appendChild(col);
+  }
+
+  const vt = document.getElementById('vars'); vt.innerHTML = '';
+  const addRow = (k, v, hot) => { const tr = el('tr'); tr.appendChild(el('td', null, k));
+    tr.appendChild(el('td', hot ? 'hot' : null, String(v))); vt.appendChild(tr); };
+  addRow('first（首位数字）', st.first < 0 ? '-1（还没选）' : st.first, st.kind === 'pick' || st.kind === 'emitFirst');
+  addRow('已输出位数', st.out.length, true);
+  addRow('剩余数字个数', cnt.reduce((x, y) => x + y, 0), false);
+  const tr = el('tr'); tr.appendChild(el('td', null, 'cnt[0..9]'));
+  const td = el('td', null, cnt.join(' ')); td.style.textAlign = 'right'; tr.appendChild(td); vt.appendChild(tr);
+
+  const ob = document.getElementById('out'); ob.innerHTML = '';
+  st.out.forEach((d, i) => {
+    let cls = '';
+    if (i === 0) cls = 'first';
+    else if (d === 0) cls = 'zero';
+    if (i === st.out.length - 1 && (st.kind === 'emit' || st.kind === 'emitZero' || st.kind === 'emitFirst')) cls += ' new';
+    ob.appendChild(el('span', cls, String(d)));
+  });
+  if (!st.out.length) ob.innerHTML = '<span style="color:#8b93b5;font-size:16px">（还没开始输出）</span>';
+
+  const note = document.getElementById('note'), prog = document.getElementById('prog');
+  const ph = x => '<span class="phase">' + x + '</span>';
+  if (st.kind === 'init') note.innerHTML = ph('读入') + `输入串 <b>${S}</b>。要用完全部数字，拼出<strong>没有前导零的最小正整数</strong>。`;
+  else if (st.kind === 'scan') {
+    const c = S[st.i], isD = (c >= '0' && c <= '9');
+    note.innerHTML = ph('扫描') + `第 ${st.i + 1} 个字符 <b>${c}</b> —— ${isD ? `是数字，<b>cnt[${+c}]++</b> → 现在 cnt[${+c}] = <b>${st.cnt[+c]}</b>` : `是字母（噪声），直接丢弃。<b>绝不能</b>写 <b>'${c}'-'0' = ${c.charCodeAt(0) - 48}</b> 去当数组下标，那会越界。`}`;
+  }
+  else if (st.kind === 'pick') note.innerHTML = ph('选首位') + `从前向后扫桶 ${st.first < 0 ? '里没找到非零数字（题目保证不会出现）' : `：<code>d=1..9</code> 中第一个 <code>cnt[d] &gt; 0</code> 的是 <b>${st.first}</b>，它就是最小的合法首位（0 不能当首位，那叫前导零）。`}`;
+  else if (st.kind === 'emitFirst') note.innerHTML = ph('输出首位') + `打印 <b>${st.first}</b>，并 <code>cnt[${st.first}]--</code>。这一步是"拼最小"相对"拼最大"多出来的特殊处理。`;
+  else if (st.kind === 'emitZero') note.innerHTML = ph('输出 0') + `剩下的 <b>0</b> 全部紧跟首位：0 越小越该往高位放，但只能放在<strong>第二位之后</strong>。当前答案 <b>${st.out.join('')}</b>`;
+  else if (st.kind === 'emit') note.innerHTML = ph('升序输出') + `按 <code>d = 1 → 9</code> 依次把剩余数字打印出来，先打印的位权更大，所以小数字要靠前。当前答案 <b>${st.out.join('')}</b>`;
+  else note.innerHTML = ph('结束') + `答案 <b>${st.out.join('')}</b>。校验三件事：位数 = 数字个数（用满了）、首位不是 0（无前导零）、首位之后每一位都不比后一位大（升序）。`;
+  prog.textContent = `步骤 ${t + 1} / ${steps.length}`;
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === steps.length - 1;
+
+  document.getElementById('code').innerHTML =
+    CODE.map((l, i) => `<span class="ln${i === st.line ? ' cur' : ''}">${(i + 1 + '  ').padStart(3, ' ')} ${hi(l)}</span>`).join('');
+}
+
+function load() {
+  S = document.getElementById('src').value.trim();
+  if (!S) return;
+  t = 0; build(); render();
+}
+
+document.getElementById('next').onclick = () => { if (t < steps.length - 1) { t++; render(); } };
+document.getElementById('prev').onclick = () => { if (t > 0) { t--; render(); } };
+document.getElementById('load').onclick = load;
+document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { document.getElementById('src').value = b.dataset.s; load(); });
+document.getElementById('jump').onclick = () => { t = steps.length - 1; render(); };
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+  e.target.textContent = '⏸ 暂停';
+  timer = setInterval(() => {
+    if (t >= steps.length - 1) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+    t++; render();
+  }, 420);
+};
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T4 二创投稿 · 计数背包与补集转化</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --gold:#fbbf24; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,"Microsoft YaHei",sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:18px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:16px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:7px 13px; font-size:14px; cursor:pointer; margin-right:6px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  input { background:#0d1020; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+          padding:7px 9px; font:14px/1.4 Consolas,monospace; }
+  #hdr { width:120px; } #src { width:340px; }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .prog { color:var(--dim); font-size:13px; margin-left:auto; }
+  label { color:var(--dim); font-size:13px; }
+  .row { display:flex; gap:16px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:300px; }
+  .clips { display:flex; gap:8px; flex-wrap:wrap; }
+  .cp { width:52px; height:56px; border-radius:8px; background:#232a4a; border:1px solid #333c66;
+        display:flex; flex-direction:column; align-items:center; justify-content:center; font:15px Consolas,monospace; }
+  .cp .i { font-size:10px; color:var(--dim); }
+  .cp.cur { outline:2px solid var(--gold); color:var(--gold); font-weight:700; }
+  .cp.used { opacity:.45; }
+  .hist { display:flex; align-items:flex-end; gap:4px; height:130px; overflow-x:auto; }
+  .h { min-width:34px; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
+  .h .bar { width:100%; background:linear-gradient(180deg,var(--acc),#0891b2); border-radius:4px 4px 0 0; min-height:2px; transition:height .2s; }
+  .h.src .bar { background:linear-gradient(180deg,var(--gold),#b45309); }
+  .h.cur .bar { background:linear-gradient(180deg,#a78bfa,#6d28d9); }
+  .h.range .bar { background:linear-gradient(180deg,#c4b5fd,#7c3aed); opacity:.85; }
+  .h.counted .bar { background:linear-gradient(180deg,var(--ok),#15803d); }
+  .h .n { font:12px Consolas,monospace; margin-bottom:3px; }
+  .h .s { font-size:11px; color:var(--dim); margin-top:4px; }
+  table.vars { border-collapse:collapse; width:100%; font:13px Consolas,monospace; }
+  table.vars td { border-bottom:1px solid #222743; padding:3px 6px; text-align:right; }
+  table.vars td:first-child { text-align:left; color:var(--dim); }
+  td.hot { color:var(--acc); font-weight:700; }
+  .big { display:flex; gap:14px; flex-wrap:wrap; }
+  .k { background:#141a2e; border:1px solid #2a3155; border-radius:10px; padding:8px 12px; min-width:120px; }
+  .k .lab { font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
+  .k .val { font:20px Consolas,monospace; color:var(--ink); }
+  .k.bad .val { color:var(--warn); } .k.good .val { color:var(--ok); } .k.gold .val { color:var(--gold); }
+  .note { color:var(--dim); font-size:14px; min-height:56px; }
+  .note b { color:var(--ink); }
+  .phase { display:inline-block; padding:1px 9px; border-radius:20px; font-size:12px; margin-right:6px;
+           background:#173a4a; color:var(--ok); }
+  pre { margin:0; font:12.5px/1.7 Consolas,monospace; overflow-x:auto; }
+  .ln { display:block; padding:0 8px; border-radius:4px; white-space:pre; }
+  .ln.cur { background:#242c52; color:var(--acc); }
+  .kw { color:#7dd3fc; } .cm { color:#5f7a91; } .st { color:#fbbf24; } .fn { color:#c4b5fd; }
+  .badge { padding:2px 9px; border-radius:20px; font-size:12px; }
+  .bok { background:rgba(63,185,80,.16); color:var(--ok); } .bbad { background:rgba(248,81,73,.16); color:var(--warn); }
+</style>
+</head>
+<body>
+<h1>T4 二创投稿 / clip · 补集转化的两步走</h1>
+<div class="sub">CSP-J 第二轮模拟卷 第 1 套 T4（对齐真题 CSP-J 2025 T4 多边形 P14360）。<strong>第一步</strong>：计数型 01 背包算出"总时长 ≤ S 的方案数"；<strong>第二步</strong>：用 2^n 减掉它。演示用小数据，取模规则与正解一致。</div>
+
+<div class="topbar">
+  <label>n 与 S</label><input type="text" id="hdr" value="3 3">
+  <label>素材时长 a</label><input type="text" id="src" value="1 2 3">
+  <button id="load">载入</button>
+  <button data-s="3 3|1 2 3">样例1</button>
+  <button data-s="4 5|2 2 2 2">样例2</button>
+  <button data-s="3 0|1 2 3">S=0</button>
+  <button data-s="4 20|2 2 2 2">S ≥ sum</button>
+</div>
+<div class="topbar">
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到末尾</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="card"><h2>① 素材（金框 = 正在处理的一段）</h2>
+  <div class="clips" id="clips"></div>
+</div>
+
+<div class="card"><h2>② 背包数组 f[s] = 总时长恰好 s 的方案数（紫=正在写，金=被读的来源，绿=已计入补集）</h2>
+  <div class="hist" id="hist"></div>
+</div>
+
+<div class="row">
+  <div class="card"><h2>③ 变量状态表</h2>
+    <table class="vars" id="vars"></table>
+  </div>
+  <div class="card"><h2>④ 第二步：补集转化</h2>
+    <div class="big" id="big"></div>
+    <div class="note" id="calc" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<div class="card"><h2>⑤ 讲解</h2>
+  <div class="note" id="note"></div>
+</div>
+
+<div class="card"><h2>⑥ 与独立枚举互验</h2>
+  <div class="note" id="check"></div>
+</div>
+
+<div class="card"><h2>⑦ 代码与执行位置</h2>
+  <pre id="code"></pre>
+</div>
+
+<script>
+const CODE = [
+  'if (S >= sum) { puts("0"); return 0; }        // 连全选都不够长',
+  'int lim = min(S, sum);  f[0] = 1;             // 空集算一种',
+  'for (int i = 1; i <= n; i++)',
+  '    for (int s = lim; s >= a[i]; s--) {       // 倒序：每段素材只用一次',
+  '        f[s] += f[s - a[i]];',
+  '        if (f[s] >= MOD) f[s] -= MOD;',
+  '    }',
+  'long long le = 0;',
+  'for (int s = 0; s <= lim; s++) le += f[s];    // 第一步：和 <= S 的方案数',
+  'long long all = 1;',
+  'for (int i = 1; i <= n; i++) all = all * 2 % MOD;   // 2^n mod MOD',
+  'printf("%lld\\n", (all - le + MOD) % MOD);    // 第二步：全体减补集'
+];
+const MOD = 998244353;
+
+let n = 3, S = 3, A = [], sum = 0, lim = 0, steps = [], t = 0, timer = null, finalAns = 0, enumAns = 0;
+
+function build() {
+  steps = [];
+  const f = new Array(lim + 1).fill(0);
+  f[0] = 1;
+  steps.push({ kind:'init', line:1, f:f.slice(), i:-1, s:-1, le:0, all:1 });
+  if (S >= sum) {
+    steps.push({ kind:'zero', line:0, f:f.slice(), i:-1, s:-1, le:0, all:1 });
+    return;
+  }
+  for (let i = 0; i < n; i++) {
+    steps.push({ kind:'item', line:3, f:f.slice(), i, s:-1, le:0, all:1 });
+    if (i === 0) {                       // 第一段素材逐格演示，看清倒序的细节
+      for (let s = lim; s >= A[i]; s--) {
+        f[s] = (f[s] + f[s - A[i]]) % MOD;
+        steps.push({ kind:'upd', line:4, f:f.slice(), i, s, src:s - A[i], le:0, all:1 });
+      }
+    } else {                             // 之后的素材一次讲完整行，避免上百步
+      for (let s = lim; s >= A[i]; s--) f[s] = (f[s] + f[s - A[i]]) % MOD;
+      steps.push({ kind:'batch', line:4, f:f.slice(), i, s:A[i], lo:A[i], hi:lim, le:0, all:1 });
+    }
+  }
+  const ff = f.slice();
+  let le = 0;
+  const chunk = Math.max(1, Math.ceil((lim + 1) / 12));   // 累加 le 时分段显示，最多十几步
+  for (let s = 0; s <= lim; s += chunk) {
+    const to = Math.min(lim, s + chunk - 1);
+    for (let x = s; x <= to; x++) le = (le + ff[x]) % MOD;
+    steps.push({ kind:'sum', line:8, f:ff, i:n - 1, s:to, le, all:1, counted:to });
+  }
+  let all = 1;
+  for (let i = 1; i <= n; i++) {
+    all = all * 2 % MOD;
+    steps.push({ kind:'pow', line:10, f:ff, i:n - 1, s:lim, le, all, powN:i });
+  }
+  finalAns = (all - le + MOD) % MOD;
+  steps.push({ kind:'ans', line:11, f:ff, i:n - 1, s:lim, le, all, counted:lim });
+}
+
+function enumerate() {
+  let cnt = 0;
+  for (let mask = 0; mask < (1 << n); mask++) {
+    let s = 0;
+    for (let i = 0; i < n; i++) if (mask >> i & 1) s += A[i];
+    if (s > S) cnt++;
+  }
+  return cnt % MOD;
+}
+
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+
+function hi(line) {
+  let h = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const c = h.indexOf('//');
+  let head = h, tail = '';
+  if (c >= 0) { head = h.slice(0, c); tail = '<span class="cm">' + h.slice(c) + '</span>'; }
+  head = head.replace(/"[^"]*"/g, s => '<span class="st">' + s + '</span>')
+             .replace(/\b(int|long|for|if|return|char|puts|printf)\b/g, '<span class="kw">$1</span>')
+             .replace(/\b(f|s|lim|le|all|MOD|a|n|i|sum)\b/g, '<span class="fn">$1</span>');
+  return head + tail;
+}
+
+function render() {
+  const st = steps[t];
+  const cb = document.getElementById('clips'); cb.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const c = el('div', 'cp' + (st.i === i && (st.kind === 'item' || st.kind === 'upd' || st.kind === 'batch') ? ' cur' : (st.i > i || st.kind === 'sum' || st.kind === 'pow' || st.kind === 'ans' ? ' used' : '')));
+    c.appendChild(el('span', null, A[i])); c.appendChild(el('span', 'i', 'a[' + (i + 1) + ']'));
+    cb.appendChild(c);
+  }
+
+  const hb = document.getElementById('hist'); hb.innerHTML = '';
+  const maxv = Math.max(1, ...st.f);
+  for (let s = 0; s <= lim; s++) {
+    let cls = 'h';
+    if (st.kind === 'upd' && s === st.s) cls += ' cur';
+    else if (st.kind === 'upd' && s === st.src) cls += ' src';
+    else if (st.kind === 'batch' && s >= st.lo && s <= st.hi) cls += ' range';
+    else if ((st.kind === 'sum' || st.kind === 'ans') && s <= st.counted) cls += ' counted';
+    const col = el('div', cls);
+    col.appendChild(el('div', 'n', st.f[s]));
+    const bar = el('div', 'bar'); bar.style.height = (st.f[s] / maxv * 86) + 'px';
+    col.appendChild(bar); col.appendChild(el('div', 's', s));
+    hb.appendChild(col);
+  }
+
+  const vt = document.getElementById('vars'); vt.innerHTML = '';
+  const row = (a, b, hot) => { const tr = el('tr'); tr.appendChild(el('td', null, a)); tr.appendChild(el('td', hot ? 'hot' : null, String(b))); vt.appendChild(tr); };
+  row('n / sum', n + ' / ' + sum, false);
+  row('S（门槛，严格大于）', S, false);
+  row('lim = min(S, sum)', lim, false);
+  row('i（第几段素材）', st.i < 0 ? '—' : st.i + 1, st.kind === 'item' || st.kind === 'upd');
+  row('a[i]', st.i < 0 ? '—' : A[st.i], st.kind === 'upd');
+  row('s（背包下标，倒序）', st.kind === 'batch' ? st.hi + ' → ' + st.lo : (st.s < 0 ? '—' : st.s), st.kind === 'upd' || st.kind === 'batch');
+  row('f[s] 当前值', st.kind === 'batch' ? '整行已更新' : (st.s < 0 ? '—' : st.f[st.s]), st.kind === 'upd');
+  row('le（和 ≤ S 的方案数）', st.le, st.kind === 'sum');
+  row('all = 2^n mod MOD', st.all, st.kind === 'pow');
+
+  const big = document.getElementById('big'); big.innerHTML = '';
+  const kk = (lab, val, cls) => { const d = el('div', 'k' + (cls ? ' ' + cls : '')); d.appendChild(el('div', 'lab', lab)); d.appendChild(el('div', 'val', String(val))); big.appendChild(d); };
+  kk('全体子集 2^n', st.all, 'gold');
+  kk('第一步：和 ≤ S 的方案数 le', st.le, 'bad');
+  kk('第二步：答案 (2^n − le) mod', st.kind === 'ans' ? finalAns : '—', 'good');
+  document.getElementById('calc').innerHTML = st.kind === 'ans'
+    ? `<code>ans = (${st.all} − ${st.le} + ${MOD}) % ${MOD} = <b>${finalAns}</b></code>；减法可能出负数，所以先加一个模数。`
+    : '先跑完背包，再做减法。';
+
+  const note = document.getElementById('note'), prog = document.getElementById('prog');
+  const ph = x => '<span class="phase">' + x + '</span>';
+  if (st.kind === 'init') note.innerHTML = ph('起点') + `<code>f[0] = 1</code>：一段素材都不选，总时长为 0，这本身算一种方案（空集）。其余 f[s] = 0。`;
+  else if (st.kind === 'zero') note.innerHTML = ph('特判') + `S = ${S} ≥ sum = ${sum}：连"全选"都进不了推荐池，答案直接是 <b>0</b>（对应子任务 12—14）。`;
+  else if (st.kind === 'item') note.innerHTML = ph('新素材') + `开始处理第 <b>${st.i + 1}</b> 段，时长 <b>${A[st.i]}</b> 秒。下一行开始，<code>s</code> 从 <b>${lim}</b> <strong>倒着</strong>走到 <b>${A[st.i]}</b>。`;
+  else if (st.kind === 'upd') note.innerHTML = ph('背包转移') + `<code>f[${st.s}] += f[${st.src}]</code>：不选这段的方案数 + 选这段（于是前面要凑出 ${st.src} 秒）的方案数 = <b>${st.f[st.s]}</b>。倒序枚举保证 <code>f[${st.src}]</code> 还是"没考虑第 ${st.i + 1} 段"时的旧值，一段素材不会被用两次。`;
+  else if (st.kind === 'batch') note.innerHTML = ph('整行更新') + `第 <b>${st.i + 1}</b> 段（${A[st.i]} 秒）把 <code>s = ${st.hi}…${st.lo}</code> 这一整段格子全部按倒序更新完（图中紫色），做法和第一段一模一样，这里合成一步。最后一列的值就是 f[${st.hi}] = <b>${st.f[st.hi]}</b>。`;
+  else if (st.kind === 'sum') note.innerHTML = ph('第一步') + `把 <code>f[0..${st.s}]</code> 累加起来 ⇒ 总时长 ≤ S = ${S} 的方案数 le = <b>${st.le}</b>（含空集）。`;
+  else if (st.kind === 'pow') note.innerHTML = ph('全集') + `每段素材独立地"选/不选" ⇒ 共 2^n 个子集。循环乘 2 并取模：2<sup>${st.powN}</sup> mod ${MOD} = <b>${st.all}</b>。`;
+  else note.innerHTML = ph('第二步') + `答案 = 全体子集 − 和 ≤ S 的子集 = <b>${finalAns}</b>。空集在两边各出现一次，正好抵消，所以"选 0 段"不会被误算进推荐池。`;
+  prog.textContent = `步骤 ${t + 1} / ${steps.length}`;
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === steps.length - 1;
+
+  const agree = (S >= sum ? 0 : finalAns) === enumAns;
+  document.getElementById('check').innerHTML =
+    `补集 + 背包 <code>${S >= sum ? 0 : finalAns}</code> ｜ 直接枚举 2^${n} 个子集数"和 &gt; S" <code>${enumAns}</code> ` +
+    `<span class="badge ${agree ? 'bok' : 'bbad'}">${agree ? '一致' : '不一致'}</span><br>` +
+    `<span style="color:var(--dim);font-size:13px">枚举版就是仓库里的 brute.cpp 的思路。本机随机对拍 5000 组全部一致；n = 300 时它要跑 2^300 ≈ 2×10^90 步，而背包版最坏 2.7×10^7 步、实测 0.081 秒。</span>`;
+
+  document.getElementById('code').innerHTML =
+    CODE.map((l, i) => `<span class="ln${i === st.line ? ' cur' : ''}">${(i + 1 + '  ').padStart(3, ' ')} ${hi(l)}</span>`).join('');
+}
+
+function load() {
+  const h = document.getElementById('hdr').value.trim().split(/\s+/).map(Number);
+  n = Math.min(12, Math.max(1, Number.isFinite(h[0]) ? h[0] : 3));
+  S = Number.isFinite(h[1]) ? Math.max(0, h[1]) : 0;
+  const parts = document.getElementById('src').value.trim().split(/[\s,]+/).map(Number).filter(v => Number.isFinite(v) && v > 0);
+  A = parts.slice(0, n);
+  while (A.length < n) A.push(1);
+  sum = A.reduce((x, y) => x + y, 0);
+  lim = Math.min(S, sum);
+  if (lim > 60) { lim = 60; S = Math.min(S, 60); }   // 演示用的小数据上限
+  document.getElementById('hdr').value = n + ' ' + S;
+  enumAns = enumerate();
+  t = 0; build(); render();
+}
+
+document.getElementById('next').onclick = () => { if (t < steps.length - 1) { t++; render(); } };
+document.getElementById('prev').onclick = () => { if (t > 0) { t--; render(); } };
+document.getElementById('load').onclick = load;
+document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => {
+  const [h, s] = b.dataset.s.split('|');
+  document.getElementById('hdr').value = h; document.getElementById('src').value = s; load();
+});
+document.getElementById('jump').onclick = () => { t = steps.length - 1; render(); };
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+  e.target.textContent = '⏸ 暂停';
+  timer = setInterval(() => {
+    if (t >= steps.length - 1) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+    t++; render();
+  }, 420);
+};
+
+load();
+</script>
+</body>
+</html>

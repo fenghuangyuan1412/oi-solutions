@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T3 连招公式 · 双栈求值与括号深度</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --hard:#fbbf24; --num:#60a5fa; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:16px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 10px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:7px 13px; font-size:14px; cursor:pointer; margin:0 6px 6px 0; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.pre { background:#22304f; font-size:13px; }
+  input[type=text] { background:#0d1020; color:var(--ink); border:1px solid #3d4778;
+                     border-radius:8px; padding:8px 10px; font:15px/1.4 Consolas,monospace; width:420px; }
+  .topbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .prog { color:var(--dim); font-size:13px; margin-left:auto; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:320px; }
+  pre.code { margin:0; background:#0d1020; border:1px solid #262c4a; border-radius:10px;
+             padding:10px 12px; font:12.5px/1.65 Consolas,monospace; overflow:auto; }
+  pre.code .ln { display:block; padding:0 6px; border-radius:5px; color:#c3cbee; white-space:pre; }
+  pre.code .ln.hot { background:#123c3a; color:var(--acc); font-weight:700; }
+  table.vars { width:100%; border-collapse:collapse; font:13px Consolas,monospace; }
+  table.vars td { padding:4px 6px; border-bottom:1px solid #262c4a; }
+  table.vars td.k { color:var(--dim); width:38%; }
+  table.vars td.v { word-break:break-all; }
+  table.vars td.v.hot { color:var(--acc); font-weight:700; }
+  .strip { display:flex; gap:3px; align-items:flex-end; overflow-x:auto; padding-bottom:4px; }
+  .ch { width:26px; min-width:26px; height:34px; border-radius:6px; background:#1b2140; border:1px solid #2c3560;
+        font:15px/34px Consolas,monospace; text-align:center; color:#7f8ab5; }
+  .ch.done { background:#141a31; color:#4d5578; }
+  .ch.digit { border-color:#2f4a8f; }
+  .ch.paren { border-color:#7a5a1f; color:var(--hard); }
+  .ch.op { border-color:#1d5a4d; color:var(--acc); }
+  .ch.cur { outline:2px solid var(--acc); outline-offset:1px; color:var(--ink); background:#22304f; }
+  .st { width:26px; min-width:26px; height:30px; border-radius:6px; font:13px/30px Consolas,monospace; text-align:center; }
+  .st.val { background:#16294d; border:1px solid #2f4a8f; color:#bfdbfe; }
+  .st.opr { background:#12352f; border:1px solid #1d5a4d; color:#7fdec9; }
+  .st.top { outline:2px solid var(--acc); outline-offset:1px; }
+  .st.new { background:#1f5c4f; color:#eafff8; font-weight:700; }
+  .st.empty { background:#151a30; border:1px dashed #2c3560; color:#4d5578; }
+  .dp { width:26px; min-width:26px; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:74px; }
+  .dp .bar { width:20px; background:linear-gradient(180deg,var(--hard),#92400e); border-radius:3px 3px 0 0; min-height:2px; }
+  .dp .bar.zero { background:#232a4a; min-height:2px; }
+  .dp .n { font:10px/1.2 Consolas,monospace; color:var(--dim); margin-top:2px; }
+  .dp.cur .bar { background:linear-gradient(180deg,var(--acc),#0891b2); }
+  .dp.cur .n { color:var(--ink); font-weight:700; }
+  .lab { color:var(--dim); font-size:12px; margin:10px 0 2px; }
+  .note { color:var(--dim); font-size:14px; min-height:52px; }
+  .note b { color:var(--ink); }
+  .log { font:12.5px/1.7 Consolas,monospace; color:var(--dim); max-height:120px; overflow:auto; }
+  .log b { color:var(--acc); }
+  .ans { font:18px/1.5 Consolas,monospace; }
+</style>
+</head>
+<body>
+<h1>T3 连招公式 / expr · 双栈（调度场）逐步执行</h1>
+<div class="sub">三行严格对齐：表达式串（一格一字符）／ 两个栈的内容（栈底在左、栈顶在右）／ 读完该字符后的括号深度。数字栈压数，运算符栈压 + * 和左括号这堵"墙"</div>
+
+<div class="topbar">
+  <input type="text" id="src" value="1+(2+3*(4+(5+6)))*7" maxlength="120">
+  <button id="load">载入</button>
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到末尾</button>
+  <span class="prog" id="prog"></span>
+</div>
+<div class="topbar">
+  <span style="color:var(--dim);font-size:13px;margin-right:6px">样例预设：</span>
+  <button class="pre" data-e="1+2*3">样例1 1+2*3</button>
+  <button class="pre" data-e="(1+2)*3">样例2 (1+2)*3</button>
+  <button class="pre" data-e="((1+2)*(3+4))*2">样例3</button>
+  <button class="pre" data-e="1+(2+3*(4+(5+6)))*7">样例4</button>
+  <button class="pre" data-e="999999999+999999999">大数取模</button>
+  <button class="pre" data-e="((((1))))">深度 4</button>
+</div>
+
+<div class="card"><h2>① 三行对齐视图（同一列宽，栈与深度跟着扫描位置走）</h2>
+  <div class="lab">表达式串（当前字符高亮）</div>
+  <div class="strip" id="expr"></div>
+  <div class="lab">数字栈 val（栈顶在右）</div>
+  <div class="strip" id="sval"></div>
+  <div class="lab">运算符栈 op（栈顶在右，<span style="color:var(--hard)">(</span> 是墙）</div>
+  <div class="strip" id="sop"></div>
+  <div class="lab">读完每个字符后的当前深度</div>
+  <div class="strip" id="dep"></div>
+</div>
+
+<div class="row">
+  <div class="card"><h2>② solution.cpp 关键分支（当前执行行高亮）</h2>
+    <pre class="code" id="code"></pre>
+  </div>
+  <div class="card"><h2>③ 变量状态表</h2><table class="vars" id="vars"></table></div>
+</div>
+
+<div class="row">
+  <div class="card" style="flex:1.5"><h2>④ 讲解</h2><div class="note" id="note"></div>
+    <div class="lab">已结算的运算（apply 日志）</div><div class="log" id="log"></div>
+  </div>
+  <div class="card"><h2>⑤ 输出</h2><div class="ans" id="ans"></div></div>
+</div>
+
+<script>
+const MOD = 998244353n;
+const CODE = [
+  ['if (c >= \'0\' && c <= \'9\') {          // 一整段数字', 0],
+  ['    while (isdigit(s[i])) x = (x*10 + s[i++]-\'0\') % MOD;', 1],
+  ['    val.push_back(x); continue;', 2],
+  ['} else if (c == \'(\') {', 3],
+  ['    op.push_back(c); now++; depth = max(depth, now);', 4],
+  ['} else if (c == \')\') {', 5],
+  ['    while (op.back() != \'(\') apply();', 6],
+  ['    op.pop_back(); now--;', 7],
+  ['} else {                              // + 或 *', 8],
+  ['    while (!op.empty() && op.back()!=\'(\'', 9],
+  ['           && prec(op.back()) >= prec(c)) apply();', 10],
+  ['    op.push_back(c);', 11],
+  ['}', 12],
+  ['while (!op.empty()) apply();          // 清空', 13],
+];
+let S = '', steps = [], t = 0, timer = null;
+const prec = c => c === '+' ? 1 : 2;
+
+function build() {
+  steps = [];
+  const val = [], op = [];
+  let now = 0, depth = 0, log = [], bad = '';
+  const apply = () => {                       // 对应 solution.cpp 里的 apply()
+    if (val.length < 2) { bad = '缺少左操作数（公式不完整）'; return false; }
+    const b = val.pop(), a = val.pop(), o = op.pop();
+    const r = o === '+' ? (a + b) % MOD : a * b % MOD;
+    val.push(r); log.push(a + ' ' + o + ' ' + b + ' = ' + r);
+    return true;
+  };
+  steps.push({ line: [], kind: 'init', val: [], op: [], now: 0, depth: 0, cur: -1, log: [] });
+  for (let i = 0; i < S.length;) {
+    const c = S[i];
+    if (c >= '0' && c <= '9') {
+      let x = 0n, st = i;
+      while (i < S.length && S[i] >= '0' && S[i] <= '9') { x = (x * 10n + BigInt(S[i].charCodeAt(0) - 48)) % MOD; i++; }
+      val.push(x);
+      steps.push({ line: [0,1,2], kind: 'num', cur: i - 1, consumed: st, num: i - 1, val: [...val], op: [...op],
+                   now, depth, log: [...log], text: S.slice(st, i), shown: x });
+      continue;
+    }
+    if (c === '(') {
+      op.push(c); now++; if (now > depth) depth = now;
+      steps.push({ line: [3,4], kind: 'lpar', cur: i, val: [...val], op: [...op], now, depth, log: [...log] });
+    } else if (c === ')') {
+      while (op.length && op[op.length-1] !== '(') { if (!apply()) break; }
+      if (bad) break;
+      if (op.length) op.pop();
+      now = Math.max(0, now - 1);
+      steps.push({ line: [5,6,7], kind: 'rpar', cur: i, val: [...val], op: [...op], now, depth, log: [...log] });
+    } else if (c === '+' || c === '*') {
+      while (op.length && op[op.length-1] !== '(' && prec(op[op.length-1]) >= prec(c)) { if (!apply()) break; }
+      if (bad) break;
+      op.push(c);
+      steps.push({ line: [8,9,10,11], kind: 'oper', cur: i, val: [...val], op: [...op], now, depth, log: [...log] });
+    } else {
+      bad = '不认识的字符 ' + c;
+      steps.push({ line: [], kind: 'bad', cur: i, val: [...val], op: [...op], now, depth, log: [...log] });
+      break;
+    }
+    i++;
+  }
+  while (!bad && op.length) { if (!apply()) break; }
+  steps.push({ line: [13], kind: 'done', cur: S.length - 1, val: [...val], op: [...op], now, depth, log: [...log],
+               bad: bad || (val.length === 1 ? '' : '公式不完整'), ok: !bad && val.length === 1 });
+}
+
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+
+function render() {
+  const st = steps[t];
+  // ① 三行对齐
+  const ex = document.getElementById('expr'); ex.innerHTML = '';
+  for (let i = 0; i < S.length; i++) {
+    const c = S[i];
+    let cls = 'ch';
+    if (c >= '0' && c <= '9') cls += ' digit';
+    else if (c === '(' || c === ')') cls += ' paren';
+    else if (c === '+' || c === '*') cls += ' op';
+    if (i <= st.cur) cls += ' done';
+    if (i === st.cur) cls += ' cur';
+    const box = el('div', cls, c); box.title = '下标 ' + i;
+    ex.appendChild(box);
+  }
+  const mk = (id, arr, cls) => {
+    const box = document.getElementById(id); box.innerHTML = '';
+    if (!arr.length) { box.appendChild(el('div', 'st empty', '空')); return; }
+    arr.forEach((v, i) => {
+      const isNew = i === arr.length - 1 && (st.kind === 'num' || st.kind === 'lpar' || st.kind === 'oper');
+      box.appendChild(el('div', cls + (i === arr.length - 1 ? ' top' : '') + (isNew ? ' new' : ''), String(v)));
+    });
+  };
+  mk('sval', st.val, 'st val');
+  mk('sop', st.op, 'st opr');
+  const dp = document.getElementById('dep'); dp.innerHTML = '';
+  let run = 0;
+  for (let i = 0; i < S.length; i++) {
+    if (S[i] === '(') run++;
+    else if (S[i] === ')') run--;
+    const shown = i <= st.cur ? Math.max(0, run) : 0;
+    const col = el('div', 'dp' + (i === st.cur ? ' cur' : ''));
+    const bar = el('div', 'bar' + (shown === 0 ? ' zero' : ''));
+    bar.style.height = (4 + shown * 16) + 'px';
+    col.appendChild(bar); col.appendChild(el('div', 'n', i <= st.cur ? String(shown) : '·'));
+    dp.appendChild(col);
+  }
+  // ② 代码
+  const cb = document.getElementById('code'); cb.innerHTML = '';
+  CODE.forEach((c, idx) => cb.appendChild(el('span', 'ln' + ((st.line || []).includes(idx) ? ' hot' : ''), c[0])));
+  // ③ 变量表
+  const rows = [['i（当前下标）', st.cur < 0 ? '—' : String(st.cur), ''],
+                ['s[i]', st.cur < 0 ? '—' : S[st.cur], ''],
+    ['val 栈（底→顶）', st.val.length ? st.val.map(v => String(v)).join(' | ') : '空', ''],
+    ['op 栈（底→顶）', st.op.length ? st.op.join(' ') : '空', ''],
+    ['now（当前层数）', String(st.now), ''],
+    ['depth（历史最大）', String(st.depth), 'hot']];
+  const tb = document.getElementById('vars'); tb.innerHTML = '';
+  rows.forEach(r => { const tr = el('tr'); tr.appendChild(el('td','k',r[0])); tr.appendChild(el('td','v '+r[2],r[1])); tb.appendChild(tr); });
+  // ④ 讲解
+  const note = document.getElementById('note'), ans = document.getElementById('ans');
+  note.innerHTML = ''; ans.innerHTML = '';
+  const c = st.cur >= 0 ? S[st.cur] : '';
+  if (st.kind === 'init') note.innerHTML = `公式 <b>${S}</b>。规则：数字进 val 栈；运算符进 op 栈，但进去之前要把栈里"不比自己优先级低"的先算掉；<b>(</b> 是一堵墙，<b>)</b> 就一路算到墙为止。深度那行只数左括号，和求值互不相干。`;
+  else if (st.kind === 'num') note.innerHTML = `读到一个完整的数字 <b>${st.text}</b>（下标 ${st.consumed}~${st.num}），边读边取模后压入 val 栈，栈顶 = <b>${st.shown}</b>。注意 while 结束后 i 已经停在下一个运算符上，所以源码里要 <b>continue</b>，不能再 i++。`;
+  else if (st.kind === 'lpar') note.innerHTML = `遇到 <b>(</b>：直接压 op 栈当墙，当前层数 now=<b>${st.now}</b>，历史最大 depth=<b>${st.depth}</b>。栈里它上面的运算符都只属于这一层括号内部。`;
+  else if (st.kind === 'rpar') note.innerHTML = `遇到 <b>)</b>：把墙以上全部结算（日志最后几条），再弹出墙。now 退回 <b>${st.now}</b>，depth 保持 <b>${st.depth}</b>（它是历史最大值，不会退）。`;
+  else if (st.kind === 'oper') note.innerHTML = `遇到 <b>${c}</b>：先把栈顶优先级 ≥ 它的运算符结算掉（${c === '+' ? '加号要把 + 和 * 都清干净' : '乘号只清 *，不清 +'}），然后自己入栈。这就是"优先级"在栈里的实现方式。`;
+  else if (st.kind === 'bad') note.innerHTML = `字符 <b>${c}</b> 不在 {数字, +, *, (, )} 里，题目保证不会出现；这里只是把非法输入显示出来，不做计算。`;
+  else if (st.kind === 'done') {
+    if (st.bad) note.innerHTML = `公式不合法（多出字符 <b>${st.bad}</b>），无法给出答案。题面保证公式合法，所以正式数据不会出现这一屏。`;
+    else note.innerHTML = `扫完后把 op 栈里剩下的运算符一路结算（右括号已经提前收工，剩下的一定是括号之间的 + 或 *）。val 栈最后只剩一个数 = <b>${st.val.length ? st.val[0] : '—'}</b>，最大深度 <b>${st.depth}</b>。这两行就是 <code>solution.cpp</code> 该打印的内容；四个样例预设的机器实测值写在 README 的表格里，可以逐条核对。`;
+  }
+  const lg = document.getElementById('log'); lg.innerHTML = '';
+  (st.log || []).slice(-8).forEach(x => { const d = el('div'); d.innerHTML = '<b>apply</b> ' + x; lg.appendChild(d); });
+  if (!(st.log || []).length) lg.innerHTML = '<span style="color:#4d5578">（还没有一次 apply）</span>';
+  if (st.kind === 'done' && !st.bad) ans.innerHTML = `<span style="color:var(--acc)">${st.val[0]}</span><br><span style="color:var(--hard)">${st.depth}</span>`;
+  else if (st.kind === 'done') ans.innerHTML = `<span style="color:var(--warn)">输入不合法</span>`;
+  else ans.innerHTML = `<span style="color:#8b93b5">（计算中，共 ${steps.length - 1} 步）</span>`;
+  document.getElementById('prog').textContent = `步骤 ${t + 1} / ${steps.length}`;
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === steps.length - 1;
+}
+
+function load() {
+  S = document.getElementById('src').value.trim();
+  if (!S) { S = '1'; document.getElementById('src').value = S; }
+  t = 0; build(); render();
+}
+
+document.getElementById('next').onclick = () => { if (t < steps.length - 1) { t++; render(); } };
+document.getElementById('prev').onclick = () => { if (t > 0) { t--; render(); } };
+document.getElementById('load').onclick = load;
+document.querySelectorAll('button.pre').forEach(btn => {
+  btn.onclick = () => { document.getElementById('src').value = btn.dataset.e; load(); };
+});
+document.getElementById('jump').onclick = () => { t = steps.length - 1; render(); };
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+  e.target.textContent = '⏸ 暂停';
+  timer = setInterval(() => {
+    if (t >= steps.length - 1) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+    t++; render();
+  }, 420);
+};
+
+load();
+</script>
+</body>
+</html>

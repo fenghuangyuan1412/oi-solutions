@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CSP-J 第二轮（复赛）模拟卷 · 第 4 套</title>
+<style>
+:root{--ink:#16181d;--sub:#4b5563;--line:#d7dbe0;--paper:#fff;--bg:#e9edf2;--accent:#8a1c1c;}
+*{box-sizing:border-box}
+body{margin:0;padding:28px 16px 60px;background:var(--bg);color:var(--ink);
+ font-family:"Times New Roman","Songti SC","SimSun","Noto Serif CJK SC",serif;
+ font-size:16px;line-height:1.9;-webkit-font-smoothing:antialiased}
+.sheet{max-width:860px;margin:0 auto 26px;background:var(--paper);padding:34px 44px 40px;
+ border:1px solid var(--line);border-radius:3px;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.masthead{text-align:center;border-bottom:3px double var(--ink);padding-bottom:14px;margin-bottom:16px}
+.masthead h1{font-size:23px;margin:0 0 6px;letter-spacing:2px}
+.masthead .sub{font-size:14px;color:var(--sub);letter-spacing:1px}
+.warn{margin:0 0 16px;padding:9px 13px;border-left:4px solid var(--accent);background:#fdf3f3;
+ font-size:13.5px;line-height:1.7;color:#6b2020}
+.meta{display:grid;grid-template-columns:120px 1fr;gap:2px 12px;font-size:14.5px;margin:0 0 14px}
+.meta dt{color:var(--sub)}
+.meta dd{margin:0}
+h2.pt{font-size:20px;text-align:center;margin:8px 0 4px;letter-spacing:1px}
+p.pname{text-align:center;font-size:13.5px;color:var(--sub);margin:0 0 14px}
+.scoreline{display:flex;justify-content:space-between;border-top:1px solid var(--line);
+ border-bottom:1px solid var(--line);padding:5px 2px;margin:0 0 16px;font-size:13.5px;color:var(--sub)}
+h3.sec{font-size:16.5px;margin:20px 0 6px;font-weight:700}
+p.para{margin:0 0 11px;text-align:justify}
+ul{margin:0 0 12px;padding-left:26px}
+li{margin:0 0 3px}
+pre{margin:0 0 13px;padding:10px 13px;background:#f6f7f9;border:1px solid var(--line);border-radius:3px;
+ font-family:Consolas,"Courier New",monospace;font-size:13.5px;line-height:1.65;white-space:pre-wrap;overflow-x:auto}
+code{font-family:Consolas,"Courier New",monospace;font-size:14px;background:#f2f3f5;padding:0 3px;border-radius:2px}
+strong{font-weight:700}
+.tblwrap{overflow-x:auto;margin:0 0 14px}
+table{border-collapse:collapse;font-size:14px;width:100%}
+th,td{border:1px solid var(--ink);padding:4px 9px;text-align:center}
+th{background:#f1f2f4;font-weight:700}
+.hintbox{margin:0 0 13px;padding:10px 13px;background:#f6f7f9;border:1px dashed var(--line);
+ font-size:14.5px;line-height:1.85;white-space:pre-wrap;font-family:Consolas,monospace}
+.pgno{text-align:center;font-size:12.5px;color:#9aa1ab;margin-top:20px}
+@media print{body{background:#fff;padding:0}.sheet{border:0;box-shadow:none;page-break-after:always}}
+</style></head>
+<body><div class="sheet">
+<div class="masthead"><h1>CSP-J 第二轮（复赛）模拟卷 · 第 4 套</h1><div class="sub">CCF CSP-J 第二轮（复赛）模拟卷 · 仿真题面</div></div>
+<div class="warn"><strong>自编模拟卷，不是任何一年的 CCF 真题。</strong>题目背景为练习而设，知识点与数据规模对齐 CSP-J 2023—2025 第二轮。</div>
+<dl class="meta"><dt>认证时间</dt><dd>8:30—12:00，共 210 分钟</dd>
+<dt>总分</dt><dd>400 分，每题 100 分</dd>
+<dt>说明</dt><dd>正式复赛要求文件读写，本模拟卷按标准输入输出练习即可</dd>
+<dt>对齐</dt><dd>本套 4 题的知识点分别对齐 CSP-J 2021—2022 第二轮（溢出判定 / 数位枚举解码 / 表达式求值与栈 / 带窗口限制的上升子序列 DP）</dd></dl>
+<div class="pgno">set4 · 卷首</div>
+</div>
+<div class="sheet">
+<h2 class="pt">T1　伤害溢出</h2>
+<p class="pname">程序文件名：<code>power.cpp</code>　输入文件名：<code>power.in</code>　输出文件名：<code>power.out</code></p>
+<div class="scoreline"><span>满分 100 分</span><span>时间限制 1000ms　空间限制 512MB</span></div>
+<h3 class="sec">【题目描述】</h3>
+<p class="para">某个技能的伤害倍率是 <code>a^b</code>（<code>a</code> 是攻击力，<code>b</code> 是叠层数）。服务器的存档字段最多只能存下 <code>10^9</code>，一旦倍率<strong>严格大于</strong> <code>10^9</code> 就会溢出，程序必须输出 <code>over</code> 而不是硬算出来。</p>
+<p class="para">给定正整数 <code>a</code> 和非负整数 <code>b</code>，如果 <code>a^b ≤ 10^9</code>，输出它的值；否则输出 <code>over</code>。</p>
+<p class="para">（约定 <code>b = 0</code> 时 <code>a^b = 1</code>。）</p>
+<h3 class="sec">【输入格式】</h3>
+<p class="para">一行两个整数 <code>a</code>、<code>b</code>。</p>
+<h3 class="sec">【输出格式】</h3>
+<p class="para">一行，一个整数表示 <code>a^b</code> 的值，或者字符串 <code>over</code>。</p>
+<h3 class="sec">【输入输出样例 1】</h3>
+<pre>10 9</pre>
+<pre>1000000000</pre>
+<h3 class="sec">【输入输出样例 2】</h3>
+<pre>10 10</pre>
+<pre>over</pre>
+<h3 class="sec">【输入输出样例 3】</h3>
+<pre>2 29</pre>
+<pre>536870912</pre>
+<h3 class="sec">【输入输出样例 4】</h3>
+<pre>1 1000000000</pre>
+<pre>1</pre>
+<h3 class="sec">【数据范围与子任务】</h3>
+<p class="para">对于 100% 的数据，1 ≤ a ≤ 10^9，0 ≤ b ≤ 10^9。</p>
+<div class="tblwrap"><table><thead><tr><th>子任务编号</th><th>分数</th><th>数据规模与特殊性质</th></tr></thead><tbody><tr><td>1—3</td><td>15</td><td><code>b ≤ 3</code></td></tr>
+<tr><td>4—7</td><td>20</td><td><code>b ≤ 20</code> 且 <code>a ≤ 100</code></td></tr>
+<tr><td>8—11</td><td>20</td><td><code>a = 2</code></td></tr>
+<tr><td>12—14</td><td>15</td><td>保证答案不超过 <code>10^9</code></td></tr>
+<tr><td>15—20</td><td>30</td><td>无特殊限制</td></tr></tbody></table></div>
+<div class="pgno">set4 · T1 伤害溢出</div>
+</div>
+<div class="sheet">
+<h2 class="pt">T2　暗号解码</h2>
+<p class="pname">程序文件名：<code>decode.cpp</code>　输入文件名：<code>decode.in</code>　输出文件名：<code>decode.out</code></p>
+<div class="scoreline"><span>满分 100 分</span><span>时间限制 1000ms　空间限制 512MB</span></div>
+<h3 class="sec">【题目描述】</h3>
+<p class="para">群里流传一种"暗号"写法：把一个正整数 <code>x</code> 写成 <code>x + S(x)</code>，其中 <code>S(x)</code> 是 <code>x</code> 的十进制数位之和。例如 <code>x = 12</code> 的暗号是 <code>12 + 1 + 2 = 15</code>。</p>
+<p class="para">现在小 Q 看到了一个暗号值 <code>N</code>，想知道<strong>最小</strong>的正整数 <code>x</code>，使得 <code>x</code> 的暗号恰好等于 <code>N</code>。如果这样的 <code>x</code> 根本不存在，输出 <code>-1</code>。</p>
+<h3 class="sec">【输入格式】</h3>
+<p class="para">一行一个整数 <code>N</code>。</p>
+<h3 class="sec">【输出格式】</h3>
+<p class="para">一行一个整数，表示最小的 <code>x</code>，或 <code>-1</code>。</p>
+<h3 class="sec">【输入输出样例 1】</h3>
+<pre>8</pre>
+<pre>4</pre>
+<h3 class="sec">【样例 1 说明】</h3>
+<p class="para"><code>4 + 4 = 8</code>。比 4 小的正整数里，<code>1→2</code>、<code>2→4</code>、<code>3→6</code>，都凑不出 8。</p>
+<h3 class="sec">【输入输出样例 2】</h3>
+<pre>100</pre>
+<pre>86</pre>
+<h3 class="sec">【输入输出样例 3】</h3>
+<pre>1</pre>
+<pre>-1</pre>
+<h3 class="sec">【数据范围与子任务】</h3>
+<p class="para">对于 100% 的数据，1 ≤ N ≤ 10^9。</p>
+<div class="tblwrap"><table><thead><tr><th>子任务编号</th><th>分数</th><th>数据规模与特殊性质</th></tr></thead><tbody><tr><td>1—3</td><td>15</td><td><code>N ≤ 100</code></td></tr>
+<tr><td>4—7</td><td>20</td><td><code>N ≤ 10^5</code></td></tr>
+<tr><td>8—11</td><td>20</td><td>保证解存在</td></tr>
+<tr><td>12—14</td><td>15</td><td>解恰好是 <code>N - 10</code></td></tr>
+<tr><td>15—20</td><td>30</td><td>无特殊限制</td></tr></tbody></table></div>
+<div class="pgno">set4 · T2 暗号解码</div>
+</div>
+<div class="sheet">
+<h2 class="pt">T3　连招公式</h2>
+<p class="pname">程序文件名：<code>expr.cpp</code>　输入文件名：<code>expr.in</code>　输出文件名：<code>expr.out</code></p>
+<div class="scoreline"><span>满分 100 分</span><span>时间限制 1000ms　空间限制 512MB</span></div>
+<h3 class="sec">【题目描述】</h3>
+<p class="para">一份连招伤害公式是一个字符串，由<strong>非负整数</strong>、加号 <code>+</code>、乘号 <code>*</code>、左括号 <code>(</code>、右括号 <code>)</code> 组成，不含空格。运算规则是平常的四则运算：括号优先，<code>*</code> 优先于 <code>+</code>。</p>
+<p class="para">由于公式里的数字可能非常巨大，所有运算都要对 <code>998244353</code> 取模（也就是说，中间结果和最终答案都只保留除以 <code>998244353</code> 的余数）。</p>
+<p class="para">小 L 想知道：</p>
+<p class="para">1. 这个公式的值（对 <code>998244353</code> 取模）；</p>
+<p class="para">2. 公式里括号的<strong>最大嵌套深度</strong>（即最多有多少层左括号是套在一起的）。</p>
+<h3 class="sec">【输入格式】</h3>
+<p class="para">一行一个字符串，表示合法的公式，长度不超过 10^5。保证公式中每个数字都不超过 10^9，且不会出现连续的运算符或空的括号。</p>
+<h3 class="sec">【输出格式】</h3>
+<p class="para">第一行一个整数，表示公式的值；</p>
+<p class="para">第二行一个整数，表示括号的最大嵌套深度。</p>
+<h3 class="sec">【输入输出样例 1】</h3>
+<pre>1+2*3</pre>
+<pre>7
+0</pre>
+<h3 class="sec">【输入输出样例 2】</h3>
+<pre>(1+2)*3</pre>
+<pre>9
+1</pre>
+<h3 class="sec">【输入输出样例 3】</h3>
+<pre>((1+2)*(3+4))*2</pre>
+<pre>42
+2</pre>
+<h3 class="sec">【输入输出样例 4】</h3>
+<pre>1+(2+3*(4+(5+6)))*7</pre>
+<pre>330
+3</pre>
+<h3 class="sec">【样例 4 说明】</h3>
+<p class="para">从里往外算：<code>5+6 = 11</code>，<code>4+11 = 15</code>，<code>3*15 = 45</code>，<code>2+45 = 47</code>，<code>47*7 = 329</code>，<code>1+329 = 330</code>。</p>
+<h3 class="sec">【数据范围与子任务】</h3>
+<p class="para">对于 100% 的数据，公式长度不超过 10^5，公式合法，每个数字 ≤ 10^9，最大嵌套深度不超过 10^5。</p>
+<div class="tblwrap"><table><thead><tr><th>子任务编号</th><th>分数</th><th>特殊性质</th></tr></thead><tbody><tr><td>1—3</td><td>15</td><td>没有括号</td></tr>
+<tr><td>4—7</td><td>20</td><td>只有 <code>+</code>，没有 <code>*</code></td></tr>
+<tr><td>8—11</td><td>20</td><td>长度 ≤ 100</td></tr>
+<tr><td>12—14</td><td>15</td><td>所有数字都是个位数</td></tr>
+<tr><td>15—20</td><td>30</td><td>无特殊限制</td></tr></tbody></table></div>
+<div class="pgno">set4 · T3 连招公式</div>
+</div>
+<div class="sheet">
+<h2 class="pt">T4　谷价走势</h2>
+<p class="pname">程序文件名：<code>trend.cpp</code>　输入文件名：<code>trend.in</code>　输出文件名：<code>trend.out</code></p>
+<div class="scoreline"><span>满分 100 分</span><span>时间限制 1000ms　空间限制 512MB</span></div>
+<h3 class="sec">【题目描述】</h3>
+<p class="para">某热门谷子（周边）连续 <code>n</code> 天的交易均价依次是 <code>p_1, p_2, …, p_n</code>。</p>
+<p class="para">小 F 想发一条"涨价实录"帖子，从这 <code>n</code> 天里选出若干天 <code>i_1 &lt; i_2 &lt; … &lt; i_m</code>，要求：</p>
+<ul><li>均价<strong>严格上升</strong>：<code>p_{i_1} &lt; p_{i_2} &lt; … &lt; p_{i_m}</code>；</li><li>为了"热度不断档"，相邻两次选取<strong>最多间隔 <code>d</code> 天</strong>，即 <code>i_{j+1} - i_j ≤ d</code>。</li></ul>
+<p class="para">求 <code>m</code> 的最大值，以及能取到最大 <code>m</code> 的<strong>选取方案数</strong>。方案数对 <code>998244353</code> 取模。</p>
+<p class="para">（只选 1 天也是合法的，此时 <code>m = 1</code>。）</p>
+<h3 class="sec">【输入格式】</h3>
+<p class="para">第一行两个整数 <code>n</code>、<code>d</code>。</p>
+<p class="para">第二行 <code>n</code> 个整数 <code>p_1, p_2, …, p_n</code>。</p>
+<h3 class="sec">【输出格式】</h3>
+<p class="para">一行两个整数，依次表示最大的 <code>m</code> 和对应的方案数（对 <code>998244353</code> 取模）。</p>
+<h3 class="sec">【输入输出样例 1】</h3>
+<pre>6 2
+3 1 2 1 3 4</pre>
+<pre>4 1</pre>
+<h3 class="sec">【样例 1 说明】</h3>
+<p class="para">只能选第 <code>2, 3, 5, 6</code> 天（价格 <code>1 &lt; 2 &lt; 3 &lt; 4</code>，间隔分别是 1、2、1，都不超过 2），共 1 种方案。</p>
+<h3 class="sec">【输入输出样例 2】</h3>
+<pre>5 5
+1 1 2 2 3</pre>
+<pre>3 4</pre>
+<h3 class="sec">【样例 2 说明】</h3>
+<p class="para"><code>d = 5</code> 相当于没有间隔限制。长度为 3 的严格上升子序列有 <code>(1,3,5)</code>、<code>(2,3,5)</code>、<code>(1,4,5)</code>、<code>(2,4,5)</code> 共 4 种。</p>
+<h3 class="sec">【输入输出样例 3】</h3>
+<pre>5 1
+1 5 2 3 4</pre>
+<pre>3 1</pre>
+<h3 class="sec">【样例 3 说明】</h3>
+<p class="para"><code>d = 1</code> 意味着必须选连续的日子。最长的连续严格上升段是第 <code>3, 4, 5</code> 天（<code>2 &lt; 3 &lt; 4</code>）。</p>
+<h3 class="sec">【数据范围与子任务】</h3>
+<p class="para">对于 100% 的数据，1 ≤ n ≤ 5000，1 ≤ d ≤ 5000，1 ≤ p_i ≤ 10^9。</p>
+<div class="tblwrap"><table><thead><tr><th>子任务编号</th><th>分数</th><th>数据规模与特殊性质</th></tr></thead><tbody><tr><td>1—3</td><td>15</td><td><code>n ≤ 18</code></td></tr>
+<tr><td>4—7</td><td>20</td><td><code>d = 1</code></td></tr>
+<tr><td>8—11</td><td>20</td><td><code>d ≥ n</code>（即没有间隔限制）</td></tr>
+<tr><td>12—14</td><td>15</td><td><code>p_i</code> 互不相同且 <code>n ≤ 500</code></td></tr>
+<tr><td>15—20</td><td>30</td><td>无特殊限制</td></tr></tbody></table></div>
+<div class="pgno">set4 · T4 谷价走势</div>
+</div></body></html>

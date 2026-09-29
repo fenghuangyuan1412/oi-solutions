@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T2 暗号解码 · 只搜 N 前面 200 个数</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --hard:#fbbf24; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:16px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 10px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:7px 13px; font-size:14px; cursor:pointer; margin:0 6px 6px 0; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.pre { background:#22304f; font-size:13px; }
+  input[type=number] { background:#0d1020; color:var(--ink); border:1px solid #3d4778;
+                       border-radius:8px; padding:7px 9px; font:14px/1.4 Consolas,monospace; width:150px; }
+  .topbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .prog { color:var(--dim); font-size:13px; margin-left:auto; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:320px; }
+  pre.code { margin:0; background:#0d1020; border:1px solid #262c4a; border-radius:10px;
+             padding:10px 12px; font:13px/1.7 Consolas,monospace; overflow:auto; }
+  pre.code .ln { display:block; padding:0 6px; border-radius:5px; color:#c3cbee; white-space:pre; }
+  pre.code .ln.hot { background:#123c3a; color:var(--acc); font-weight:700; }
+  table.vars { width:100%; border-collapse:collapse; font:13px Consolas,monospace; }
+  table.vars td { padding:4px 6px; border-bottom:1px solid #262c4a; }
+  table.vars td.k { color:var(--dim); width:36%; }
+  table.vars td.v { word-break:break-all; }
+  table.vars td.v.hot { color:var(--acc); font-weight:700; }
+  table.vars td.v.bad { color:var(--warn); font-weight:700; }
+  .strip { display:flex; flex-wrap:wrap; gap:2px; }
+  .cell { width:11px; height:22px; border-radius:3px; background:#20264a; border:1px solid #2c3560;
+          font:9px/20px Consolas,monospace; text-align:center; color:#6b7396; }
+  .cell.may { background:#12352f; border-color:#1d5a4d; color:#7fdec9; }
+  .cell.tried { background:#2b3358; }
+  .cell.miss { background:#3a2030; border-color:#5c2f45; }
+  .cell.hit { background:var(--ok); color:#06210f; font-weight:700; }
+  .cell.cur { outline:2px solid var(--acc); outline-offset:1px; }
+  .plot { position:relative; height:190px; margin-top:6px; border-left:1px solid #2c3560; border-bottom:1px solid #2c3560; }
+  .col { position:absolute; bottom:0; width:4px; }
+  .colbar { position:absolute; width:4px; background:linear-gradient(180deg,#60a5fa,#1d4ed8); border-radius:2px; }
+  .colbar.hit { background:var(--ok); }
+  .colbar.over { background:linear-gradient(180deg,#f87171,#7f1d1d); }
+  .zero { position:absolute; left:0; right:0; border-top:2px dashed var(--warn); }
+  .zero span { position:absolute; right:2px; top:-18px; font-size:11px; color:var(--warn); }
+  .digits { display:flex; gap:5px; align-items:center; flex-wrap:wrap; margin-top:4px; }
+  .dg { width:30px; height:36px; border-radius:6px; background:#232a4a; border:1px solid #333c66;
+        font:16px/36px Consolas,monospace; text-align:center; }
+  .plus { color:var(--dim); font:16px Consolas,monospace; }
+  .eq { font:16px/1.4 Consolas,monospace; color:var(--acc); }
+  .note { color:var(--dim); font-size:14px; min-height:46px; }
+  .note b { color:var(--ink); }
+  .ans { font:20px/1.4 Consolas,monospace; }
+  .legend { color:var(--dim); font-size:12px; margin-top:6px; }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin:0 4px 0 10px; vertical-align:middle; }
+</style>
+</head>
+<body>
+<h1>T2 暗号解码 / decode · 候选只挤在 N 前面一小段</h1>
+<div class="sub">求最小 x 使 x + S(x) = N。因为 S(x) 最多 81，x 必然落在 [N-81, N]；代码枚举 [N-200, N]，从小到大扫，第一个命中就是答案</div>
+
+<div class="topbar">
+  N <input type="number" id="inn" value="100" min="1" max="1000000000" step="1">
+  <button id="load">载入</button>
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到末尾</button>
+  <span class="prog" id="prog"></span>
+</div>
+<div class="topbar">
+  <span style="color:var(--dim);font-size:13px;margin-right:6px">预设：</span>
+  <button class="pre" data-n="8">样例1 N=8</button>
+  <button class="pre" data-n="100">样例2 N=100</button>
+  <button class="pre" data-n="1">样例3 N=1（无解）</button>
+  <button class="pre" data-n="29">子任务：解=N-10</button>
+  <button class="pre" data-n="999999979">间隔 80 的极端</button>
+  <button class="pre" data-n="999999937">大数无解</button>
+</div>
+
+<div class="row">
+  <div class="card"><h2>① solution.cpp 关键代码（当前执行行高亮）</h2>
+    <pre class="code" id="code"></pre>
+  </div>
+  <div class="card"><h2>② 变量状态表</h2>
+    <table class="vars" id="vars"></table>
+  </div>
+</div>
+
+<div class="card"><h2>③ 候选带：[max(1, N-200), N]，绿色底是理论上唯一可能有解的 [N-81, N]</h2>
+  <div class="strip" id="strip"></div>
+  <div class="legend">灰=还没试<i style="background:#20264a;border:1px solid #2c3560"></i>绿=理论上界内<i style="background:#12352f;border:1px solid #1d5a4d"></i>紫=试过但不是解<i style="background:#3a2030;border:1px solid #5c2f45"></i>绿亮条=命中<i style="background:#86efac"></i></div>
+</div>
+
+<div class="card"><h2>④ f(x) = x + S(x) 相对目标 N 的偏差（0 线 = 命中）</h2>
+  <div class="plot" id="plot"><div class="zero" id="zero"><span>N（目标线，偏差 0）</span></div></div>
+  <div class="digits" id="digits"></div>
+</div>
+
+<div class="row">
+  <div class="card" style="flex:1.6"><h2>⑤ 讲解</h2><div class="note" id="note"></div></div>
+  <div class="card"><h2>⑥ 输出</h2><div class="ans" id="ans"></div></div>
+</div>
+
+<script>
+const CODE = [
+  ['ll S(ll x) {                        // 数位和', 0],
+  ['    ll s = 0;', 1],
+  ['    while (x) { s += x % 10; x /= 10; }', 2],
+  ['    return s;', 3],
+  ['}', 4],
+  ['for (ll x = max(1LL, N - 200); x <= N; x++) {', 5],
+  ['    if (x + S(x) == N) { printf("%lld\\n", x); return 0; }', 6],
+  ['}', 7],
+  ['puts("-1");', 8],
+];
+let N = 100, L = 1, cand = [], steps = [], t = 0, timer = null, hitIdx = -1;
+const W = 200;
+
+function S(x) { let s = 0; while (x > 0) { s += x % 10; x = Math.floor(x / 10); } return s; }
+function digs(x) { return String(x).split('').map(Number); }
+
+function build() {
+  L = Math.max(1, N - W);
+  cand = [];
+  for (let x = L; x <= N; x++) cand.push(x);
+  hitIdx = cand.findIndex(x => x + S(x) === N);
+  steps = [{ line: [5], kind: 'init' }];
+  for (let i = 0; i < cand.length; i++) {
+    const x = cand[i], f = x + S(x);
+    steps.push({ line: f === N ? [6] : [2, 6], kind: 'try', i, x, s: S(x), f, dev: f - N });
+    if (f === N) { steps.push({ line: [6], kind: 'found', i, x, s: S(x), f }); return; }
+  }
+  steps.push({ line: [8], kind: 'none', i: cand.length - 1 });
+}
+
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+
+function renderCode(lines) {
+  const box = document.getElementById('code'); box.innerHTML = '';
+  CODE.forEach((c, idx) => box.appendChild(el('span', 'ln' + (lines.includes(idx) ? ' hot' : ''), c[0])));
+}
+
+function renderStrip(st) {
+  const box = document.getElementById('strip'); box.innerHTML = '';
+  const upto = st.kind === 'init' ? -1 : st.i;
+  cand.forEach((x, i) => {
+    let cls = 'cell';
+    if (x >= N - 81) cls += ' may';
+    if (i <= upto) cls += (hitIdx === i ? ' hit' : ' miss');
+    if (i === upto) cls += ' cur';
+    const c = el('div', cls, String(i));
+    c.title = 'x = ' + x + '，x + S(x) = ' + (x + S(x));
+    box.appendChild(c);
+  });
+}
+
+function renderPlot(st) {
+  const plot = document.getElementById('plot');
+  plot.querySelectorAll('.col').forEach(e => e.remove());
+  const scale = 0.55;                       // 每 1 的偏差 = 0.55 px
+  const zeroBottom = 130;                   // 0 线距底部
+  document.getElementById('zero').style.bottom = zeroBottom + 'px';
+  const upto = st.kind === 'init' ? -1 : st.i;
+  cand.forEach((x, i) => {
+    if (i > upto) return;
+    const dev = x + S(x) - N;
+    const col = el('div', 'col');
+    col.style.left = (i * 5 + 2) + 'px';
+    const bar = el('div', 'colbar' + (dev === 0 ? ' hit' : dev > 0 ? ' over' : ''));
+    const h = Math.max(2, Math.abs(dev) * scale);
+    bar.style.height = h + 'px';
+    bar.style.bottom = (dev >= 0 ? zeroBottom : zeroBottom - h) + 'px';
+    col.appendChild(bar);
+    col.title = 'x = ' + x + '，偏差 = ' + dev;
+    plot.appendChild(col);
+  });
+  const dg = document.getElementById('digits'); dg.innerHTML = '';
+  if (st.kind === 'try' || st.kind === 'found') {
+    const x = st.x;
+    dg.appendChild(el('span', 'eq', 'x = ' + x + ' 的数位拆解：'));
+    digs(x).forEach((d, k) => { if (k) dg.appendChild(el('span', 'plus', '+')); dg.appendChild(el('span', 'dg', d)); });
+    dg.appendChild(el('span', 'eq', ' = S(x) = ' + st.s + '   →   x + S(x) = ' + st.f + (st.f === N ? ' = N ✓' : (st.f > N ? ' > N（太大）' : ' < N（太小）'))));
+  } else {
+    dg.appendChild(el('span', 'eq', '点"下一步"开始逐个尝试 x，格子高度 = f(x) 与 N 的差'));
+  }
+}
+
+function render() {
+  const st = steps[t];
+  renderCode(st.line || []);
+  const note = document.getElementById('note'), ans = document.getElementById('ans');
+  const rows = [['N', String(N), ''], ['枚举左端 L = max(1, N-200)', String(L), ''],
+                ['理论上界 N-81', String(N - 81), '']];
+  if (st.kind === 'init') {
+    rows.push(['x', '还没开始', ''], ['试过的个数', '0 / ' + cand.length, '']);
+    note.innerHTML = `N=<b>${N}</b>。要找最小 x 使 x + S(x) = ${N}。因为 x &lt; N（S(x) 至少是 1）且 x 最多 9 位 ⇒ S(x) ≤ 81，所以 x ≥ N-81 = <b>${N - 81}</b>。代码把窗口放宽到 <b>${cand.length}</b> 格（左端取 max(1, N-200) = <b>${L}</b>）。暴力版要从 x=1 试到 ${N}，本机实测 N=10^9 时 <b>11.4 s</b>，窗口版 <b>0.005 s</b>。`;
+    ans.innerHTML = '<span style="color:#8b93b5">（还没输出）</span>';
+  } else if (st.kind === 'try') {
+    rows.push(['x（当前候选）', String(st.x), 'hot'], ['S(x)', String(st.s), ''],
+              ['x + S(x)', String(st.f), ''], ['与 N 的差', String(st.dev), st.dev === 0 ? 'hot' : ''],
+              ['试过的个数', (st.i + 1) + ' / ' + cand.length, '']);
+    note.innerHTML = `第 <b>${st.i + 1}</b> 个候选 x=<b>${st.x}</b>：S(x)=<b>${st.s}</b>，x+S(x)=<b>${st.f}</b>，比 N ${st.dev === 0 ? '<b>正好相等</b>' : (st.dev > 0 ? '大 ' + st.dev : '小 ' + (-st.dev))}。${st.dev === 0 ? '命中！因为是从左往右扫，这就是最小解。' : '不是解，继续往右。注意 f(x) 并不单调：本机实测 f(99)=117 而 f(100)=101，所以只能顺序扫，不能二分。'}`;
+    ans.innerHTML = '<span style="color:#8b93b5">（计算中）</span>';
+  } else if (st.kind === 'found') {
+    rows.push(['答案 x', String(st.x), 'hot'], ['验证 x + S(x)', st.x + ' + ' + st.s + ' = ' + st.f, ''],
+              ['试过的个数', (st.i + 1) + ' / ' + cand.length, '']);
+    note.innerHTML = `输出 <b>${st.x}</b>。它左边 ${st.i} 个候选都被排除，右边虽然可能还有别的解（本机把 N ≤ 200000 全扫了一遍，有 <b>19524</b> 个 N 有 ≥2 个原像），但题目要最小，第一个命中即可 return。`;
+    ans.innerHTML = `<span style="color:var(--acc)">${st.x}</span>`;
+  } else if (st.kind === 'none') {
+    rows.push(['x', '窗口内全部试过', 'bad'], ['试过的个数', cand.length + ' / ' + cand.length, '']);
+    note.innerHTML = `${cand.length} 个候选全试完，没有一个满足 x + S(x) = ${N}。由引理 1，窗口外也不可能有解 ⇒ 输出 <b>-1</b>。本机把 N ≤ 200000 全扫了一遍，这样的"无解 N"有 <b>19562</b> 个（约 9.8%）。`;
+    ans.innerHTML = `<span style="color:var(--warn)">-1</span>`;
+  }
+  const tb = document.getElementById('vars'); tb.innerHTML = '';
+  rows.forEach(r => { const tr = el('tr'); tr.appendChild(el('td','k',r[0])); tr.appendChild(el('td','v '+r[2],r[1])); tb.appendChild(tr); });
+  renderStrip(st); renderPlot(st);
+  document.getElementById('prog').textContent = `步骤 ${t + 1} / ${steps.length}（候选 ${cand.length} 个）`;
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === steps.length - 1;
+}
+
+function load() {
+  const v = Number(document.getElementById('inn').value);
+  N = Math.max(1, Math.min(1000000000, Math.floor(Number.isFinite(v) ? v : 100)));
+  document.getElementById('inn').value = N;
+  t = 0; build(); render();
+}
+
+document.getElementById('next').onclick = () => { if (t < steps.length - 1) { t++; render(); } };
+document.getElementById('prev').onclick = () => { if (t > 0) { t--; render(); } };
+document.getElementById('load').onclick = load;
+document.querySelectorAll('button.pre').forEach(btn => {
+  btn.onclick = () => { document.getElementById('inn').value = btn.dataset.n; load(); };
+});
+document.getElementById('jump').onclick = () => { t = steps.length - 1; render(); };
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+  e.target.textContent = '⏸ 暂停';
+  timer = setInterval(() => {
+    if (t >= steps.length - 1) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+    t++; render();
+  }, 90);
+};
+
+load();
+</script>
+</body>
+</html>

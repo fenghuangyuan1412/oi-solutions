@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T4 漫展通勤 · 带等待约束的 Dijkstra 分步演示</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --gold:#fbbf24; --wait:#fb923c; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,"Microsoft YaHei",sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:16px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:16px; }
+  .card h2 { font-size:13px; letter-spacing:.06em; color:var(--dim); margin:0 0 12px; }
+  .card h2 .tag { color:var(--acc); font-weight:700; margin-right:6px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:7px 13px; font-size:14px; cursor:pointer; margin-right:6px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  textarea { background:#0d1020; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+             padding:8px 10px; font:13px/1.5 Consolas,monospace; width:330px; height:150px; resize:vertical; }
+  .topbar { display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+  .prog { color:var(--dim); font-size:13px; margin-left:auto; }
+  .col { display:flex; gap:6px; flex-direction:column; }
+  .row { display:flex; gap:16px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:320px; }
+  table.grid { border-collapse:collapse; width:100%; font:13px Consolas,monospace; }
+  table.grid th, table.grid td { border-bottom:1px solid #222743; padding:3px 7px; text-align:right; white-space:nowrap; }
+  table.grid th { color:var(--dim); font-weight:400; }
+  table.grid td:first-child, table.grid th:first-child { text-align:left; }
+  table.grid tr.cur { background:#242c52; }
+  table.grid tr.cur td { color:var(--acc); font-weight:700; }
+  table.grid td.hit { color:var(--gold); font-weight:700; }
+  table.grid td.done { color:var(--ok); }
+  table.grid td.inf { color:#3f4670; }
+  .note { color:var(--dim); font-size:14px; min-height:44px; }
+  .note b { color:var(--ink); }
+  .note .w { color:var(--wait); font-weight:700; }
+  .note .g { color:var(--ok); font-weight:700; }
+  .phase { display:inline-block; padding:1px 9px; border-radius:20px; font-size:12px; margin-right:6px;
+           background:#173a4a; color:var(--ok); }
+  pre { margin:0; font:12.5px/1.7 Consolas,monospace; overflow-x:auto; }
+  .ln { display:block; padding:0 8px; border-radius:4px; white-space:pre; }
+  .ln.cur { background:#242c52; color:var(--acc); }
+  .kw { color:#7dd3fc; } .cm { color:#5f7a91; } .fn { color:#c4b5fd; }
+  .big { display:flex; gap:12px; flex-wrap:wrap; }
+  .k { background:#141a2e; border:1px solid #2a3155; border-radius:10px; padding:7px 11px; min-width:78px; }
+  .k .lab { font-size:11px; color:var(--dim); }
+  .k .val { font:18px Consolas,monospace; }
+  .k.gold .val { color:var(--gold); } .k.acc .val { color:var(--acc); }
+  .k.wait .val { color:var(--wait); } .k.dim .val { color:var(--dim); }
+  .badge { padding:2px 9px; border-radius:20px; font-size:12px; }
+  .bok { background:rgba(63,185,80,.16); color:var(--ok); } .bbad { background:rgba(248,81,73,.16); color:var(--warn); }
+  .binfo { background:#242c52; color:var(--acc); }
+  svg { width:100%; height:auto; display:block; background:#12162a; border-radius:10px; }
+  .err { color:var(--warn); font-size:13px; }
+  text { font-family:Consolas,monospace; }
+</style>
+</head>
+<body>
+<h1>T4 漫展通勤 / expo · 每条边的权是"等到 k 的倍数 + 走 1 分钟"</h1>
+<div class="sub">CSP-J 第二轮模拟卷 第 3 套 T4（对齐真题 CSP-J 2023 T4 旅游巴士 P9751）。橙色 = <b>等待</b>（等到不小于 max(t, a) 的第一个 k 倍数），绿色 = 走这条边的 1 分钟。每点只保留一个"最早到达时刻"，因为早到永远不亏。</div>
+
+<div class="topbar">
+  <div class="col">
+    <textarea id="inp">3 3 2
+1 2 0
+2 3 1
+1 3 5</textarea>
+    <div><button id="load">载入这份输入</button> <span class="err" id="err"></span></div>
+  </div>
+  <div class="col" style="max-width:420px">
+    <button data-s="0">样例 1（3 分钟到）</button>
+    <button data-s="1">样例 2（等到 3 才上路）</button>
+    <button data-s="2">样例 3（到不了 -1）</button>
+    <button data-s="3">绕远更快（直连反而慢）</button>
+    <button data-s="4">重边（同一对点两条）</button>
+    <button data-s="5">大等待（brute 会失效）</button>
+    <div class="note" style="min-height:0;font-size:13px">也可以直接改上面左上角的文本框：第一行 <code>n m k</code>，下面 <code>m</code> 行 <code>u v a</code>。演示限制 n ≤ 12、m ≤ 20（图要画得下）。</div>
+  </div>
+</div>
+<div class="topbar">
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到末尾</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="card"><h2><span class="tag">①</span>路线图（圆圈内 = 路口号，下方 = 最早到达时刻；边上 = 开通时刻 a 与"要等到几"）</h2>
+  <svg id="svg" viewBox="0 0 760 400"></svg>
+</div>
+
+<div class="card"><h2><span class="tag">②</span>时刻轴：这一步站在 t，要等到哪个 k 的倍数？</h2>
+  <svg id="axis" viewBox="0 0 760 96"></svg>
+  <div class="note" id="axnote" style="min-height:0"></div>
+</div>
+
+<div class="row">
+  <div class="card"><h2><span class="tag">③</span>dist 表（最早到达时刻）</h2>
+    <table class="grid" id="tblD"></table>
+  </div>
+  <div class="card"><h2><span class="tag">④</span>优先队列（堆）里的内容</h2>
+    <table class="grid" id="tblH"></table>
+    <div class="note" id="hnote" style="min-height:0;font-size:13px"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="card"><h2><span class="tag">⑤</span>本步变量</h2>
+    <div class="big" id="big"></div>
+  </div>
+  <div class="card" style="flex:1.6"><h2><span class="tag">⑥</span>讲解</h2>
+    <div class="note" id="note"></div>
+    <div class="note" id="check" style="margin-top:6px;font-size:13px"></div>
+  </div>
+</div>
+
+<div class="card"><h2><span class="tag">⑦</span>代码与执行位置</h2>
+  <pre id="code"></pre>
+</div>
+
+<script>
+const CODE = [
+  'inline ll round_up(ll x) { return (x + k - 1) / k * k; }   // 不小于 x 的第一个 k 倍数',
+  '',
+  'for (int i = 1; i <= n; i++) dist[i] = INF;',
+  'dist[1] = 0; pq.push({0, 1});',
+  'while (!pq.empty()) {',
+  '    PLI cur = pq.top(); pq.pop();          // 弹出"当前最早"的路口',
+  '    int u = cur.second;',
+  '    if (cur.first != dist[u]) continue;    // 堆里的旧记录，跳过',
+  '    for (int i = 0; i < e[u].size(); i++) {',
+  '        int v = e[u][i].first, a = e[u][i].second;',
+  '        ll depart = round_up(max(cur.first, (ll)a));   // 先等到开通，再等到 k 的倍数',
+  '        ll nd = depart + 1;                            // 走 1 分钟',
+  '        if (nd < dist[v]) { dist[v] = nd; pq.push({nd, v}); }',
+  '    }',
+  '}',
+  'printf("%lld\\n", dist[n] == INF ? -1 : dist[n]);      // 到终点不用再等'
+];
+
+const PRESETS = [
+  '3 3 2\n1 2 0\n2 3 1\n1 3 5',
+  '2 1 3\n1 2 1',
+  '4 2 2\n1 2 0\n2 3 0',
+  '4 5 10\n1 4 95\n1 2 0\n2 4 95\n1 3 0\n3 4 0',
+  '3 4 5\n1 2 3\n1 2 0\n2 3 0\n2 3 100',
+  '3 2 2\n1 2 0\n2 3 500'
+];
+
+let n = 3, k = 2, edges = [], dist = [], state = [], tree = {}, steps = [], t = 0, timer = null, ans = null;
+
+function round_up(x) { return Math.floor((x + k - 1) / k) * k; }
+
+// 与 solution.cpp 等价的完整 Dijkstra，顺便把每一步录下来
+function runAll() {
+  const INF = 1e18;
+  dist = []; state = []; tree = {};
+  for (let i = 1; i <= n; i++) { dist[i] = INF; state[i] = 0; }
+  const out = [];
+  const snap = (kind, line, extra) => {
+    const s = Object.assign({ kind, line, dist: dist.slice(), state: state.slice(),
+      tree: JSON.parse(JSON.stringify(tree)), heap: heap.map(x => ({ t: x.t, u: x.u })).sort((a, b) => a.t - b.t || a.u - b.u) }, extra || {});
+    out.push(s);
+  };
+  let heap = [];
+  dist[1] = 0; heap.push({ t: 0, u: 1 }); state[1] = 1;
+  snap('init', 3, { note: `<b>0 时刻</b>站在路口 1（出发点本来就是 k 的倍数，不用等）。dist[1] = 0，其余全是 +∞。堆里只有 (0, 1)。` });
+  while (heap.length) {
+    let bi = 0; for (let i = 1; i < heap.length; i++) if (heap[i].t < heap[bi].t || (heap[i].t === heap[bi].t && heap[i].u < heap[bi].u)) bi = i;
+    const cur = heap[bi]; heap.splice(bi, 1);
+    const u = cur.u;
+    if (cur.t !== dist[u]) {
+      snap('stale', 7, { u, ct: cur.t, note: `弹出 (时刻 ${cur.t}, 路口 ${u})，但 dist[${u}] 已经被更新成更小的 <b>${dist[u]}</b> ⇒ 这是<strong>旧记录</strong>，<code>continue</code> 掉。少了这一行，同一个点会被反复扩展，复杂度就没保证了。` });
+      continue;
+    }
+    state[u] = 2;
+    snap('pop', 5, { u, ct: cur.t, note: `弹出堆顶 (时刻 <b>${cur.t}</b>, 路口 <b>${u}</b>)。因为边权恒正（至少 1 分钟），这个时刻已经是 ${u} 的<strong>最终答案</strong>：dist[${u}] = ${cur.t} 从此不再变。` });
+    const outs = [];
+    for (let i = 0; i < edges.length; i++) if (edges[i].u === u) outs.push(edges[i]);
+    for (let i = 0; i < outs.length; i++) {
+      const e = outs[i];
+      const mx = Math.max(cur.t, e.a);
+      const depart = round_up(mx);
+      const wait = depart - cur.t;
+      const nd = depart + 1;
+      const imp = nd < dist[e.v];
+      if (imp) { dist[e.v] = nd; heap.push({ t: nd, u: e.v }); state[e.v] = state[e.v] === 2 ? 2 : 1; tree[e.v] = { u: u, a: e.a, depart: depart, wait: wait, from: cur.t }; }
+      snap('relax', imp ? 12 : 10, {
+        u, v: e.v, a: e.a, ct: cur.t, depart, nd, wait, imp, ei: i,
+        note: `试边 <b>${u} → ${e.v}</b>（${e.a} 时刻开通）。现在时刻 <b>${cur.t}</b>：先取 max(${cur.t}, ${e.a}) = ${mx}，再等到 k=${k} 的倍数 ⇒ <span class="w">depart = ${depart}（在路口等了 ${depart - cur.t} 分钟）</span>，走 1 分钟 ⇒ 到达 ${e.v} 的时刻 <b>${nd}</b>。` +
+          (imp ? `<span class="g">比 dist[${e.v}] 的旧值更好 ⇒ 更新并入堆。</span>` : `不比 dist[${e.v}] = ${dist[e.v] === 1e18 ? '+∞' : dist[e.v]} 更好 ⇒ 丢弃。`)
+      });
+    }
+    if (!outs.length) snap('dead', 8, { u, ct: cur.t, note: `路口 <b>${u}</b> 一条出边都没有 ⇒ 走进来的路到此为止，什么也不 relax。` });
+  }
+  ans = dist[n] >= 1e18 ? -1 : dist[n];
+  snap('done', 15, { note: `堆空了。dist[${n}] = ${dist[n] >= 1e18 ? '+∞' : dist[n]} ⇒ 输出 <b>${ans}</b>。` +
+    (ans === -1 ? `（到不了：从 1 出发能走到的路口里不含 ${n}。）` : ` 注意<b>到达终点后不用再等</b>，所以答案不再 round_up。`) });
+  return out;
+}
+
+// brute.cpp 的思路：把"时刻"当成一层做 BFS（只在小时刻范围内可用）
+function bruteLayered(B) {
+  const vis = {};
+  const q = [[1, 0]]; vis['1,0'] = 1;
+  let head = 0, over = false;
+  while (head < q.length) {
+    const it = q[head++], u = it[0], tt = it[1];
+    if (u === n) return { ans: tt, over: over };
+    if (tt + 1 > B) { over = true; continue; }
+    if (!vis[u + ',' + (tt + 1)]) { vis[u + ',' + (tt + 1)] = 1; q.push([u, tt + 1]); }
+    if (tt % k === 0) for (let i = 0; i < edges.length; i++) {
+      const e = edges[i];
+      if (e.u === u && tt >= e.a && !vis[e.v + ',' + (tt + 1)]) { vis[e.v + ',' + (tt + 1)] = 1; q.push([e.v, tt + 1]); }
+    }
+  }
+  return { ans: over ? null : -1, over: over };
+}
+
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.setAttribute('class', cls); if (txt != null) e.textContent = txt; return e; }
+function svgEl(tag, attrs, txt) {
+  const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const key in attrs) e.setAttribute(key, attrs[key]);
+  if (txt != null) e.textContent = txt;
+  return e;
+}
+
+function layout() {
+  const pos = {}, cx = 380, cy = 205, R = n <= 4 ? 130 : 160;
+  for (let i = 1; i <= n; i++) {
+    const ang = -Math.PI / 2 + (i - 1) * 2 * Math.PI / n;
+    pos[i] = { x: cx + R * Math.cos(ang), y: cy + R * Math.sin(ang) * (n <= 4 ? 0.8 : 1) };
+  }
+  return pos;
+}
+
+function drawGraph(st) {
+  const svg = document.getElementById('svg'); svg.innerHTML = '';
+  const pos = layout();
+  const defs = svgEl('defs', {});
+  const mk = svgEl('marker', { id: 'arw', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto-start-reverse' });
+  mk.appendChild(svgEl('path', { d: 'M 0 0 L 10 5 L 0 10 z', fill: '#8b93b5' }));
+  defs.appendChild(mk); svg.appendChild(defs);
+  // 重边分组：同一对 (u,v) 给不同弯曲度
+  const cnt = {}, seen = {};
+  for (const e of edges) { const key = Math.min(e.u, e.v) + '-' + Math.max(e.u, e.v); seen[key] = (seen[key] || 0) + 1; }
+  edges.forEach((e, idx) => {
+    const key = Math.min(e.u, e.v) + '-' + Math.max(e.u, e.v);
+    cnt[key] = (cnt[key] || 0) + 1;
+    const total = seen[key];
+    const bend = total === 1 ? 0 : (cnt[key] - (total + 1) / 2) * 34;
+    const p1 = pos[e.u], p2 = pos[e.v];
+    const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
+    const dx = p2.x - p1.x, dy = p2.y - p1.y, len = Math.hypot(dx, dy) || 1;
+    const cxp = mx - dy / len * bend, cyp = my + dx / len * bend;
+    const isCur = st.kind === 'relax' && st.u === e.u && st.v === e.v && st.ei === idxInOuts(e);
+    const isTree = st.tree && st.tree[e.v] && st.tree[e.v].u === e.u && st.tree[e.v].a === e.a;
+    const col = isCur ? (st.imp ? '#86efac' : '#f87171') : (isTree ? '#5eead4' : '#4a5580');
+    const path = svgEl('path', {
+      d: `M ${p1.x} ${p1.y} Q ${cxp} ${cyp} ${p2.x} ${p2.y}`,
+      fill: 'none', stroke: col, 'stroke-width': isCur ? 3 : (isTree ? 2.2 : 1.4),
+      'marker-end': 'url(#arw)', 'stroke-dasharray': isCur && !st.imp ? '5 4' : 'none'
+    });
+    svg.appendChild(path);
+    // 边标签：开通时刻
+    const lx = 0.25 * p1.x + 0.5 * cxp + 0.25 * p2.x, ly = 0.25 * p1.y + 0.5 * cyp + 0.25 * p2.y;
+    let label = 'a=' + e.a;
+    if (isCur) label += ` 等${st.wait}分→${st.depart}`;
+    else if (isTree && st.tree[e.v].from != null) label += ` 等到${st.tree[e.v].depart}`;
+    const txt = svgEl('text', { x: lx, y: ly, fill: isCur ? '#fbbf24' : (isTree ? '#5eead4' : '#8b93b5'),
+      'font-size': isCur ? 13 : 11, 'text-anchor': 'middle', 'paint-order': 'stroke', stroke: '#0f1220', 'stroke-width': 4 }, label);
+    svg.appendChild(txt);
+    e._mid = { x: lx, y: ly };
+  });
+  // 结点
+  for (let i = 1; i <= n; i++) {
+    const p = pos[i], stt = st.state[i];
+    const cur = (st.u === i && (st.kind === 'pop' || st.kind === 'stale' || st.kind === 'relax' || st.kind === 'dead'));
+    const fill = cur ? '#4a3b1c' : (stt === 2 ? '#1f3b2c' : (stt === 1 ? '#17304a' : '#232a4a'));
+    const stroke = cur ? '#fbbf24' : (stt === 2 ? '#86efac' : (stt === 1 ? '#5eead4' : '#333c66'));
+    svg.appendChild(svgEl('circle', { cx: p.x, cy: p.y, r: 24, fill: fill, stroke: stroke, 'stroke-width': cur ? 3 : 1.6 }));
+    svg.appendChild(svgEl('text', { x: p.x, y: p.y + 5, fill: '#e8ecff', 'font-size': 16, 'text-anchor': 'middle' }, String(i)));
+    const dv = st.dist[i] >= 1e18 ? '+∞' : st.dist[i];
+    svg.appendChild(svgEl('text', { x: p.x, y: p.y + 43, fill: stt === 2 ? '#86efac' : '#8b93b5', 'font-size': 13,
+      'text-anchor': 'middle', 'paint-order': 'stroke', stroke: '#0f1220', 'stroke-width': 4 }, '到 ' + dv));
+    if (i === 1) svg.appendChild(svgEl('text', { x: p.x, y: p.y - 32, fill: '#8b93b5', 'font-size': 11, 'text-anchor': 'middle' }, '家'));
+    if (i === n) svg.appendChild(svgEl('text', { x: p.x, y: p.y - 32, fill: '#8b93b5', 'font-size': 11, 'text-anchor': 'middle' }, '漫展'));
+  }
+}
+
+function idxInOuts(e) {
+  let c = 0;
+  for (const x of edges) if (x.u === e.u) { if (x === e) return c; c++; }
+  return -1;
+}
+
+function drawAxis(st) {
+  const svg = document.getElementById('axis'); svg.innerHTML = '';
+  const nt = document.getElementById('axnote');
+  if (st.kind !== 'relax') {
+    nt.innerHTML = '走到某个"试边"的步骤，这里会画出这条边上的等待：蓝色 = 你站在路口的时刻 t，橙色 = 真正能上路的时刻 depart。';
+    return;
+  }
+  const lo = Math.max(0, (Math.floor(st.ct / k) - 1) * k);
+  let hi = Math.max(lo + 4 * k, st.depart + k);
+  let mul = Math.max(1, Math.ceil(((hi - lo) / k + 1) / 10));   // 最多画 10 个刻度，步长仍是 k 的倍数
+  hi = lo + Math.ceil((hi - lo) / (mul * k)) * mul * k;
+  const step = mul * k;
+  const X = x => 40 + (x - lo) / (hi - lo) * 680;
+  svg.appendChild(svgEl('line', { x1: 30, y1: 46, x2: 735, y2: 46, stroke: '#333c66', 'stroke-width': 2 }));
+  for (let x = lo; x <= hi + 0.5; x += step) {
+    svg.appendChild(svgEl('line', { x1: X(x), y1: 38, x2: X(x), y2: 54, stroke: '#5f7a91', 'stroke-width': 1.4 }));
+    svg.appendChild(svgEl('text', { x: X(x), y: 70, fill: '#8b93b5', 'font-size': 11, 'text-anchor': 'middle' }, String(x)));
+  }
+  svg.appendChild(svgEl('text', { x: 30, y: 20, fill: '#8b93b5', 'font-size': 11 }, 'k 的倍数刻度（k = ' + k + (mul > 1 ? '，图上每 ' + step + ' 标一个，都是 k 的倍数' : '') + '）'));
+  if (st.wait > 0) svg.appendChild(svgEl('rect', { x: X(st.ct), y: 40, width: Math.max(2, X(st.depart) - X(st.ct)), height: 12, fill: 'rgba(251,146,60,.35)' }));
+  svg.appendChild(svgEl('line', { x1: X(st.ct), y1: 26, x2: X(st.ct), y2: 60, stroke: '#7dd3fc', 'stroke-width': 2.5 }));
+  svg.appendChild(svgEl('text', { x: X(st.ct), y: 20, fill: '#7dd3fc', 'font-size': 12, 'text-anchor': 'middle' }, 't=' + st.ct));
+  svg.appendChild(svgEl('line', { x1: X(st.depart), y1: 26, x2: X(st.depart), y2: 60, stroke: '#fb923c', 'stroke-width': 2.5 }));
+  svg.appendChild(svgEl('text', { x: X(st.depart), y: 88, fill: '#fb923c', 'font-size': 12, 'text-anchor': 'middle' }, 'depart=' + st.depart));
+  if (st.a > st.ct && st.a >= lo) {
+    svg.appendChild(svgEl('line', { x1: X(st.a), y1: 34, x2: X(st.a), y2: 56, stroke: '#f87171', 'stroke-width': 2, 'stroke-dasharray': '3 3' }));
+    svg.appendChild(svgEl('text', { x: X(st.a), y: 20, fill: '#f87171', 'font-size': 11, 'text-anchor': 'middle' }, 'a=' + st.a));
+  }
+  nt.innerHTML = `max(t, a) = max(${st.ct}, ${st.a}) = <b>${Math.max(st.ct, st.a)}</b>，往上取整到 ${k} 的倍数 ⇒ <span class="w">depart = ${st.depart}</span>，其中<span class="w">纯等待 ${st.wait} 分钟</span>（含"还没开通"的 ${Math.max(0, st.a - st.ct)} 分钟 + "等成倍数"的 ${st.depart - Math.max(st.ct, st.a)} 分钟），再加 1 分钟车程 ⇒ 到达 ${st.v} 的时刻 <b>${st.nd}</b>。`;
+}
+
+function hi(line) {
+  let h = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const c = h.indexOf('//');
+  let head = h, tail = '';
+  if (c >= 0) { head = h.slice(0, c); tail = '<span class="cm">' + h.slice(c) + '</span>'; }
+  head = head.replace(/"[^"]*"/g, s => '<span class="fn">' + s + '</span>')
+             .replace(/\b(ll|int|for|while|if|else|return|printf|inline|continue|top|pop)\b/g, '<span class="kw">$1</span>');
+  return head + tail;
+}
+
+function render() {
+  const st = steps[t];
+  drawGraph(st);
+  drawAxis(st);
+
+  // ③ dist 表
+  const td = document.getElementById('tblD'); td.innerHTML = '';
+  const hd = el('tr'); ['路口', 'dist（最早到达）', '状态', '最后走的那条边'].forEach(x => hd.appendChild(el('th', null, x)));
+  td.appendChild(hd);
+  for (let i = 1; i <= n; i++) {
+    const tr = el('tr', (st.u === i || (st.kind === 'relax' && st.v === i)) ? 'cur' : '');
+    tr.appendChild(el('td', null, i + (i === 1 ? '（家）' : (i === n ? '（漫展）' : ''))));
+    const dv = st.dist[i] >= 1e18 ? '+∞' : st.dist[i];
+    tr.appendChild(el('td', st.state[i] === 2 ? 'done' : (st.dist[i] >= 1e18 ? 'inf' : 'hit'), dv));
+    tr.appendChild(el('td', null, st.state[i] === 2 ? '已定案' : (st.state[i] === 1 ? '在堆里' : '未到达')));
+    const tw = st.tree && st.tree[i];
+    tr.appendChild(el('td', null, tw ? `${tw.u}→${i}（a=${tw.a}，等到 ${tw.depart}）` : '—'));
+    td.appendChild(tr);
+  }
+
+  // ④ 堆
+  const th = document.getElementById('tblH'); th.innerHTML = '';
+  const hh = el('tr'); ['(时刻, 路口)', '还能用吗'].forEach(x => hh.appendChild(el('th', null, x)));
+  th.appendChild(hh);
+  if (!st.heap.length) { const tr = el('tr'); tr.appendChild(el('td', null, '（空）')); tr.appendChild(el('td', null, '—')); th.appendChild(tr); }
+  st.heap.forEach((h, i) => {
+    const tr = el('tr', i === 0 ? 'cur' : '');
+    tr.appendChild(el('td', null, `(${h.t}, ${h.u})`));
+    tr.appendChild(el('td', null, h.t === st.dist[h.u] ? '有效（下次弹出它）' : '旧记录，弹出就丢'));
+    th.appendChild(tr);
+  });
+  document.getElementById('hnote').innerHTML = '堆按"时刻"排序，所以每次弹出的都是当前最早的那个路口 —— 这就是 Dijkstra 的贪心。' + (st.kind === 'stale' ? '<b>本步弹出的正是旧记录。</b>' : '');
+
+  // ⑤ 变量
+  const big = document.getElementById('big'); big.innerHTML = '';
+  const kk = (lab, val, cls) => { const d = el('div', 'k' + (cls ? ' ' + cls : '')); d.appendChild(el('div', 'lab', lab)); d.appendChild(el('div', 'val', String(val))); big.appendChild(d); };
+  kk('n', n, 'dim'); kk('k', k, 'dim');
+  kk('u（当前路口）', st.u == null ? '—' : st.u, 'acc');
+  kk('t = dist[u]', st.ct == null ? '—' : st.ct, 'acc');
+  kk('v（试的边）', st.v == null ? '—' : st.v, 'acc');
+  kk('a（开通时刻）', st.a == null ? '—' : st.a, 'dim');
+  kk('等待', st.kind === 'relax' ? st.wait + ' 分' : '—', 'wait');
+  kk('depart', st.kind === 'relax' ? st.depart : '—', 'wait');
+  kk('nd = depart+1', st.kind === 'relax' ? st.nd : '—', 'gold');
+  kk('dist[n]', st.dist[n] >= 1e18 ? '+∞' : st.dist[n], 'gold');
+
+  // ⑥ 讲解
+  const ph = x => '<span class="phase">' + x + '</span>';
+  const tagmap = { init: '起点', pop: '弹出最小值', stale: '旧记录', relax: '松弛一条边', dead: '没有出边', done: '结束' };
+  document.getElementById('note').innerHTML = ph(tagmap[st.kind] || st.kind) + st.note;
+  const chk = document.getElementById('check');
+  if (st.kind === 'done') {
+    const br = bruteLayered(2000);
+    if (br.ans !== null && br.ans === ans)
+      chk.innerHTML = `对照：把"时刻"当一层做 BFS（<code>brute.cpp</code> 的思路，上界 2000 分钟）给出 <code>${br.ans}</code>，本页 Dijkstra 给出 <code>${ans}</code> <span class="badge bok">两种算法一致</span>。本机随机 5000 组（n ≤ 8、k ≤ 5、a ≤ 12）两程序输出全部一致。`;
+    else if (br.ans === null && ans === -1)
+      chk.innerHTML = `对照：分层 BFS 搜到 2000 分钟也没能到达终点，与 Dijkstra 的 <code>-1</code> 相符。<span class="badge bok">一致</span>` +
+        `（注意它靠的是"有界搜索"：<code>brute.cpp</code> 的上界只有 B = 400，本机实测 <code>3 2 2 / 1 2 0 / 2 3 500</code> 它输出 <code>-1</code>，正解是 <code>501</code>。）`;
+    else if (br.ans === null)
+      chk.innerHTML = `本例答案 ${ans} 分钟，超过分层 BFS 的 2000 分钟上界，无法互验 ⇒ 这正说明为什么必须用 Dijkstra：状态里不带时刻，只带"最早到达时刻"一个数。`;
+    else
+      chk.innerHTML = `分层 BFS 给 <code>${br.ans}</code>，Dijkstra 给 <code>${ans}</code> <span class="badge bbad">不一致</span>：请核对输入是否满足"到达终点后不用再等"。`;
+  } else chk.innerHTML = `走到"结束"那一步时，这里会拿"时刻分层 BFS"（brute.cpp 思路）的结果跟本页 Dijkstra 的结果对一次。`;
+
+  document.getElementById('prog').textContent = `步骤 ${t + 1} / ${steps.length}`;
+  document.getElementById('code').innerHTML =
+    CODE.map((l, i) => `<span class="ln${i === st.line ? ' cur' : ''}">${String(i + 1).padStart(2, ' ')} ${hi(l)}</span>`).join('');
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === steps.length - 1;
+}
+
+function parse(text) {
+  const tk = text.trim().split(/\s+/).map(Number);
+  if (tk.length < 3 || tk.some(x => !Number.isInteger(x))) return '输入里有没有整数以外的东西';
+  const N = tk[0], M = tk[1], K = tk[2];
+  if (!(N >= 2 && N <= 12)) return '演示要求 2 ≤ n ≤ 12（图要画得下）';
+  if (!(M >= 1 && M <= 20)) return '演示要求 1 ≤ m ≤ 20';
+  if (!(K >= 2 && K <= 100)) return '演示要求 2 ≤ k ≤ 100';
+  if (tk.length < 3 + 3 * M) return '边的条数不够：第一行说 m = ' + M + '，实际只给了 ' + Math.floor((tk.length - 3) / 3) + ' 条';
+  const es = [];
+  for (let i = 0; i < M; i++) {
+    const u = tk[3 + 3 * i], v = tk[4 + 3 * i], a = tk[5 + 3 * i];
+    if (!(u >= 1 && u <= N && v >= 1 && v <= N)) return `第 ${i + 1} 条边的端点超出 1..${N}`;
+    if (u === v) return `第 ${i + 1} 条边是自环（题面保证 u ≠ v）`;
+    if (!(a >= 0 && a <= 1000000)) return `第 ${i + 1} 条边的 a 要在 0..10^6`;
+    es.push({ u: u, v: v, a: a });
+  }
+  n = N; k = K; edges = es;
+  return null;
+}
+
+function load() {
+  const err = parse(document.getElementById('inp').value);
+  const eb = document.getElementById('err');
+  if (err) { eb.textContent = '输入不合法：' + err; return; }
+  eb.textContent = '';
+  steps = runAll(); t = 0; render();
+}
+
+document.getElementById('next').onclick = () => { if (t < steps.length - 1) { t++; render(); } };
+document.getElementById('prev').onclick = () => { if (t > 0) { t--; render(); } };
+document.getElementById('load').onclick = load;
+document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => {
+  document.getElementById('inp').value = PRESETS[+b.dataset.s]; load();
+});
+document.getElementById('jump').onclick = () => { t = steps.length - 1; render(); };
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+  e.target.textContent = '⏸ 暂停';
+  timer = setInterval(() => {
+    if (t >= steps.length - 1) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+    t++; render();
+  }, 700);
+};
+
+load();
+</script>
+</body>
+</html>

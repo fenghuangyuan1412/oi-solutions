@@ -40,3 +40,19 @@
 - **规范** `AGENTS.md` 新增 §5.5 真题卷题面流水线：题目文字只允许存在于 `problem.txt`，其余由脚本生成，引用块不得手改
 - **验证** 重跑流水线：`paper.md` 全部 13 个代码块行号 1..N 连续无缺（J 8 块 / S 5 块）；注入脚本跑两遍第二遍为 0 处；10 个可视化页面 Chrome headless 再压一遍（自动点满 20000 次「下一步」）0 抛错、无 `NaN`/`undefined`；全仓 62 条相对链接 0 死链
 - **验证** 两份 `verify/RESULTS.md` 各加一节「题面与 PDF 的交叉核对」：把同一份 PDF 用 `pdftotext -layout` 再导一遍对撞，逐类说明差异全部出在排版层（丢中文 / 分栏 / 行号归属），并给出实证 —— 选择题 3 那个 25 行程序按 pdftotext 的行号排列编译报 `error: expected unqualified-id before 'return'`，按 `problem.txt` 的排列一次通过
+
+## 2026-09-30
+
+## 2026-09-30
+
+- **新增** `notes/cspj-trend-2021-2025.md`：CSP-J 第二轮五年考情趋势分析——五年逐题表、算法考核清单（带优先级）、T1—T4 位置指纹、16 课时排课建议。2023/2024/2025 三年逐题核对，2021/2022 只核对到题名与考点归类，推断与存疑项集中在 §8
+- **新增** `notes/mock-cspj-round2/`：按上面趋势自编的 **4 套 × 4 题** CSP-J 第二轮模拟卷（**不是任何一年真题**），题面是二次元 / 谷圈皮：
+  - 第 1 套 痛车车牌 / 吧唧墙 / 深渊连击 / 二创投稿；第 2 套 角色图鉴 / 谷仓机器人 / 应援灯牌 / 总选打投；第 3 套 无料排队 / 体力药水 / 暴击阈值 / 漫展通勤；第 4 套 伤害溢出 / 暗号解码 / 连招公式 / 谷价走势
+  - 每题目录：`problem.txt`（唯一题面源）→ `paper.md` / `paper.html`（脚本生成，可直接截图）、`README.md`（零基础题解：暴力 → 观察 → 算法 → 正确性 → 复杂度 → 可视化 → 易错点）、`visualization.html`、`solution.cpp` + `brute.cpp`
+  - 每套一份 `answer-key.md` 教师版（考点表 / 极限数据实测 / 样例答案 / 子任务给分表 / 扣分点），与题面**分文件**存放，截图不会漏答案
+  - 体量：85 个文件；16 篇题解 + 4 份答案册 + 索引 + 趋势讲义共 3380 行，16 个可视化 5359 行，32 个 cpp 1102 行
+- **新增** `scripts/mock_paper.js`：`problem.txt` → 仿真题面 `paper.md` + `paper.html`（卷头 `%` 信息行、`【小标题】`、子任务表、程序/输入/输出文件名一栏按 CCF 复赛版式排），可整目录 `--all` 批量出卷；沿用 AGENTS.md §5.5「题面只写在 `problem.txt`」
+- **验证** `notes/mock-cspj-round2/verify.js`：编译 → 官方样例（正解与暴力双跑）→ 与 `brute.cpp` 随机对拍 → 极限数据计时，结果全写进 `verify/RESULTS.md`。`node notes/mock-cspj-round2/verify.js all --rounds 5000 --perf` 跑出 **120 项检查、失败 0 项**，16 题每题 5000 组随机数据与暴力完全一致
+- **修正** 题解里的实测数字全部重测再写回，不沿用初稿值：set1 T1 满规模 0.102 s（`RESULTS.md` 同一份数据 106 ms）、771 408 个数字按桶重拼逐字符对撞一致；set2 T1 用 `rng(17)` 那份数据三跑 0.5 s 级、输出 `368068`；set3 T2 暴力的 n² 曲线 0.015 → 0.067 → 0.329 → 3.442 s；set3 T4 留着 `continue` 0.034 s / 去掉 0.619 s；set4 T2 暴力 11.41 s vs 窗口版 0.005 s（初稿的 16.9～21.9 s 已作废）；set4 T3 递归下降 8000 层还能算、10000 层 `0xC00000FD` 栈溢出；set4 T4 四档各跑 5 次取最快
+- **规范** `verify.js` 的页眉现在会写明对拍组数是被 `--rounds` 统一覆盖还是取每题 SPEC 默认；`.gitignore` 增加模拟卷截图产物（`verify/sheets/`、`verify/viz/`、`verify-shot-*.png`），跑脚本随时重生成，不入库
+- **验证** 16 个可视化用本机 Chrome（playwright headless）整批重跑：加载后 60 轮点遍所有按钮，**0 抛错**、页面文字无 `NaN` / `undefined` / `Infinity`、1280px 视口下无横向溢出；`scripts/mock_paper.js --all` 重跑四套 `paper.md` / `paper.html` 生成物一致

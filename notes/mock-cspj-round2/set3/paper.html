@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CSP-J 第二轮（复赛）模拟卷 · 第 3 套</title>
+<style>
+:root{--ink:#16181d;--sub:#4b5563;--line:#d7dbe0;--paper:#fff;--bg:#e9edf2;--accent:#8a1c1c;}
+*{box-sizing:border-box}
+body{margin:0;padding:28px 16px 60px;background:var(--bg);color:var(--ink);
+ font-family:"Times New Roman","Songti SC","SimSun","Noto Serif CJK SC",serif;
+ font-size:16px;line-height:1.9;-webkit-font-smoothing:antialiased}
+.sheet{max-width:860px;margin:0 auto 26px;background:var(--paper);padding:34px 44px 40px;
+ border:1px solid var(--line);border-radius:3px;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.masthead{text-align:center;border-bottom:3px double var(--ink);padding-bottom:14px;margin-bottom:16px}
+.masthead h1{font-size:23px;margin:0 0 6px;letter-spacing:2px}
+.masthead .sub{font-size:14px;color:var(--sub);letter-spacing:1px}
+.warn{margin:0 0 16px;padding:9px 13px;border-left:4px solid var(--accent);background:#fdf3f3;
+ font-size:13.5px;line-height:1.7;color:#6b2020}
+.meta{display:grid;grid-template-columns:120px 1fr;gap:2px 12px;font-size:14.5px;margin:0 0 14px}
+.meta dt{color:var(--sub)}
+.meta dd{margin:0}
+h2.pt{font-size:20px;text-align:center;margin:8px 0 4px;letter-spacing:1px}
+p.pname{text-align:center;font-size:13.5px;color:var(--sub);margin:0 0 14px}
+.scoreline{display:flex;justify-content:space-between;border-top:1px solid var(--line);
+ border-bottom:1px solid var(--line);padding:5px 2px;margin:0 0 16px;font-size:13.5px;color:var(--sub)}
+h3.sec{font-size:16.5px;margin:20px 0 6px;font-weight:700}
+p.para{margin:0 0 11px;text-align:justify}
+ul{margin:0 0 12px;padding-left:26px}
+li{margin:0 0 3px}
+pre{margin:0 0 13px;padding:10px 13px;background:#f6f7f9;border:1px solid var(--line);border-radius:3px;
+ font-family:Consolas,"Courier New",monospace;font-size:13.5px;line-height:1.65;white-space:pre-wrap;overflow-x:auto}
+code{font-family:Consolas,"Courier New",monospace;font-size:14px;background:#f2f3f5;padding:0 3px;border-radius:2px}
+strong{font-weight:700}
+.tblwrap{overflow-x:auto;margin:0 0 14px}
+table{border-collapse:collapse;font-size:14px;width:100%}
+th,td{border:1px solid var(--ink);padding:4px 9px;text-align:center}
+th{background:#f1f2f4;font-weight:700}
+.hintbox{margin:0 0 13px;padding:10px 13px;background:#f6f7f9;border:1px dashed var(--line);
+ font-size:14.5px;line-height:1.85;white-space:pre-wrap;font-family:Consolas,monospace}
+.pgno{text-align:center;font-size:12.5px;color:#9aa1ab;margin-top:20px}
+@media print{body{background:#fff;padding:0}.sheet{border:0;box-shadow:none;page-break-after:always}}
+</style></head>
+<body><div class="sheet">
+<div class="masthead"><h1>CSP-J 第二轮（复赛）模拟卷 · 第 3 套</h1><div class="sub">CCF CSP-J 第二轮（复赛）模拟卷 · 仿真题面</div></div>
+<div class="warn"><strong>自编模拟卷，不是任何一年的 CCF 真题。</strong>题目背景为练习而设，知识点与数据规模对齐 CSP-J 2023—2025 第二轮。</div>
+<dl class="meta"><dt>认证时间</dt><dd>8:30—12:00，共 210 分钟</dd>
+<dt>总分</dt><dd>400 分，每题 100 分</dd>
+<dt>说明</dt><dd>正式复赛要求文件读写，本模拟卷按标准输入输出练习即可</dd>
+<dt>对齐</dt><dd>本套 4 题的知识点分别对齐 CSP-J 2023 第二轮 T1—T4（O(log n) 递推 / 历史最低价贪心 / 根式化简与格式控制 / 带等待约束的最短路）</dd></dl>
+<div class="pgno">set3 · 卷首</div>
+</div>
+<div class="sheet">
+<h2 class="pt">T1　无料排队</h2>
+<p class="pname">程序文件名：<code>lineup.cpp</code>　输入文件名：<code>lineup.in</code>　输出文件名：<code>lineup.out</code></p>
+<div class="scoreline"><span>满分 100 分</span><span>时间限制 1000ms　空间限制 512MB</span></div>
+<h3 class="sec">【题目描述】</h3>
+<p class="para">漫展现场要发无料（免费赠品）。<code>n</code> 个人排成一列，从左到右编号 <code>1</code> 到 <code>n</code>。</p>
+<p class="para">工作人员每一轮都从队首开始，<strong>每隔 2 个人取 1 个人</strong>去领无料——也就是取走本轮队伍中第 <code>1, 4, 7, 10, …</code> 个位置上的人。被取走的人离队，剩下的人<strong>保持原来的相对顺序</strong>重新排成一列，再进行下一轮，直到队伍被清空。</p>
+<p class="para">小 Z 想知道两件事：</p>
+<p class="para">1. 一共需要进行多少轮；</p>
+<p class="para">2. 编号为 <code>x</code> 的人是在第几轮被取走的。</p>
+<h3 class="sec">【输入格式】</h3>
+<p class="para">一行两个整数 <code>n</code>、<code>x</code>，含义见题面，保证 <code>1 ≤ x ≤ n</code>。</p>
+<h3 class="sec">【输出格式】</h3>
+<p class="para">一行两个整数，依次表示总轮数、编号 <code>x</code> 被取走的轮数。</p>
+<h3 class="sec">【输入输出样例 1】</h3>
+<pre>6 1</pre>
+<pre>4 1</pre>
+<h3 class="sec">【样例 1 说明】</h3>
+<p class="para">第 1 轮取走位置 1、4（即编号 1、4），剩 <code>2 3 5 6</code>；第 2 轮取走新队伍位置 1、4（编号 2、6），剩 <code>3 5</code>；第 3 轮取走位置 1（编号 3），剩 <code>5</code>；第 4 轮取走编号 5。共 4 轮，编号 1 在第 1 轮被取走。</p>
+<h3 class="sec">【输入输出样例 2】</h3>
+<pre>6 5</pre>
+<pre>4 4</pre>
+<h3 class="sec">【输入输出样例 3】</h3>
+<pre>1 1</pre>
+<pre>1 1</pre>
+<h3 class="sec">【数据范围与子任务】</h3>
+<p class="para">对于 100% 的数据，1 ≤ n ≤ 10^9，1 ≤ x ≤ n。</p>
+<div class="tblwrap"><table><thead><tr><th>子任务编号</th><th>分数</th><th>数据规模与特殊性质</th></tr></thead><tbody><tr><td>1—2</td><td>10</td><td><code>n ≤ 10</code></td></tr>
+<tr><td>3—5</td><td>15</td><td><code>n ≤ 1000</code></td></tr>
+<tr><td>6—9</td><td>20</td><td><code>n ≤ 10^6</code></td></tr>
+<tr><td>10—13</td><td>20</td><td><code>x = 1</code></td></tr>
+<tr><td>14—20</td><td>35</td><td>无特殊限制</td></tr></tbody></table></div>
+<div class="pgno">set3 · T1 无料排队</div>
+</div>
+<div class="sheet">
+<h2 class="pt">T2　体力药水</h2>
+<p class="pname">程序文件名：<code>potion.cpp</code>　输入文件名：<code>potion.in</code>　输出文件名：<code>potion.out</code></p>
+<div class="scoreline"><span>满分 100 分</span><span>时间限制 1000ms　空间限制 512MB</span></div>
+<h3 class="sec">【题目描述】</h3>
+<p class="para">从小 C 家（第 <code>1</code> 个点）到漫展（第 <code>n</code> 个点）是一条笔直的马路，中间依次有 <code>n</code> 个点，第 <code>i</code> 个点与第 <code>i+1</code> 个点之间的距离是 <code>v_i</code> 公里。</p>
+<p class="para">每个点都卖体力药水：第 <code>i</code> 个点的单价是 <code>a_i</code> 元一瓶，<strong>一瓶恰好能跑 <code>d</code> 公里</strong>。小 C 的背包无限大，买了可以随时留着以后用；出发时她身上一瓶药水也没有，而且<strong>只能整瓶购买</strong>。</p>
+<p class="para">题目保证每一段距离 <code>v_i</code> 都是 <code>d</code> 的整数倍，所以不需要考虑"最后一瓶用不完"的问题。</p>
+<p class="para">求小 C 从第 <code>1</code> 个点走到第 <code>n</code> 个点所需的最小花费。</p>
+<h3 class="sec">【输入格式】</h3>
+<p class="para">第一行两个整数 <code>n</code>、<code>d</code>。</p>
+<p class="para">第二行 <code>n-1</code> 个整数 <code>v_1, v_2, …, v_{n-1}</code>。</p>
+<p class="para">第三行 <code>n</code> 个整数 <code>a_1, a_2, …, a_n</code>。</p>
+<h3 class="sec">【输出格式】</h3>
+<p class="para">一行一个整数，表示最小花费。</p>
+<h3 class="sec">【输入输出样例 1】</h3>
+<pre>5 10
+10 10 10 10
+9 8 9 6 5</pre>
+<pre>31</pre>
+<h3 class="sec">【样例 1 说明】</h3>
+<p class="para">每段 10 公里正好要 1 瓶。第 1 段只能在点 1 买，花 9 元；第 2 段在点 2 买，花 8 元；第 3 段虽然点 3 卖 9 元，但可以在点 2 提前多买一瓶（8 元）带着走，所以花 8 元；第 4 段在点 4 买，花 6 元。合计 <code>9+8+8+6 = 31</code>。</p>
+<h3 class="sec">【输入输出样例 2】</h3>
+<pre>3 5
+10 5
+3 10 2</pre>
+<pre>9</pre>
+<h3 class="sec">【样例 2 说明】</h3>
+<p class="para">第 1 段 10 公里要 2 瓶，只能在点 1 买，<code>2×3 = 6</code> 元；第 2 段 5 公里要 1 瓶，点 1 的 3 元比点 2 的 10 元便宜，所以在点 1 一起买好，<code>3</code> 元。合计 9 元。</p>
+<h3 class="sec">【数据范围与子任务】</h3>
+<p class="para">对于 100% 的数据，2 ≤ n ≤ 10^5，1 ≤ d ≤ 10^5，1 ≤ v_i ≤ 10^5（<code>d</code> 整除 <code>v_i</code>），1 ≤ a_i ≤ 10^5。</p>
+<div class="tblwrap"><table><thead><tr><th>子任务编号</th><th>分数</th><th>数据规模与特殊性质</th></tr></thead><tbody><tr><td>1—3</td><td>15</td><td><code>n ≤ 10</code></td></tr>
+<tr><td>4—7</td><td>20</td><td><code>a_1</code> 是全局最小值</td></tr>
+<tr><td>8—11</td><td>20</td><td>所有 <code>v_i = d</code></td></tr>
+<tr><td>12—14</td><td>15</td><td><code>a_i</code> 单调不升</td></tr>
+<tr><td>15—20</td><td>30</td><td>无特殊限制</td></tr></tbody></table></div>
+<div class="pgno">set3 · T2 体力药水</div>
+</div>
+<div class="sheet">
+<h2 class="pt">T3　暴击阈值</h2>
+<p class="pname">程序文件名：<code>dmg.cpp</code>　输入文件名：<code>dmg.in</code>　输出文件名：<code>dmg.out</code></p>
+<div class="scoreline"><span>满分 100 分</span><span>时间限制 1000ms　空间限制 512MB</span></div>
+<h3 class="sec">【题目描述】</h3>
+<p class="para">某个游戏的伤害曲线是一个二次函数 <code>f(t) = a·t² + b·t + c</code>。策划把方程 <code>f(t) = 0</code> 的<strong>较大实根</strong>称为这条曲线的"暴击阈值"。</p>
+<p class="para">给定 <code>T</code> 组整数系数 <code>a, b, c</code>（<code>a ≠ 0</code>），请对每组输出暴击阈值，要求输出<strong>精确值</strong>（不许输出小数），规则如下：</p>
+<p class="para">1. 若方程没有实根，输出一行 <code>NO</code>。</p>
+<p class="para">2. 若较大实根是有理数，把它写成<strong>最简分数</strong>：分母为 1 时只输出分子 <code>p</code>，否则输出 <code>p/q</code>（<code>q &gt; 0</code>，<code>gcd(|p|, q) = 1</code>，负号只出现在分子上）。</p>
+<p class="para">3. 若较大实根是无理数，把它写成 <code>(p + q√r) / s</code> 的形式并化到最简，要求：</p>
+<ul><li><code>r &gt; 1</code> 且 <code>r</code> 不含平方因子（即不存在大于 1 的整数 <code>k</code> 使 <code>k²</code> 整除 <code>r</code>）；</li><li><code>q &gt; 0</code>，<code>s &gt; 0</code>，<code>gcd(|p|, q, s) = 1</code>（三者整体的最大公约数为 1）；</li><li>输出时：<code>q = 1</code> 则根号前不写系数（写 <code>√r</code>）；<code>p = 0</code> 则不写常数项、也不写加号；<code>s = 1</code> 则不写分母；<code>s &gt; 1</code> 且 <code>p ≠ 0</code> 时分子整体加圆括号；<code>s &gt; 1</code> 且 <code>p = 0</code> 时分子不加括号。</li><li>任何地方都不要输出空格。</li></ul>
+<h3 class="sec">【输入格式】</h3>
+<p class="para">第一行一个整数 <code>T</code>。</p>
+<p class="para">接下来 <code>T</code> 行，每行三个整数 <code>a</code>、<code>b</code>、<code>c</code>。</p>
+<h3 class="sec">【输出格式】</h3>
+<p class="para"><code>T</code> 行，每行一个字符串，表示对应方程的较大实根。</p>
+<h3 class="sec">【输入输出样例 1】</h3>
+<pre>8
+1 0 -2
+1 1 -1
+1 -3 1
+1 -2 -1
+1 -3 2
+1 0 1
+-1 1 1
+1 0 0</pre>
+<pre>√2
+(-1+√5)/2
+(3+√5)/2
+1+√2
+2
+NO
+(1+√5)/2
+0</pre>
+<h3 class="sec">【样例 1 说明】</h3>
+<ul><li><code>t² - 2 = 0</code>：较大根 <code>√2</code>，此时 <code>p = 0, q = 1, r = 2, s = 1</code>，按规则只写 <code>√r</code>。</li><li><code>t² + t - 1 = 0</code>：较大根 <code>(-1+√5)/2</code>。</li><li><code>t² - 2t - 1 = 0</code>：判别式 <code>Δ = 4 + 4 = 8 = 2·2²</code>，较大根 <code>(2 + 2√2) / 2 = 1 + √2</code>。</li><li><code>t² - 3t + 2 = 0</code>：<code>Δ = 1</code> 是完全平方数，较大根为整数 <code>2</code>。</li><li><code>-t² + t + 1 = 0</code>：<code>a &lt; 0</code>，较大根是 <code>(1+√5)/2</code>（注意此时含 <code>+√Δ</code> 的那个根反而更小）。</li></ul>
+<h3 class="sec">【输入输出样例 2】</h3>
+<pre>4
+1 0 -12
+1 2 -1
+3 -6 1
+2 0 -1</pre>
+<pre>2√3
+-1+√2
+(3+√6)/3
+√2/2</pre>
+<h3 class="sec">【样例 2 说明】</h3>
+<ul><li><code>t² - 12 = 0</code>：较大根 <code>√12 = 2√3</code>。</li><li><code>t² + 2t - 1 = 0</code>：<code>Δ = 4 + 4 = 8 = 2·2²</code>，较大根 <code>(-2+2√2)/2 = -1+√2</code>，此时 <code>p = -1</code>，所以负号直接写在最前面。</li><li><code>3t² - 6t + 1 = 0</code>：<code>Δ = 36 - 12 = 24 = 6·2²</code>，较大根 <code>(6+2√6)/6 = (3+√6)/3</code>。</li><li><code>2t² - 1 = 0</code>：<code>Δ = 8 = 2·2²</code>，较大根 <code>(0+2√2)/4 = √2/2</code>，<code>p = 0</code> 时分子不加括号。</li></ul>
+<h3 class="sec">【数据范围与子任务】</h3>
+<p class="para">对于 100% 的数据，1 ≤ T ≤ 5000，|a| ≤ 1000，|b| ≤ 1000，|c| ≤ 1000，<code>a ≠ 0</code>。</p>
+<div class="tblwrap"><table><thead><tr><th>子任务编号</th><th>分数</th><th>特殊性质</th></tr></thead><tbody><tr><td>1—3</td><td>15</td><td><code>b = 0</code></td></tr>
+<tr><td>4—6</td><td>15</td><td><code>c = 0</code></td></tr>
+<tr><td>7—10</td><td>20</td><td>所有方程都有有理根（<code>Δ</code> 是完全平方数或 <code>Δ = 0</code>）</td></tr>
+<tr><td>11—13</td><td>15</td><td>所有方程都无实根</td></tr>
+<tr><td>14—16</td><td>15</td><td><code>a &gt; 0</code> 且 <code>Δ &gt; 0</code> 且 <code>s = 1</code></td></tr>
+<tr><td>17—20</td><td>20</td><td>无特殊限制</td></tr></tbody></table></div>
+<div class="pgno">set3 · T3 暴击阈值</div>
+</div>
+<div class="sheet">
+<h2 class="pt">T4　漫展通勤</h2>
+<p class="pname">程序文件名：<code>expo.cpp</code>　输入文件名：<code>expo.in</code>　输出文件名：<code>expo.out</code></p>
+<div class="scoreline"><span>满分 100 分</span><span>时间限制 1000ms　空间限制 512MB</span></div>
+<h3 class="sec">【题目描述】</h3>
+<p class="para">从家（路口 <code>1</code>）到漫展（路口 <code>n</code>）之间有 <code>n</code> 个路口、<code>m</code> 条<strong>单向</strong>马路。走任何一条马路都恰好花 <code>1</code> 分钟。</p>
+<p class="para">第 <code>i</code> 条马路从 <code>u_i</code> 通向 <code>v_i</code>，并且它在 <code>a_i</code> 时刻才开通：只有当你<strong>上路的那一刻</strong>的时刻 <code>≥ a_i</code> 时才能使用它。</p>
+<p class="para">小 K 在 <code>0</code> 时刻从路口 <code>1</code> 出发。他有个怪癖：<strong>每次站在一个路口上准备上路时，时刻必须恰好是 <code>k</code> 的倍数</strong>（出发点是 <code>0</code> 时刻，本来就满足）。等待不花时间成本，也不允许在马路上停留——也就是说，站在 <code>u</code> 路口、当前时刻为 <code>t</code> 时，他只能等到不小于 <code>max(t, a_i)</code> 的第一个 <code>k</code> 的倍数时刻才能踏上马路 <code>i</code>。</p>
+<p class="para">到达路口 <code>n</code> 之后就结束了，不需要再等。</p>
+<p class="para">求小 K 最早能在什么时刻到达路口 <code>n</code>。如果无论如何都到不了，输出 <code>-1</code>。</p>
+<h3 class="sec">【输入格式】</h3>
+<p class="para">第一行三个整数 <code>n</code>、<code>m</code>、<code>k</code>。</p>
+<p class="para">接下来 <code>m</code> 行，每行三个整数 <code>u_i</code>、<code>v_i</code>、<code>a_i</code>。</p>
+<h3 class="sec">【输出格式】</h3>
+<p class="para">一行一个整数，表示最早到达时刻，或 <code>-1</code>。</p>
+<h3 class="sec">【输入输出样例 1】</h3>
+<pre>3 3 2
+1 2 0
+2 3 1
+1 3 5</pre>
+<pre>3</pre>
+<h3 class="sec">【样例 1 说明】</h3>
+<p class="para"><code>0</code> 时刻从 1 出发走马路 1（已开通），<code>1</code> 时刻到路口 2；此时不是 2 的倍数，等到 <code>2</code> 时刻走马路 2，<code>3</code> 时刻到达终点。若直接走马路 3，要等到 <code>6</code> 时刻（<code>≥ 5</code> 的第一个 2 的倍数）才能上路，<code>7</code> 时刻才到，更慢。</p>
+<h3 class="sec">【输入输出样例 2】</h3>
+<pre>2 1 3
+1 2 1</pre>
+<pre>4</pre>
+<h3 class="sec">【样例 2 说明】</h3>
+<p class="para"><code>0</code> 时刻马路还没开通，等到 <code>3</code> 时刻上路，<code>4</code> 时刻到达。</p>
+<h3 class="sec">【输入输出样例 3】</h3>
+<pre>4 2 2
+1 2 0
+2 3 0</pre>
+<pre>-1</pre>
+<h3 class="sec">【数据范围与子任务】</h3>
+<p class="para">对于 100% 的数据，2 ≤ n ≤ 10^4，1 ≤ m ≤ 2×10^4，2 ≤ k ≤ 100，1 ≤ u_i, v_i ≤ n，u_i ≠ v_i，0 ≤ a_i ≤ 10^6。可能有多条马路连接同一对路口。</p>
+<div class="tblwrap"><table><thead><tr><th>子任务编号</th><th>分数</th><th>数据规模与特殊性质</th></tr></thead><tbody><tr><td>1—3</td><td>15</td><td><code>n ≤ 10</code>，<code>a_i = 0</code></td></tr>
+<tr><td>4—7</td><td>20</td><td><code>k = 2</code></td></tr>
+<tr><td>8—11</td><td>20</td><td>每个路口的出边不超过 1 条（图退化成链）</td></tr>
+<tr><td>12—15</td><td>15</td><td><code>a_i ≤ 100</code></td></tr>
+<tr><td>16—20</td><td>30</td><td>无特殊限制</td></tr></tbody></table></div>
+<div class="pgno">set3 · T4 漫展通勤</div>
+</div></body></html>

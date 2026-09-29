@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CSP-J 第二轮（复赛）模拟卷 · 第 2 套</title>
+<style>
+:root{--ink:#16181d;--sub:#4b5563;--line:#d7dbe0;--paper:#fff;--bg:#e9edf2;--accent:#8a1c1c;}
+*{box-sizing:border-box}
+body{margin:0;padding:28px 16px 60px;background:var(--bg);color:var(--ink);
+ font-family:"Times New Roman","Songti SC","SimSun","Noto Serif CJK SC",serif;
+ font-size:16px;line-height:1.9;-webkit-font-smoothing:antialiased}
+.sheet{max-width:860px;margin:0 auto 26px;background:var(--paper);padding:34px 44px 40px;
+ border:1px solid var(--line);border-radius:3px;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.masthead{text-align:center;border-bottom:3px double var(--ink);padding-bottom:14px;margin-bottom:16px}
+.masthead h1{font-size:23px;margin:0 0 6px;letter-spacing:2px}
+.masthead .sub{font-size:14px;color:var(--sub);letter-spacing:1px}
+.warn{margin:0 0 16px;padding:9px 13px;border-left:4px solid var(--accent);background:#fdf3f3;
+ font-size:13.5px;line-height:1.7;color:#6b2020}
+.meta{display:grid;grid-template-columns:120px 1fr;gap:2px 12px;font-size:14.5px;margin:0 0 14px}
+.meta dt{color:var(--sub)}
+.meta dd{margin:0}
+h2.pt{font-size:20px;text-align:center;margin:8px 0 4px;letter-spacing:1px}
+p.pname{text-align:center;font-size:13.5px;color:var(--sub);margin:0 0 14px}
+.scoreline{display:flex;justify-content:space-between;border-top:1px solid var(--line);
+ border-bottom:1px solid var(--line);padding:5px 2px;margin:0 0 16px;font-size:13.5px;color:var(--sub)}
+h3.sec{font-size:16.5px;margin:20px 0 6px;font-weight:700}
+p.para{margin:0 0 11px;text-align:justify}
+ul{margin:0 0 12px;padding-left:26px}
+li{margin:0 0 3px}
+pre{margin:0 0 13px;padding:10px 13px;background:#f6f7f9;border:1px solid var(--line);border-radius:3px;
+ font-family:Consolas,"Courier New",monospace;font-size:13.5px;line-height:1.65;white-space:pre-wrap;overflow-x:auto}
+code{font-family:Consolas,"Courier New",monospace;font-size:14px;background:#f2f3f5;padding:0 3px;border-radius:2px}
+strong{font-weight:700}
+.tblwrap{overflow-x:auto;margin:0 0 14px}
+table{border-collapse:collapse;font-size:14px;width:100%}
+th,td{border:1px solid var(--ink);padding:4px 9px;text-align:center}
+th{background:#f1f2f4;font-weight:700}
+.hintbox{margin:0 0 13px;padding:10px 13px;background:#f6f7f9;border:1px dashed var(--line);
+ font-size:14.5px;line-height:1.85;white-space:pre-wrap;font-family:Consolas,monospace}
+.pgno{text-align:center;font-size:12.5px;color:#9aa1ab;margin-top:20px}
+@media print{body{background:#fff;padding:0}.sheet{border:0;box-shadow:none;page-break-after:always}}
+</style></head>
+<body><div class="sheet">
+<div class="masthead"><h1>CSP-J 第二轮（复赛）模拟卷 · 第 2 套</h1><div class="sub">CCF CSP-J 第二轮（复赛）模拟卷 · 仿真题面</div></div>
+<div class="warn"><strong>自编模拟卷，不是任何一年的 CCF 真题。</strong>题目背景为练习而设，知识点与数据规模对齐 CSP-J 2023—2025 第二轮。</div>
+<dl class="meta"><dt>认证时间</dt><dd>8:30—12:00，共 210 分钟</dd>
+<dt>总分</dt><dd>400 分，每题 100 分</dd>
+<dt>说明</dt><dd>正式复赛要求文件读写，本模拟卷按标准输入输出练习即可</dd>
+<dt>对齐</dt><dd>本套 4 题的知识点分别对齐 CSP-J 2024 第二轮 T1—T4（去重统计 / 网格转向模拟 / 贪心构造数字 / 分层 DP）</dd></dl>
+<div class="pgno">set2 · 卷首</div>
+</div>
+<div class="sheet">
+<h2 class="pt">T1　角色图鉴</h2>
+<p class="pname">程序文件名：<code>codex.cpp</code>　输入文件名：<code>codex.in</code>　输出文件名：<code>codex.out</code></p>
+<div class="scoreline"><span>满分 100 分</span><span>时间限制 1000ms　空间限制 512MB</span></div>
+<h3 class="sec">【题目描述】</h3>
+<p class="para">小 B 在玩一款抽卡游戏，她的角色图鉴里一共有 <code>m</code> 个角色，编号 <code>1</code> 到 <code>m</code>。</p>
+<p class="para">她已经抽了 <code>n</code> 次，第 <code>i</code> 次抽到的角色编号是 <code>c_i</code>。同一个角色可能被抽到很多次——多出来的那些只能当"复数"，图鉴里那个角色依然只算"已拥有"。</p>
+<p class="para">问：她<strong>至少</strong>还要再抽多少次，才能让图鉴里的每一个角色都至少被拥有 1 次？</p>
+<p class="para">（可以把运气假设成最好：以后每次抽卡都能精准抽到她目前还缺的角色。）</p>
+<h3 class="sec">【输入格式】</h3>
+<p class="para">第一行两个整数 <code>n</code>、<code>m</code>。</p>
+<p class="para">第二行 <code>n</code> 个整数 <code>c_1, c_2, …, c_n</code>。</p>
+<h3 class="sec">【输出格式】</h3>
+<p class="para">一行一个整数，表示最少还需要抽的次数。</p>
+<h3 class="sec">【输入输出样例 1】</h3>
+<pre>5 8
+1 2 2 3 1</pre>
+<pre>5</pre>
+<h3 class="sec">【样例 1 说明】</h3>
+<p class="para">已经拥有的角色是 <code>1, 2, 3</code>，共 3 个不同的角色，还缺 <code>8 - 3 = 5</code> 个。</p>
+<h3 class="sec">【输入输出样例 2】</h3>
+<pre>3 3
+1 2 3</pre>
+<pre>0</pre>
+<h3 class="sec">【数据范围与子任务】</h3>
+<p class="para">对于 100% 的数据，1 ≤ n ≤ 10^6，1 ≤ m ≤ 10^6，1 ≤ c_i ≤ m。</p>
+<div class="tblwrap"><table><thead><tr><th>子任务编号</th><th>分数</th><th>特殊性质</th></tr></thead><tbody><tr><td>1—3</td><td>15</td><td><code>n ≤ 10</code></td></tr>
+<tr><td>4—8</td><td>25</td><td><code>c_i</code> 两两不同</td></tr>
+<tr><td>9—13</td><td>25</td><td><code>m ≤ 100</code></td></tr>
+<tr><td>14—20</td><td>35</td><td>无特殊限制</td></tr></tbody></table></div>
+<div class="pgno">set2 · T1 角色图鉴</div>
+</div>
+<div class="sheet">
+<h2 class="pt">T2　谷仓机器人</h2>
+<p class="pname">程序文件名：<code>robot.cpp</code>　输入文件名：<code>robot.in</code>　输出文件名：<code>robot.out</code></p>
+<div class="scoreline"><span>满分 100 分</span><span>时间限制 1000ms　空间限制 512MB</span></div>
+<h3 class="sec">【题目描述】</h3>
+<p class="para">一个存放谷子的仓库是 <code>n</code> 行 <code>m</code> 列的网格。有些格子里立着货架（记作 <code>x</code>），机器人进不去；其余是空地（记作 <code>.</code>）。</p>
+<p class="para">一台送谷子的机器人站在某个空格上，初始朝向为 <code>d0</code>。朝向用整数表示：<code>0</code> 东（列 +1）、<code>1</code> 南（行 +1）、<code>2</code> 西（列 -1）、<code>3</code> 北（行 -1）。</p>
+<p class="para">机器人依次执行长度为 <code>k</code> 的指令串，指令只有两种：</p>
+<ul><li><code>R</code>：原地右转 90°（东 → 南 → 西 → 北 → 东）。</li><li><code>F</code>：尝试向<strong>当前朝向</strong>前进一格。若目标格在网格内且不是货架，就走过去；否则<strong>原地右转 90°</strong>，这一步不移动。</li></ul>
+<p class="para">机器人出发时所在的格子也算"走过"。问全部指令执行完之后：</p>
+<ul><li>它停在第几行第几列，朝向是什么；</li><li>它一共走过多少个<strong>不同的</strong>格子（同一个格子走多次只算一次）。</li></ul>
+<h3 class="sec">【输入格式】</h3>
+<p class="para">第一行三个整数 <code>n</code>、<code>m</code>、<code>k</code>。</p>
+<p class="para">接下来 <code>n</code> 行，每行一个长度为 <code>m</code> 的字符串，只含 <code>.</code> 和 <code>x</code>，描述地图。</p>
+<p class="para">接下来一行三个整数 <code>r0</code>、<code>c0</code>、<code>d0</code>，表示出发位置与初始朝向，保证该格是空地。</p>
+<p class="para">最后一行一个长度为 <code>k</code> 的字符串，只含 <code>F</code> 和 <code>R</code>。</p>
+<h3 class="sec">【输出格式】</h3>
+<p class="para">一行四个整数 <code>r</code>、<code>c</code>、<code>d</code>、<code>s</code>，依次表示最终行、最终列、最终朝向、走过的不同格子数。</p>
+<h3 class="sec">【输入输出样例 1】</h3>
+<pre>3 3 5
+...
+.x.
+...
+1 1 0
+FFFRF</pre>
+<pre>1 2 2 3</pre>
+<h3 class="sec">【样例 1 说明】</h3>
+<p class="para">从 <code>(1,1)</code> 朝东出发：<code>F</code> 到 <code>(1,2)</code>，<code>F</code> 到 <code>(1,3)</code>；第三条 <code>F</code> 前面已经出界，于是原地右转成朝南（不移动）；<code>R</code> 再右转成朝西；<code>F</code> 回到 <code>(1,2)</code>。最终朝向 <code>2</code>（西），走过的不同格子是 <code>(1,1)(1,2)(1,3)</code> 共 3 个。</p>
+<h3 class="sec">【输入输出样例 2】</h3>
+<pre>3 3 6
+..x
+...
+x..
+1 1 0
+FFFFFF</pre>
+<pre>3 2 3 4</pre>
+<h3 class="sec">【数据范围与子任务】</h3>
+<p class="para">对于 100% 的数据，1 ≤ n, m ≤ 1000，1 ≤ k ≤ 10^6，地图中至少有一个空格。</p>
+<div class="tblwrap"><table><thead><tr><th>子任务编号</th><th>分数</th><th>特殊性质</th></tr></thead><tbody><tr><td>1—3</td><td>15</td><td><code>n = 1</code></td></tr>
+<tr><td>4—7</td><td>20</td><td>地图中没有货架</td></tr>
+<tr><td>8—11</td><td>20</td><td><code>k ≤ 1000</code></td></tr>
+<tr><td>12—14</td><td>15</td><td>指令串中只有 <code>F</code></td></tr>
+<tr><td>15—20</td><td>30</td><td>无特殊限制</td></tr></tbody></table></div>
+<div class="pgno">set2 · T2 谷仓机器人</div>
+</div>
+<div class="sheet">
+<h2 class="pt">T3　应援灯牌</h2>
+<p class="pname">程序文件名：<code>light.cpp</code>　输入文件名：<code>light.in</code>　输出文件名：<code>light.out</code></p>
+<div class="scoreline"><span>满分 100 分</span><span>时间限制 1000ms　空间限制 512MB</span></div>
+<h3 class="sec">【题目描述】</h3>
+<p class="para">小 Y 要给演唱会做一块数字应援灯牌。灯牌上每一位数字都要用 LED 拼成"七段数码管"的形状，各数字需要的 LED 数量如下表：</p>
+<div class="tblwrap"><table><thead><tr><th>数字</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th></tr></thead><tbody><tr><td>LED 数</td><td>6</td><td>2</td><td>5</td><td>5</td><td>4</td><td>5</td><td>6</td><td>3</td><td>7</td><td>6</td></tr></tbody></table></div>
+<p class="para">她手上正好有 <code>n</code> 颗 LED，要求<strong>全部用完</strong>（不多也不少），拼出一个<strong>没有前导零</strong>的正整数。</p>
+<p class="para">请帮她拼出能表示的<strong>最小</strong>的正整数。如果无论怎么拼都不可能恰好用完 <code>n</code> 颗 LED，输出 <code>-1</code>。</p>
+<h3 class="sec">【输入格式】</h3>
+<p class="para">一行一个整数 <code>n</code>。</p>
+<h3 class="sec">【输出格式】</h3>
+<p class="para">一行，一个正整数（答案可能很长，请按字符串输出），或 <code>-1</code>。</p>
+<h3 class="sec">【输入输出样例 1】</h3>
+<pre>5</pre>
+<pre>2</pre>
+<h3 class="sec">【样例 1 说明】</h3>
+<p class="para">恰好用 5 颗 LED 的一位数有 <code>2</code>、<code>3</code>、<code>5</code>；两位数也能恰好用 5 颗（例如 <code>17</code>，2+3 = 5），但两位数一定比一位数大，所以答案是 <code>2</code>。</p>
+<h3 class="sec">【输入输出样例 2】</h3>
+<pre>8</pre>
+<pre>10</pre>
+<h3 class="sec">【样例 2 说明】</h3>
+<p class="para">最少要 2 位（因为一位最多用 7 颗）。第一位选 <code>1</code>（2 颗），第二位就还剩 6 颗，能拼出的最小数字是 <code>0</code>，于是答案是 <code>10</code>。注意 <code>16</code> 也正好用 8 颗，但比 <code>10</code> 大。</p>
+<h3 class="sec">【输入输出样例 3】</h3>
+<pre>1</pre>
+<pre>-1</pre>
+<h3 class="sec">【数据范围与子任务】</h3>
+<p class="para">对于 100% 的数据，1 ≤ n ≤ 10^5。</p>
+<div class="tblwrap"><table><thead><tr><th>子任务编号</th><th>分数</th><th>特殊性质</th></tr></thead><tbody><tr><td>1—4</td><td>20</td><td><code>n ≤ 10</code></td></tr>
+<tr><td>5—9</td><td>25</td><td>答案只有一位数</td></tr>
+<tr><td>10—14</td><td>25</td><td><code>n ≤ 100</code></td></tr>
+<tr><td>15—20</td><td>30</td><td>无特殊限制</td></tr></tbody></table></div>
+<div class="pgno">set2 · T3 应援灯牌</div>
+</div>
+<div class="sheet">
+<h2 class="pt">T4　总选打投</h2>
+<p class="pname">程序文件名：<code>vote.cpp</code>　输入文件名：<code>vote.in</code>　输出文件名：<code>vote.out</code></p>
+<div class="scoreline"><span>满分 100 分</span><span>时间限制 1000ms　空间限制 512MB</span></div>
+<h3 class="sec">【题目描述】</h3>
+<p class="para">一场总选投票一共持续 <code>m</code> 天。第 <code>i</code> 天开放 <code>k_i</code> 个应援项目供小 N 选择，第 <code>j</code> 个项目投一票能带来热度 <code>v_{i,j}</code>。同一天里可能有两个项目热度相同，但它们是不同的项目，选它们算作<strong>不同</strong>的方案。</p>
+<p class="para">规则：</p>
+<ul><li>每天<strong>必须</strong>投票，而且<strong>只能投 1 个</strong>项目。</li><li>平台防刷：<strong>相邻两天投出的项目热度值不能相同</strong>（即第 <code>i</code> 天与第 <code>i-1</code> 天的热度值必须不同）。</li></ul>
+<p class="para">小 N 想知道：<code>m</code> 天结束后总热度<strong>恰好</strong>等于 <code>S</code> 的投票方案数是多少。答案对 <code>998244353</code> 取模。</p>
+<h3 class="sec">【输入格式】</h3>
+<p class="para">第一行两个整数 <code>m</code>、<code>S</code>。</p>
+<p class="para">接下来 <code>m</code> 行，第 <code>i</code> 行先是一个整数 <code>k_i</code>，随后是 <code>k_i</code> 个整数，表示第 <code>i</code> 天各项目的热度值。</p>
+<h3 class="sec">【输出格式】</h3>
+<p class="para">一行一个整数，表示方案数对 <code>998244353</code> 取模的结果。</p>
+<h3 class="sec">【输入输出样例 1】</h3>
+<pre>3 6
+2 1 2
+2 2 3
+1 3</pre>
+<pre>1</pre>
+<h3 class="sec">【样例 1 说明】</h3>
+<p class="para">第 3 天只能投热度 3。要凑出 6，前两天必须凑出 3，只有 <code>(1,2)</code> 一种，且满足相邻两天热度不同。<code>(1,3)</code> 与第 3 天的 3 冲突，不合法。</p>
+<h3 class="sec">【输入输出样例 2】</h3>
+<pre>2 4
+2 1 3
+2 1 3</pre>
+<pre>2</pre>
+<h3 class="sec">【样例 2 说明】</h3>
+<p class="para"><code>(第1天, 第2天)</code> 取 <code>(1,3)</code> 或 <code>(3,1)</code> 都能凑出 4，且相邻两天热度不同，共 2 种。</p>
+<h3 class="sec">【输入输出样例 3】</h3>
+<pre>1 5
+3 5 5 2</pre>
+<pre>2</pre>
+<h3 class="sec">【样例 3 说明】</h3>
+<p class="para">只有 1 天，没有"相邻"限制。热度 5 的项目有 2 个，选哪个都不同，故 2 种。</p>
+<h3 class="sec">【数据范围与子任务】</h3>
+<p class="para">对于 100% 的数据，1 ≤ m ≤ 100，1 ≤ S ≤ 5000，1 ≤ k_i ≤ 100，1 ≤ v_{i,j} ≤ 100。</p>
+<div class="tblwrap"><table><thead><tr><th>子任务编号</th><th>分数</th><th>数据规模与特殊性质</th></tr></thead><tbody><tr><td>1—3</td><td>15</td><td><code>m ≤ 8</code>，<code>S ≤ 50</code></td></tr>
+<tr><td>4—7</td><td>20</td><td><code>k_i = 1</code>（每天只有唯一选择）</td></tr>
+<tr><td>8—11</td><td>20</td><td>同一天内各项目的热度值两两不同</td></tr>
+<tr><td>12—15</td><td>15</td><td><code>m ≤ 20</code>，<code>S ≤ 500</code></td></tr>
+<tr><td>16—20</td><td>30</td><td>无特殊限制</td></tr></tbody></table></div>
+<div class="pgno">set2 · T4 总选打投</div>
+</div></body></html>

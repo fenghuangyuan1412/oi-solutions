@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T3 应援灯牌 · 恰好用完 LED 拼最小数分步演示</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:20px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:16px 18px; margin-bottom:16px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 14px; font-size:14px; cursor:pointer; margin-right:8px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  input.num { background:#0d1020; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+              padding:8px 10px; font:14px/1.4 Consolas,monospace; width:110px; }
+  .topbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+  .prog { color:var(--dim); font-size:13px; margin-left:auto; }
+  .err { color:var(--warn); font-size:13px; }
+  .seg { position:relative; width:28px; height:48px; display:inline-block; }
+  .seg i { position:absolute; background:#2a3157; border-radius:2px; }
+  .seg i.on { background:var(--acc); box-shadow:0 0 6px rgba(94,234,212,.45); }
+  .seg i.a { left:5px; top:0;    width:18px; height:4px; }
+  .seg i.g { left:5px; top:22px; width:18px; height:4px; }
+  .seg i.d { left:5px; top:44px; width:18px; height:4px; }
+  .seg i.f { left:1px; top:5px;  width:4px; height:16px; }
+  .seg i.b { left:23px;top:5px;  width:4px; height:16px; }
+  .seg i.e { left:1px; top:27px; width:4px; height:16px; }
+  .seg i.c { left:23px;top:27px; width:4px; height:16px; }
+  .refrow { display:flex; flex-wrap:wrap; gap:9px; }
+  .ref { text-align:center; background:#141830; border:1px solid #2c3560; border-radius:8px; padding:8px 4px 6px; width:58px; }
+  .ref.hot { border-color:var(--acc); background:#12303a; }
+  .ref .lab { font:11px Consolas,monospace; color:var(--dim); margin-top:2px; }
+  .ref .lab b { color:var(--acc); font-size:13px; }
+  .ansbox { display:flex; flex-wrap:wrap; gap:6px; min-height:60px; align-items:flex-start; }
+  .ansbox .slot { width:38px; text-align:center; }
+  .ansbox .slot .p { font:10px Consolas,monospace; color:var(--dim); margin-bottom:2px; }
+  .ansbox .slot .seg { transform:scale(1.1); transform-origin:top center; margin-left:3px; }
+  .ansbox .slot.empty .seg { opacity:.15; }
+  .ansbox .slot.just .seg i.on { background:var(--ok); }
+  table.vars, table.trials { border-collapse:collapse; width:100%; font:13px Consolas,monospace; }
+  table.vars td, table.vars th, table.trials td, table.trials th { border:1px solid #2c3560; padding:5px 8px; text-align:left; }
+  table.vars th, table.trials th { color:var(--dim); font-weight:400; background:#141830; }
+  table.vars td.hot { color:var(--acc); font-weight:700; }
+  table.trials tr.acc { background:#123a2a; }
+  table.trials tr.acc td { color:var(--ok); }
+  table.trials tr.rej td.j { color:var(--warn); }
+  .bar { height:22px; background:#0d1020; border-radius:6px; position:relative; overflow:hidden; margin-top:10px; }
+  .bar .used { position:absolute; left:0; top:0; bottom:0; background:linear-gradient(90deg,var(--acc),#0891b2); transition:width .25s ease; }
+  .bar .txt { position:absolute; left:8px; top:0; line-height:22px; font:12px Consolas,monospace; color:#e8ecff; }
+  .axis { position:relative; height:52px; margin-top:14px; }
+  .axis .band { position:absolute; top:20px; height:14px; background:#123a44; border:1px solid #1f6f7a; border-radius:4px; }
+  .axis .tick { position:absolute; top:38px; font:10px Consolas,monospace; color:var(--dim); transform:translateX(-50%); }
+  .axis .mark { position:absolute; top:8px; width:2px; height:38px; background:var(--warn); }
+  .axis .markv { position:absolute; top:-4px; font:11px Consolas,monospace; color:var(--warn); transform:translateX(-50%); }
+  .note { color:var(--dim); font-size:14px; min-height:88px; }
+  .note b { color:var(--ink); }
+  pre.code { margin:0; font:13px/1.65 Consolas,monospace; color:#c3cbee; overflow-x:auto; }
+  pre.code .ln { display:block; padding:0 8px; border-radius:4px; white-space:pre; color:#7d86ab; }
+  pre.code .ln.run { background:#173a4a; color:var(--acc); }
+  .row { display:flex; gap:16px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:300px; }
+</style>
+</head>
+<body>
+<h1>T3 应援灯牌 / light —— 恰好用完 LED 拼出最小正整数</h1>
+<div class="sub">CSP-J 第二轮模拟卷第 2 套 · 对齐 CSP-J 2024 T3 小木棍 P11229 · 先把位数压到最少，再逐位取"后面还填得满"的最小数字</div>
+
+<div class="topbar">
+  <span style="color:var(--dim)">LED 数 n =</span>
+  <input class="num" type="text" id="src" value="8">
+  <button id="load">载入 / 重新生成</button>
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到末尾</button>
+  <span class="err" id="err"></span>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="card"><h2>① 七段数码管参考表（亮起的段数 = 这个数字要烧掉的 LED 颗数）</h2>
+  <div class="refrow" id="ref"></div>
+</div>
+
+<div class="row">
+  <div class="card"><h2>② 答案（淡色格 = 还没定下来的位）</h2>
+    <div class="ansbox" id="ans"></div>
+    <div class="bar"><div class="used" id="used"></div><div class="txt" id="usedtxt"></div></div>
+  </div>
+  <div class="card" style="flex:1.25"><h2>讲解</h2>
+    <div class="note" id="note"></div>
+  </div>
+</div>
+
+<div class="card"><h2>③ 当前这一位的试数字过程（判据：剩下的颗数必须落进 [2×left, 7×left]）</h2>
+  <table class="trials" id="trials"></table>
+  <div class="axis" id="axis"></div>
+</div>
+
+<div class="row">
+  <div class="card"><h2>④ 变量状态表</h2>
+    <table class="vars" id="vars"></table>
+  </div>
+  <div class="card" style="flex:1.2"><h2>⑤ 代码行高亮（solution.cpp 核心）</h2>
+    <pre class="code" id="code"></pre>
+  </div>
+</div>
+
+<script>
+const COST = [6, 2, 5, 5, 4, 5, 6, 3, 7, 6];
+const SEG = ['abcdef', 'bc', 'abdeg', 'abcdg', 'bcfg', 'acdfg', 'acdefg', 'abc', 'abcdefg', 'abcfgd'];
+const CODE = [
+  'int cost[10] = {6,2,5,5,4,5,6,3,7,6};',
+  'int L = (n + 6) / 7;                  // ceil(n/7)：一位最多 7 颗',
+  'if (2 * L > n) { puts("-1"); return 0; }   // 一位最少 2 颗',
+  'int rem = n;',
+  'for (int pos = 0; pos < L; pos++) {',
+  '    int left = L - pos - 1;           // 这一位之后还欠几格',
+  "    for (int d = (pos == 0 ? 1 : 0); d <= 9; d++) {   // 首位不许是 0",
+  '        int r2 = rem - cost[d];',
+  '        if (r2 >= 2 * left && r2 <= 7 * left) {   // 后面填得满吗？',
+  "            putchar('0' + d);",
+  '            rem = r2;',
+  '            break;                    // 取最小可行值，立刻走',
+  '        }',
+  '    }',
+  '}'
+];
+let n = 0, L = 0, steps = [], t = 0, timer = null;
+
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+function segEl(digit, forceOff) {
+  const s = el('span', 'seg');
+  const on = forceOff ? '' : SEG[digit];
+  'abcdefg'.split('').forEach(k => s.appendChild(el('i', k + (on.indexOf(k) >= 0 ? ' on' : ''))));
+  return s;
+}
+function snap(picks, rem) { return { picks: picks.slice(), rem: rem, used: n - rem }; }
+
+function build() {
+  steps = [];
+  L = Math.floor((n + 6) / 7);
+  if (2 * L > n) {
+    steps.push({ kind:'impossible', L:L, lo:2 * L });
+    steps.push({ kind:'done', impossible:true, ans:'-1', picks:[], rem:n, used:0 });
+    return;
+  }
+  steps.push({ kind:'init', L:L, lo:2 * L, hi:7 * L, picks:[], rem:n, used:0 });
+  let rem = n;
+  const picks = [];
+  for (let pos = 0; pos < L; pos++) {
+    const left = L - pos - 1;
+    const tried = [];
+    for (let d = (pos === 0 ? 1 : 0); d <= 9; d++) {
+      const r2 = rem - COST[d];
+      const ok = (r2 >= 2 * left && r2 <= 7 * left);
+      const why = ok ? '选中，输出 ' + d : (r2 < 2 * left ? 'r2 太小：后面 left 格至少还要 2×left 颗' : 'r2 太大：后面 left 格最多只能烧 7×left 颗');
+      tried.push({ d:d, c:COST[d], r2:r2, ok:ok, why:why });
+      steps.push({ kind:'trial', pos:pos, left:left, rem:rem, tried:tried.slice(),
+                   picks:picks.slice(), used:n - rem });
+      if (ok) {
+        picks.push(d);
+        rem = r2;
+        steps.push({ kind:'pick', pos:pos, left:left, d:d, tried:tried.slice(),
+                     remBefore:rem + COST[d], rem:rem, picks:picks.slice(), used:n - rem });
+        break;
+      }
+    }
+  }
+  steps.push({ kind:'done', ans:picks.join(''), picks:picks.slice(), rem:rem, used:n - rem });
+}
+
+function render() {
+  const st = steps[t];
+  const picks = st.picks || [];
+
+  // ① 参考表
+  const hot = (st.kind === 'trial' || st.kind === 'pick') ? st.tried[st.tried.length - 1].d : -1;
+  const ref = document.getElementById('ref'); ref.innerHTML = '';
+  for (let d = 0; d <= 9; d++) {
+    const box = el('div', 'ref' + (d === hot ? ' hot' : ''));
+    box.appendChild(segEl(d));
+    const lab = el('div', 'lab');
+    lab.appendChild(document.createTextNode((d === hot ? '▶ ' : '') + d + ' = '));
+    lab.appendChild(el('b', null, COST[d]));
+    box.appendChild(lab);
+    ref.appendChild(box);
+  }
+
+  // ② 答案槽
+  const ab = document.getElementById('ans'); ab.innerHTML = '';
+  for (let i = 0; i < Math.max(L, 1); i++) {
+    const set = i < picks.length;
+    const just = set && st.kind === 'pick' && i === st.pos;
+    const slot = el('div', 'slot' + (set ? '' : ' empty') + (just ? ' just' : ''));
+    slot.appendChild(el('div', 'p', '第' + (i + 1) + '位'));
+    slot.appendChild(segEl(set ? picks[i] : 8, !set));
+    ab.appendChild(slot);
+  }
+  document.getElementById('used').style.width = (n > 0 ? st.used / n * 100 : 0) + '%';
+  document.getElementById('usedtxt').textContent = '已安排 ' + st.used + ' / ' + n + ' 颗，剩 ' + st.rem + ' 颗';
+
+  // ③ 试数字表
+  const tb = document.getElementById('trials'); tb.innerHTML = '';
+  const head = el('tr');
+  ['试的数字 d', 'cost[d]', 'r2 = rem − cost[d]', '2×left', '7×left', '判定'].forEach(x => head.appendChild(el('th', null, x)));
+  tb.appendChild(head);
+  const inTrial = (st.kind === 'trial' || st.kind === 'pick');
+  const left = inTrial ? st.left : 0;
+  if (inTrial) {
+    st.tried.forEach(function(row) {
+      const trEl = el('tr', row.ok ? 'acc' : 'rej');
+      trEl.appendChild(el('td', null, (row.d === hot ? '▶ ' : '') + row.d));
+      trEl.appendChild(el('td', null, row.c));
+      trEl.appendChild(el('td', null, st.rem + ' − ' + row.c + ' = ' + row.r2));
+      trEl.appendChild(el('td', null, 2 * left));
+      trEl.appendChild(el('td', null, 7 * left));
+      trEl.appendChild(el('td', 'j', row.why));
+      tb.appendChild(trEl);
+    });
+  } else {
+    const trEl = el('tr');
+    const td = el('td', null, st.kind === 'impossible' ? '无解，不进入逐位构造' : '（这一步不在"试数字"阶段）');
+    td.colSpan = 6;
+    trEl.appendChild(td); tb.appendChild(trEl);
+  }
+
+  // 数轴：可行区间与 r2 的位置
+  const ax = document.getElementById('axis'); ax.innerHTML = '';
+  if (inTrial) {
+    const r2 = st.tried[st.tried.length - 1].r2;
+    const hi = Math.max(7 * left, r2, 1) * 1.15 + 1;
+    const band = el('div', 'band');
+    band.style.left = (2 * left / hi * 100) + '%';
+    band.style.width = (5 * left / hi * 100) + '%';
+    ax.appendChild(band);
+    const mk = function(txt, v, cls) { const e = el('div', cls, txt); e.style.left = (Math.max(0, v) / hi * 100) + '%'; ax.appendChild(e); };
+    mk('0', 0, 'tick');
+    mk('2×left=' + (2 * left), 2 * left, 'tick');
+    mk('7×left=' + (7 * left), 7 * left, 'tick');
+    mk('', r2, 'mark');
+    mk('r2=' + r2, r2, 'markv');
+  }
+
+  // ④ 变量表
+  const vt = document.getElementById('vars'); vt.innerHTML = '';
+  const h2 = el('tr'); ['变量', '当前值', '含义'].forEach(x => h2.appendChild(el('th', null, x)));
+  vt.appendChild(h2);
+  const rows = [
+    ['n', n, '一共有几颗 LED', false],
+    ['L', L, '答案位数 = ⌈n/7⌉ = (n+6)/7', true],
+    ['2*L', 2 * L, 'L 位数最少要烧的颗数（判无解用）', st.kind === 'impossible'],
+    ['pos', inTrial ? st.pos : (st.kind === 'done' ? L : 0), '正在定第几位（从 0 数）', false],
+    ['left', inTrial ? st.left : Math.max(0, L - 1), '这一位之后还欠几格', true],
+    ['rem', st.rem, '还剩几颗没安排', true],
+    ['d', inTrial ? st.tried[st.tried.length - 1].d : '—', '这一位正在试的数字', false],
+    ['r2', inTrial ? st.tried[st.tried.length - 1].r2 : '—', '若选 d，之后剩下的颗数', false],
+    ['前缀', picks.length ? picks.join('') : '（空）', '答案串目前的样子', true]
+  ];
+  rows.forEach(function(r) {
+    const trEl = el('tr');
+    trEl.appendChild(el('td', null, r[0]));
+    trEl.appendChild(el('td', r[3] ? 'hot' : null, r[1]));
+    trEl.appendChild(el('td', null, r[2]));
+    vt.appendChild(trEl);
+  });
+
+  // ⑤ 代码
+  const cp = document.getElementById('code'); cp.innerHTML = '';
+  let run = 5;
+  if (st.kind === 'impossible') run = 2;
+  else if (st.kind === 'init') run = 3;
+  else if (st.kind === 'trial') run = (st.tried[st.tried.length - 1].ok ? 8 : 7);
+  else if (st.kind === 'pick') run = 9;
+  else if (st.kind === 'done') run = st.impossible ? 2 : 10;
+  CODE.forEach(function(line, idx) { cp.appendChild(el('span', 'ln' + (idx === run ? ' run' : ''), (idx + 1) + '  ' + line)); });
+
+  // 讲解
+  const note = document.getElementById('note'), prog = document.getElementById('prog');
+  if (st.kind === 'impossible')
+    note.innerHTML = '一位数字<b>最少</b>也要烧 2 颗（数字 <b>1</b>）。位数先定为 <b>L = ⌈' + n + '/7⌉ = ' + st.L + '</b>，' +
+      st.L + ' 位最少要 <b>2 × ' + st.L + ' = ' + st.lo + '</b> 颗，而手上只有 <b>' + n + '</b> 颗——<b>连最少都不够</b>，' +
+      '怎么拼都会剩下一截，输出 <b>-1</b>。';
+  else if (st.kind === 'init')
+    note.innerHTML = '一位最多烧 7 颗（数字 <b>8</b>），所以 ' + n + ' 颗至少要 <b>L = ⌈' + n + '/7⌉ = (' + n + '+6)/7 = ' + L + '</b> 位。' +
+      '没有前导零时<b>位数越少数越小</b>，所以答案就定 <b>' + L + ' 位</b>。' +
+      L + ' 位能烧的颗数正好是区间 <b>[' + st.lo + ', ' + st.hi + ']</b>，' + n + ' 落在里面 → 有解，开始逐位定数字。';
+  else if (st.kind === 'trial') {
+    const r = st.tried[st.tried.length - 1];
+    note.innerHTML = '第 <b>' + (st.pos + 1) + '</b> 位：后面还欠 <b>left = ' + st.left + '</b> 格，' +
+      '所以选完这一位之后，剩下的颗数必须落在 <b>[' + (2 * st.left) + ', ' + (7 * st.left) + ']</b>。' +
+      '当前 <b>rem = ' + st.rem + '</b>。试数字 <b>' + r.d + '</b>（要 ' + r.c + ' 颗）→ <b>r2 = ' + st.rem + ' − ' + r.c + ' = ' + r.r2 + '</b>。' +
+      (r.ok ? '<b>' + r.r2 + '</b> 在区间内 → <b>可行</b>，就它了。' : '<b>' + r.r2 + '</b> 不在区间内 → <b>淘汰</b>，接着试 ' + (r.d + 1) + '。');
+  }
+  else if (st.kind === 'pick')
+    note.innerHTML = '第 <b>' + (st.pos + 1) + '</b> 位选中 <b>' + st.d + '</b> —— 这是从' +
+      (st.pos === 0 ? ' <b>1</b>（首位不能是 0）' : ' <b>0</b>') + '开始试的<b>第一个</b>可行数字，输出它，' +
+      '<b>rem</b> 从 ' + st.remBefore + ' 变成 <b>' + st.rem + '</b>。' +
+      '因为判据是<b>精确</b>的（落进区间就一定填得满），后面绝不会走进死路，<b>不需要回头</b>。';
+  else
+    note.innerHTML = st.impossible ? '无解，输出 <b>-1</b>。' :
+      '<b>' + L + '</b> 位全部定完，答案 = <b>' + st.ans + '</b>。' +
+      '核对颗数：' + st.picks.map(function(d) { return COST[d]; }).join(' + ') + ' = <b>' + st.used + '</b> = n = ' + n + '，一颗不剩；' +
+      '结束时 <b>rem = ' + st.rem + '</b>。';
+  prog.textContent = '步骤 ' + (t + 1) + ' / ' + steps.length;
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === steps.length - 1;
+}
+
+function load() {
+  const err = document.getElementById('err'); err.textContent = '';
+  const raw = String(document.getElementById('src').value).trim();
+  let v = parseInt(raw, 10);
+  if (isNaN(v)) { err.textContent = '请输入一个整数 n'; return; }
+  if (v < 1) { err.textContent = 'n 已夹到最小值 1'; v = 1; }
+  if (v > 200) { err.textContent = '演示上限 n ≤ 200（题面允许 10^5，位数太多画不下），已夹到 200'; v = 200; }
+  n = v;
+  if (timer) { clearInterval(timer); timer = null; document.getElementById('play').textContent = '▶ 自动播放'; }
+  t = 0; build(); render();
+}
+
+document.getElementById('next').onclick = () => { if (t < steps.length - 1) { t++; render(); } };
+document.getElementById('prev').onclick = () => { if (t > 0) { t--; render(); } };
+document.getElementById('load').onclick = load;
+document.getElementById('jump').onclick = () => { t = steps.length - 1; render(); };
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+  e.target.textContent = '⏸ 暂停';
+  timer = setInterval(() => {
+    if (t >= steps.length - 1) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+    t++; render();
+  }, 420);
+};
+
+load();
+</script>
+</body>
+</html>

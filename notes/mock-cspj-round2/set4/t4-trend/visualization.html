@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T4 谷价走势 · 带窗口的上升子序列 DP</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --hard:#fbbf24; --band:#38bdf8; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:16px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 10px; }
+  .card h2 em { font-style:normal; text-transform:none; letter-spacing:0; color:#6b7396; font-size:12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:7px 13px; font-size:14px; cursor:pointer; margin:0 6px 6px 0; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.pre { background:#22304f; font-size:13px; }
+  input[type=number] { background:#0d1020; color:var(--ink); border:1px solid #3d4778;
+                       border-radius:8px; padding:7px 9px; font:14px/1.4 Consolas,monospace; width:70px; }
+  input[type=text] { background:#0d1020; color:var(--ink); border:1px solid #3d4778;
+                     border-radius:8px; padding:7px 9px; font:14px/1.4 Consolas,monospace; width:340px; }
+  .topbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .prog { color:var(--dim); font-size:13px; margin-left:auto; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:320px; }
+  pre.code { margin:0; background:#0d1020; border:1px solid #262c4a; border-radius:10px;
+             padding:10px 12px; font:13px/1.7 Consolas,monospace; overflow:auto; }
+  pre.code .ln { display:block; padding:0 6px; border-radius:5px; color:#c3cbee; white-space:pre; }
+  pre.code .ln.hot { background:#123c3a; color:var(--acc); font-weight:700; }
+  table.vars { width:100%; border-collapse:collapse; font:13px Consolas,monospace; }
+  table.vars td { padding:4px 6px; border-bottom:1px solid #262c4a; }
+  table.vars td.k { color:var(--dim); width:38%; }
+  table.vars td.v { color:var(--ink); word-break:break-all; }
+  table.vars td.v.hot { color:var(--acc); font-weight:700; }
+  table.vars td.v.ok { color:var(--ok); font-weight:700; }
+  table.vars td.v.bad { color:var(--warn); font-weight:700; }
+  table.vars td.v.warn2 { color:var(--hard); }
+  svg { display:block; width:100%; height:auto; }
+  .note { color:var(--dim); font-size:14px; min-height:64px; }
+  .note b { color:var(--ink); }
+  .note .ok { color:var(--ok); } .note .bad { color:var(--warn); } .note .am { color:var(--hard); }
+  .ans { font:20px/1.4 Consolas,monospace; }
+  table.dp { border-collapse:collapse; font:11px Consolas,monospace; width:100%; }
+  table.dp th, table.dp td { border:1px solid #262c4a; padding:3px 2px; text-align:center; min-width:34px; }
+  table.dp th { color:var(--dim); background:#141932; }
+  table.dp td.hot { background:#123c3a; color:var(--acc); font-weight:700; }
+  table.dp td.hj { background:#3b2f14; color:var(--hard); font-weight:700; }
+  table.dp td.wait { color:#4a5170; }
+  table.dp .lab { color:var(--dim); text-align:left; padding-left:6px; min-width:64px; background:#141932; }
+  .seq { font:12px Consolas,monospace; color:var(--dim); margin-top:8px; word-break:break-all; white-space:pre-wrap; }
+  .legend { font-size:12px; color:var(--dim); margin-top:6px; }
+  .legend i { display:inline-block; width:22px; height:0; border-top:3px solid; vertical-align:middle; margin:0 4px 0 12px; }
+</style>
+</head>
+<body>
+<h1>T4 谷价走势 / trend · 一天一天把 f / g 长出来</h1>
+<div class="sub">带窗口的最长严格上升子序列 + 方案数。上图是<b>价格折线</b>：蓝色带子是当前天 i 能回头看的那 d 天（窗口），带子里<b>价格更低的画绿色箭头</b>（合法前驱），<b>价格不小于它的画红叉</b>（不能接）。下图是 f / g 两排条形随扫描生长</div>
+
+<div class="topbar">
+  n <input type="number" id="inn" value="6" min="1" max="40" step="1">
+  d <input type="number" id="ind" value="2" min="1" max="5000" step="1">
+  价格 <input type="text" id="inp" value="3 1 2 1 3 4">
+  <button id="load">载入</button>
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到末尾</button>
+  <span class="prog" id="prog"></span>
+</div>
+<div class="topbar">
+  <span style="color:var(--dim);font-size:13px;margin-right:6px">样例与极端预设：</span>
+  <button class="pre" data-n="6" data-d="2" data-p="3 1 2 1 3 4">样例1（答案 4 1）</button>
+  <button class="pre" data-n="5" data-d="5" data-p="1 1 2 2 3">样例2 相等价格（3 4）</button>
+  <button class="pre" data-n="5" data-d="1" data-p="1 5 2 3 4">样例3 d=1 必须连续（3 1）</button>
+  <button class="pre" data-n="4" data-d="3" data-p="2 2 2 2">全相等（1 4）</button>
+  <button class="pre" data-n="6" data-d="6" data-p="1 2 1 2 1 2">宽窗口多方案（2 6）</button>
+  <button class="pre" data-n="5" data-d="2" data-p="9 7 5 3 1">一路下跌（1 5）</button>
+  <button class="pre" data-n="8" data-d="3" data-p="5 1 3 2 6 4 8 7">锯齿多方案（4 8）</button>
+  <button class="pre" data-n="10" data-d="4" data-p="1 9 2 8 3 7 4 6 5 10">大起大落（6 2）</button>
+</div>
+
+<div class="card"><h2>① 价格折线 · 窗口带 · 合法前驱 <em>纵轴用"价格名次"：相等的价格画在同一高度，方便看出"相等不能接"</em></h2>
+  <svg id="chart" viewBox="0 0 1120 320"></svg>
+  <div class="legend">
+    <i style="border-color:var(--dim)"></i>原始走势
+    <i style="border-color:var(--acc)"></i>合法前驱 j→i
+    <i style="border-color:var(--warn)"></i>价格不升，不能接
+    <i style="border-color:var(--ok)"></i>最终一条最优链
+  </div>
+  <div class="seq" id="seq"></div>
+</div>
+
+<div class="card"><h2>② f[i]（青色）与 g[i]（琥珀色，对数高度）条形图 <em>横坐标与上图逐列对齐</em></h2>
+  <svg id="bars" viewBox="0 0 1120 190"></svg>
+</div>
+
+<div class="row">
+  <div class="card"><h2>③ solution.cpp 关键代码（当前执行行高亮）</h2>
+    <pre class="code" id="code"></pre>
+  </div>
+  <div class="card"><h2>④ 变量状态表</h2>
+    <table class="vars" id="vars"></table>
+  </div>
+</div>
+
+<div class="card"><h2>⑤ DP 表（还没算的格子是灰的）</h2>
+  <div style="overflow-x:auto"><table class="dp" id="dp"></table></div>
+</div>
+
+<div class="row">
+  <div class="card" style="flex:1.7"><h2>⑥ 讲解</h2><div class="note" id="note"></div></div>
+  <div class="card"><h2>⑦ 输出</h2><div class="ans" id="ans"></div></div>
+</div>
+
+<script>
+const MOD = 998244353;
+const CODE = [
+  ['best = 0;  cnt = 0;', 0],
+  ['for (int i = 1; i <= n; i++) {', 1],
+  ['    f[i] = 1;  g[i] = 1;              // 只选自己这一天', 2],
+  ['    for (int j = max(1, i - d); j < i; j++) {', 3],
+  ['        if (p[j] >= p[i]) continue;   // 必须严格上升', 4],
+  ['        if (f[j] + 1 > f[i]) { f[i] = f[j] + 1; g[i] = g[j]; }      // 更长 ⇒ 覆盖', 5],
+  ['        else if (f[j] + 1 == f[i]) g[i] = (g[i] + g[j]) % MOD;      // 一样长 ⇒ 累加', 6],
+  ['    }', 7],
+  ['    if (f[i] > best) { best = f[i]; cnt = g[i]; }', 8],
+  ['    else if (f[i] == best) cnt = (cnt + g[i]) % MOD;', 9],
+  ['}', 10],
+  ['printf("%d %lld\\n", best, cnt % MOD);', 11],
+];
+let n = 6, d = 2, p = [0,3,1,2,1,3,4], steps = [], FF = [], GG = [], chain = [], t = 0, timer = null;
+
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+function sv(tag, at, txt) { const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const k in at) e.setAttribute(k, at[k]); if (txt != null) e.textContent = txt; return e; }
+function fmt(x) { return String(x); }
+
+/* ---------- 几何 ---------- */
+const CW = 1120, CH = 320, PL = 58, PR = 26, PT = 26, PB = 52;
+const BH = 190, BPT = 24, BBT = 34;
+let step = 0, uniq = [];
+function X(i) { return n === 1 ? PL + (CW - PL - PR) / 2 : PL + (i - 1) * step; }
+function Y(v) { const k = Math.max(0, uniq.indexOf(v)), U = uniq.length;
+  return PT + (CH - PT - PB) * (U <= 1 ? 0.5 : 1 - k / (U - 1)); }
+function BX(i) { return X(i); }
+function geom() { step = n > 1 ? (CW - PL - PR) / (n - 1) : 0; uniq = [...new Set(p.slice(1))].sort((a, b) => a - b); }
+
+/* ---------- 生成步骤（和 solution.cpp 一模一样的逻辑） ---------- */
+function build() {
+  steps = []; chain = [];
+  const f = new Array(n + 1).fill(0), g = new Array(n + 1).fill(0), pre = new Array(n + 1).fill(0);
+  let best = 0, cnt = 0, bestEnd = 0;
+  steps.push({ kind:'init', line:[0], f:f.slice(), g:g.slice(), best:0, cnt:0, legal:[] });
+  for (let i = 1; i <= n; i++) {
+    f[i] = 1; g[i] = 1; pre[i] = 0;
+    const lo = Math.max(1, i - d), hi = i - 1;
+    steps.push({ kind:'win', line:[1,2], i, lo, hi, f:f.slice(), g:g.slice(), best, cnt, legal:[] });
+    const legal = [];
+    for (let j = lo; j <= hi; j++) {
+      let act, line;
+      if (p[j] >= p[i]) { act = 'skip'; line = [3,4]; }
+      else if (f[j] + 1 > f[i]) { act = 'over'; line = [3,5]; }
+      else if (f[j] + 1 === f[i]) { act = 'add'; line = [3,6]; }
+      else { act = 'shorter'; line = [3,5]; }
+      const bf = f[i], bg = g[i];
+      if (p[j] < p[i]) legal.push(j);
+      if (act === 'over') { f[i] = f[j] + 1; g[i] = g[j]; pre[i] = j; }
+      else if (act === 'add') { g[i] = (g[i] + g[j]) % MOD; }
+      steps.push({ kind:'try', line, i, j, lo, hi, act, bf, bg, af:f[i], ag:g[i],
+                   f:f.slice(), g:g.slice(), best, cnt, legal:legal.slice() });
+    }
+    let bAct, line, b0 = best, c0 = cnt;
+    if (f[i] > best) { best = f[i]; cnt = g[i]; bestEnd = i; bAct = 'newbest'; line = [1,8]; }
+    else if (f[i] === best) { cnt = (cnt + g[i]) % MOD; bAct = 'eq'; line = [1,9]; }
+    else { bAct = 'less'; line = [1]; }
+    steps.push({ kind:'done', line, i, lo, hi, bAct, b0, c0, f:f.slice(), g:g.slice(), best, cnt, legal:legal.slice(), pre:pre.slice() });
+  }
+  let c = bestEnd;
+  while (c > 0) { chain.unshift(c); c = pre[c]; }
+  FF = f.slice(); GG = g.slice();
+  steps.push({ kind:'ans', line:[11], f:f.slice(), g:g.slice(), best, cnt, chain:chain.slice(), i:bestEnd, lo:Math.max(1,bestEnd-d), hi:bestEnd-1, legal:[], pre:pre.slice() });
+}
+
+/* ---------- 上图：价格折线 + 窗口 + 箭头 ---------- */
+function marker(id, color) {
+  const m = sv('marker', { id, viewBox:'0 0 10 10', refX:9, refY:5, markerWidth:6, markerHeight:6, orient:'auto-start-reverse' });
+  m.appendChild(sv('path', { d:'M0,0 L10,5 L0,10 z', fill:color }));
+  return m;
+}
+function arrow(x1, y1, x2, y2, color, width, dash, head) {
+  const mx = (x1 + x2) / 2, my = Math.min(y1, y2) - 18 - Math.min(26, (x2 - x1) * 0.06);
+  return sv('path', { d:'M' + x1 + ',' + y1 + ' Q' + mx + ',' + my + ' ' + x2 + ',' + y2,
+                      fill:'none', stroke:color, 'stroke-width':width, 'stroke-dasharray':dash || '',
+                      'marker-end':head ? 'url(#' + head + ')' : '' });
+}
+function renderChart(st) {
+  const box = document.getElementById('chart'); box.innerHTML = '';
+  const defs = sv('defs');
+  defs.appendChild(marker('ok', '#5eead4')); defs.appendChild(marker('no', '#f87171'));
+  defs.appendChild(marker('fine', '#64748b')); defs.appendChild(marker('fin', '#86efac'));
+  box.appendChild(defs);
+  // 名次网格线
+  uniq.forEach((v, k) => {
+    const y = Y(v);
+    box.appendChild(sv('line', { x1:PL - 8, y1:y, x2:CW - PR, y2:y, stroke:'#262c4a', 'stroke-dasharray':'2 5' }));
+    if (uniq.length <= 12) box.appendChild(sv('text', { x:PL - 14, y:y + 4, fill:'#6b7396', 'font-size':11, 'text-anchor':'end' }, fmt(v)));
+  });
+  // 窗口带
+  if (st.kind !== 'init' && st.hi >= st.lo) {
+    const x1 = X(st.lo) - (n > 1 ? step * 0.46 : 20), x2 = X(st.i) - (n > 1 ? step * 0.46 : 20);
+    box.appendChild(sv('rect', { x:Math.min(x1, x2), y:PT - 10, width:Math.abs(x2 - x1), height:CH - PT - PB + 20,
+                                 fill:'rgba(56,189,248,.10)', stroke:'#38bdf8', 'stroke-dasharray':'4 4', 'stroke-width':1 }));
+    box.appendChild(sv('text', { x:(x1 + x2) / 2, y:CH - PB + 34, fill:'#38bdf8', 'font-size':12, 'text-anchor':'middle' },
+                       '窗口 d = ' + d + '：只有这 ' + (st.hi - st.lo + 1) + ' 天能当第 ' + st.i + ' 天的前驱'));
+  }
+  // 原始折线
+  let dd = '';
+  for (let i = 1; i <= n; i++) dd += (i === 1 ? 'M' : ' L') + X(i) + ',' + Y(p[i]);
+  box.appendChild(sv('path', { d:dd, fill:'none', stroke:'#4a5170', 'stroke-width':1.5 }));
+  // 箭头
+  const cur = st.kind === 'ans' ? null : st.i;
+  if (st.kind === 'try') {
+    const ok = st.act !== 'skip';
+    const col = ok ? (st.act === 'shorter' ? '#64748b' : '#5eead4') : '#f87171';
+    box.appendChild(arrow(X(st.j), Y(p[st.j]), X(st.i), Y(p[st.i]), col, 2.6, '', ok ? 'ok' : 'no'));
+    if (!ok) {
+      const mx = (X(st.j) + X(st.i)) / 2, my = (Y(p[st.j]) + Y(p[st.i])) / 2 - 12;
+      box.appendChild(sv('text', { x:mx, y:my, fill:'#f87171', 'font-size':16, 'text-anchor':'middle' }, '×'));
+    }
+  }
+  if (st.kind === 'done' || st.kind === 'win') {
+    (st.legal || []).forEach(j => box.appendChild(arrow(X(j), Y(p[j]), X(st.i), Y(p[st.i]), '#3f7f76', 1.6, '3 3', 'ok')));
+  }
+  if (st.kind === 'ans') {
+    for (let k = 0; k + 1 < st.chain.length; k++) {
+      const j = st.chain[k], i = st.chain[k + 1];
+      box.appendChild(arrow(X(j), Y(p[j]), X(i), Y(p[i]), '#86efac', 3.4, '', 'fin'));
+    }
+  }
+  // 点 + 下标
+  for (let i = 1; i <= n; i++) {
+    const isI = i === cur, isJ = (st.kind === 'try' && i === st.j);
+    const inChain = st.kind === 'ans' && st.chain.includes(i);
+    box.appendChild(sv('circle', { cx:X(i), cy:Y(p[i]), r:isI || inChain ? 7 : 4.5,
+                                   fill:isI ? '#5eead4' : inChain ? '#86efac' : '#1a1f35',
+                                   stroke:isJ ? '#fbbf24' : (isI || inChain ? '#e8ecff' : '#8b93b5'),
+                                   'stroke-width':isJ || isI || inChain ? 2.5 : 1.4,
+                                   'stroke-dasharray':isJ ? '3 2' : '' }));
+    box.appendChild(sv('text', { x:X(i), y:CH - PB + 16, fill:isI ? '#5eead4' : '#8b93b5',
+                                 'font-size':isI ? 13 : 11, 'text-anchor':'middle', 'font-weight':isI ? 700 : 400 }, fmt(i)));
+    if (n <= 16 || isI || isJ || inChain)
+      box.appendChild(sv('text', { x:X(i), y:Y(p[i]) - 12, fill:isI ? '#e8ecff' : '#9aa3c8',
+                                   'font-size':11, 'text-anchor':'middle' }, fmt(p[i])));
+  }
+  document.getElementById('seq').textContent = '下标 i：' + Array.from({ length:n }, (_, k) => k + 1).join(' ') +
+      '\n价格 p ：' + p.slice(1).join(' ');
+}
+
+/* ---------- 下图：f / g 条形 ---------- */
+function renderBars(st) {
+  const box = document.getElementById('bars'); box.innerHTML = '';
+  const base = BH - BBT, plot = base - BPT;
+  const maxF = Math.max(1, ...FF.slice(1)), maxG = Math.max(1, ...GG.slice(1));
+  const lg = Math.log10(maxG + 1);
+  box.appendChild(sv('line', { x1:PL - 8, y1:base, x2:CW - PR, y2:base, stroke:'#3d4778' }));
+  const w = n > 1 ? Math.max(3, Math.min(15, step * 0.3)) : 15;
+  for (let i = 1; i <= n; i++) {
+    const fv = st.f[i], gv = st.g[i];
+    const hf = fv > 0 ? Math.max(3, fv / maxF * plot * 0.62) : 0;
+    const hg = fv > 0 ? Math.max(3, (Math.log10(gv + 1) / lg) * plot * 0.62) : 0;
+    const isI = i === st.i && st.kind !== 'init', isJ = (st.kind === 'try' && i === st.j);
+    const inChain = st.kind === 'ans' && st.chain.includes(i);
+    if (hf) box.appendChild(sv('rect', { x:X(i) - w - 1, y:base - hf, width:w, height:hf,
+                                         fill:isJ ? '#fbbf24' : (inChain ? '#86efac' : '#5eead4'), rx:2 }));
+    if (hg) box.appendChild(sv('rect', { x:X(i) + 1, y:base - hg, width:w, height:hg,
+                                         fill:'#8a6d1f', stroke:isJ ? '#fbbf24' : '', 'stroke-width':isJ ? 2 : 0, rx:2 }));
+    if (fv > 0) {
+      box.appendChild(sv('text', { x:X(i) - w / 2 - 1, y:base - hf - 4, fill:isI || inChain ? '#e8ecff' : '#5eead4',
+                                   'font-size':10, 'text-anchor':'middle' }, fmt(fv)));
+      box.appendChild(sv('text', { x:X(i) + w / 2 + 1, y:base - hg - 4, fill:'#c9a63a', 'font-size':10, 'text-anchor':'middle' }, fmt(gv)));
+    }
+    box.appendChild(sv('text', { x:X(i), y:base + 15, fill:isI ? '#5eead4' : '#6b7396', 'font-size':11, 'text-anchor':'middle' }, fmt(i)));
+  }
+  box.appendChild(sv('text', { x:PL - 10, y:BPT + 4, fill:'#5eead4', 'font-size':12, 'text-anchor':'end' }, 'f（长度）'));
+  box.appendChild(sv('text', { x:PL - 10, y:BPT + 22, fill:'#c9a63a', 'font-size':12, 'text-anchor':'end' }, 'g（方案数）'));
+  box.appendChild(sv('text', { x:CW - PR, y:BPT - 8, fill:'#6b7396', 'font-size':11, 'text-anchor':'end' },
+                     'g 的高度按 log10 画（最大 g = ' + maxG + '）'));
+}
+
+/* ---------- 代码 / 变量表 / DP 表 ---------- */
+function renderCode(lines) {
+  const box = document.getElementById('code'); box.innerHTML = '';
+  CODE.forEach(c => box.appendChild(el('span', 'ln' + (lines.includes(c[1]) ? ' hot' : ''), c[0])));
+}
+function renderVars(st) {
+  const rows = [];
+  const put = (k, v, cls) => rows.push([k, v, cls || '']);
+  put('n / d', n + ' / ' + d, '');
+  if (st.kind === 'init') {
+    put('i', '—'); put('窗口 [i-d, i-1]', '—'); put('j', '—');
+    put('f[i] / g[i]', '—'); put('best / cnt', '0 / 0', 'hot');
+  } else if (st.kind === 'ans') {
+    put('扫描', 'i = 1 … n 全部完成'); put('best', fmt(st.best), 'hot'); put('cnt', fmt(st.cnt), 'hot');
+    put('一条最优方案', st.chain.join(' → ') + '（价格 ' + st.chain.map(x => p[x]).join(' < ') + '）', 'ok');
+  } else {
+    put('i', fmt(st.i), 'hot'); put('p[i]', fmt(p[st.i]));
+    put('窗口 [max(1,i-d), i-1]', st.hi >= st.lo ? '[' + st.lo + ', ' + st.hi + ']' : '空（左边没有天）');
+    if (st.kind === 'win') {
+      put('j', '还没开始枚举');
+      put('f[i] / g[i]', '1 / 1（只选自己）', 'hot');
+      put('best / cnt', st.best + ' / ' + st.cnt, 'warn2');
+    } else if (st.kind === 'try') {
+      put('j', fmt(st.j), 'warn2'); put('p[j]', fmt(p[st.j]));
+      put('p[j] < p[i] ?', (p[st.j] < p[st.i] ? '是 → 可以接' : '否（p[j] ≥ p[i]）→ continue'), p[st.j] < p[st.i] ? 'ok' : 'bad');
+      put('f[j] + 1', st.f[st.j] > 0 && p[st.j] < p[st.i] ? fmt(st.f[st.j] + 1) : '（不看）');
+      put('动作', st.act === 'skip' ? '跳过' : st.act === 'over' ? '更长 ⇒ 覆盖 g[i]' : st.act === 'add' ? '一样长 ⇒ 累加 g[i]' : '更短 ⇒ 什么都不做',
+          st.act === 'over' ? 'hot' : st.act === 'add' ? 'ok' : '');
+      put('f[i] / g[i]', st.bf + ' / ' + st.bg + '  →  ' + st.af + ' / ' + st.ag, 'hot');
+      put('best / cnt', st.best + ' / ' + st.cnt, 'warn2');
+    } else {
+      put('j', '窗口枚举完毕');
+      put('定案 f[i] / g[i]', st.f[st.i] + ' / ' + st.g[st.i], 'hot');
+      put('与 best 比较', st.bAct === 'newbest' ? 'f[i] > best ⇒ 覆盖 best，cnt = g[i]'
+          : st.bAct === 'eq' ? 'f[i] == best ⇒ cnt += g[i]' : 'f[i] < best ⇒ 不加入方案数',
+          st.bAct === 'less' ? 'bad' : 'ok');
+      put('best / cnt', st.best + ' / ' + st.cnt, 'hot');
+    }
+  }
+  const tb = document.getElementById('vars'); tb.innerHTML = '';
+  rows.forEach(r => { const tr = el('tr'); tr.appendChild(el('td', 'k', r[0])); tr.appendChild(el('td', 'v ' + r[2], r[1])); tb.appendChild(tr); });
+}
+function renderDP(st) {
+  const tb = document.getElementById('dp'); tb.innerHTML = '';
+  const mk = (name, arr) => {
+    const tr = el('tr'); tr.appendChild(el('th', 'lab', name));
+    for (let i = 1; i <= n; i++) {
+      const v = arr[i];
+      const c = v === 0 || v === undefined ? 'wait' : '';
+      tr.appendChild(el('td', c, v === 0 || v === undefined ? '·' : fmt(v)));
+    }
+    tb.appendChild(tr); return tr;
+  };
+  const head = el('tr'); head.appendChild(el('th', 'lab', '下标 i'));
+  for (let i = 1; i <= n; i++) {
+    const th = el('th', '', fmt(i));
+    if (i === st.i && st.kind !== 'init' && st.kind !== 'ans') th.className = 'hot';
+    if (st.kind === 'ans' && st.chain.includes(i)) th.className = 'hot';
+    head.appendChild(th);
+  }
+  tb.appendChild(head);
+  const rowP = el('tr'); rowP.appendChild(el('th', 'lab', 'p[i]'));
+  for (let i = 1; i <= n; i++) rowP.appendChild(el('td', '', fmt(p[i])));
+  tb.appendChild(rowP);
+  const rowF = mk('f[i]', st.f);
+  const rowG = mk('g[i]', st.g);
+  if (st.kind === 'try') {
+    const cells = [...rowF.children];
+    if (cells[st.i]) cells[st.i].className = 'hot';
+    if (cells[st.j]) cells[st.j].className = 'hj';
+    const cg = [...rowG.children];
+    if (cg[st.i]) cg[st.i].className = 'hot';
+    if (cg[st.j]) cg[st.j].className = 'hj';
+  }
+}
+
+/* ---------- 讲解 ---------- */
+function renderNote(st) {
+  const note = document.getElementById('note'), ans = document.getElementById('ans');
+  if (st.kind === 'init') {
+    note.innerHTML = `一共 <b>${n}</b> 天，均价写在每个点上方。要选的下标 <b>i₁ &lt; i₂ &lt; …</b> 必须同时满足两件事：价格<b>严格上升</b>（相等也不算）、相邻两次选取的下标差 <b>≤ d = ${d}</b>。问最长能选几天、有多少种选法（模 998244353）。DP 状态：<b>f[i] = 以第 i 天结尾的最长长度</b>，<b>g[i] = 达到 f[i] 的方案数</b>，都按"以 i 结尾"分类，天然不重不漏。`;
+    ans.innerHTML = '<span style="color:#8b93b5">（还没输出）</span>';
+  } else if (st.kind === 'win') {
+    note.innerHTML = `处理第 <b>${st.i}</b> 天（价格 ${p[st.i]}）。先把 <b>f[${st.i}] = 1、g[${st.i}] = 1</b> 立起来 —— "只选自己这一天"本身就是一条合法方案，长度 1、方案 1 种。<b>g 的初值 1 千万别忘</b>，全相等的数据全靠它撑着。谁能当第 ${st.i} 天的前驱？只有蓝色带子里那 ${Math.max(0, st.hi - st.lo + 1)} 格 <b>j ∈ [${st.lo}, ${st.hi}]</b>${st.hi < st.lo ? '（第 1 天左边没有天，窗口为空，f[1]=1 直接定案）' : ''}；窗口外的天<b>连看都不看</b>，这就是 O(nd) 里的那个 d。`;
+    ans.innerHTML = '<span style="color:#8b93b5">（计算中）</span>';
+  } else if (st.kind === 'try') {
+    if (st.act === 'skip') {
+      note.innerHTML = `看 j = <b>${st.j}</b>：p[${st.j}] = <b>${p[st.j]}</b>，p[${st.i}] = <b>${p[st.i]}</b>。${p[st.j]} ≥ ${p[st.i]}，<span class="bad">不满足严格上升</span> → <b>continue</b>，f、g 一个字都不改。红色 × 就是这个意思：<b>相等也不行</b>，题面说的是"严格"。把判据写成 <b>p[j] &gt; p[i]</b>（漏掉等号）是这题最常见的失分点，样例 2 的 1 1 2 2 3 一测就现形。`;
+    } else if (st.act === 'over') {
+      note.innerHTML = `j = <b>${st.j}</b> 能接（${p[st.j]} &lt; ${p[st.i]}），而且 f[${st.j}] + 1 = <b>${st.af}</b> 比当前 f[${st.i}] = <b>${st.bf}</b> <span class="ok">更长</span> → 这是<b>新发现的最优</b>，方案数要<b>覆盖</b>：g[${st.i}] = g[${st.j}] = <b>${st.g[st.j]}</b>（不是加！）。f[${st.i}] 现在是 <b>${st.af}</b>，pre[${st.i}] = ${st.j} 顺手记下这个前驱，末尾才能把一条方案还原出来。`;
+    } else if (st.act === 'add') {
+      note.innerHTML = `j = <b>${st.j}</b> 能接，且 f[${st.j}] + 1 = <b>${st.af}</b> <span class="ok">正好等于</span>当前 f[${st.i}] = ${st.bf} → 长度没变，但"倒数第二天"换成了另一天，方案是<b>新一批</b>：g[${st.i}] = ${st.bg} + g[${st.j}] = ${st.bg} + ${st.g[st.j]}${st.bg + st.g[st.j] === st.ag ? ' = <b>' + st.ag + '</b>' : ' = 取模后 <b>' + st.ag + '</b>'}。这一行就是"最长长度只有一个，但达到它的走法有好几种"的由来。`;
+    } else {
+      note.innerHTML = `j = <b>${st.j}</b> 价格能接（${p[st.j]} &lt; ${p[st.i]}），可是 f[${st.j}] + 1 = <b>${st.f[st.j] + 1}</b> 比 f[${st.i}] = <b>${st.bf}</b> 还<b>短</b> → 两个分支都不成立，<b>什么都不做</b>才是对的。灰色箭头表示"能接但不值得接"。若在这里也累加，就会把短方案塞进 g[${st.i}]，答案立刻偏大。`;
+    }
+    ans.innerHTML = '<span style="color:#8b93b5">（计算中）</span>';
+  } else if (st.kind === 'done') {
+    let cmp;
+    if (st.bAct === 'newbest') {
+      cmp = 'f[' + st.i + '] = ' + st.f[st.i] + ' <span class="ok">&gt; best = ' + st.b0 + '</span> → best 更新为 <b>' + st.best +
+            '</b>，cnt 直接<b>覆盖</b>成 g[' + st.i + '] = <b>' + st.cnt + '</b>：以前那些更短的方案全部作废，一个都不能留';
+    } else if (st.bAct === 'eq') {
+      cmp = 'f[' + st.i + '] = ' + st.f[st.i] + ' <span class="ok">== best = ' + st.best +
+            '</span> → 又发现一批同样长的方案，<b>累加</b>：cnt = ' + st.c0 + ' + g[' + st.i + '] = ' + st.c0 + ' + ' + st.g[st.i] +
+            (st.c0 + st.g[st.i] === st.cnt ? ' = ' : ' 取模后 = ') + '<b>' + st.cnt + '</b>';
+    } else {
+      cmp = 'f[' + st.i + '] = ' + st.f[st.i] + ' &lt; best = ' + st.best +
+            ' → <span class="bad">不加进 cnt</span>，best/cnt 保持 ' + st.best + ' / ' + st.cnt +
+            '。这里最容易写成"每行都把 g 加起来"，那等于把短方案也数进答案';
+    }
+    note.innerHTML = '第 <b>' + st.i + '</b> 天定案：f[' + st.i + '] = <b>' + st.f[st.i] + '</b>，g[' + st.i + '] = <b>' + st.g[st.i] +
+                     '</b>。和全局比一比（比较前 best = ' + st.b0 + '、cnt = ' + st.c0 + '）：' + cmp +
+                     '。注意"更长就覆盖、一样长就累加"这套规则在<b>转移</b>（f/g）和<b>汇总</b>（best/cnt）两处一模一样。';
+    ans.innerHTML = '<span style="color:#8b93b5">（计算中）</span>';
+  } else {
+    note.innerHTML = `扫完 <b>${n}</b> 天。最长 <b>best = ${st.best}</b>，方案数 <b>cnt = ${st.cnt}</b>（每步加法都取过模，最后再 <code>% MOD</code> 一次保险）。图中绿色加粗链条是一条真实的最优方案：<b>${st.chain.join(' → ')}</b>，价格 ${st.chain.map(x => p[x]).join(' &lt; ')}，相邻下标差都 ≤ d = ${d}。输出 <b class="ok">${st.best} ${st.cnt}</b>。想看清"计数从哪来"，换预设 <b>样例2</b>：f 只有 1,1,2,2,3，但 g 走到第 5 天变成 4，正是题面列的 (1,3,5) (2,3,5) (1,4,5) (2,4,5)。`;
+    ans.innerHTML = `<span style="color:var(--ok)">${st.best} ${st.cnt}</span>`;
+  }
+}
+
+function render() {
+  const st = steps[t];
+  renderChart(st); renderBars(st); renderCode(st.line); renderVars(st); renderDP(st); renderNote(st);
+  document.getElementById('prog').textContent = `步骤 ${t + 1} / ${steps.length}`;
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === steps.length - 1;
+}
+
+function load() {
+  const raw = document.getElementById('inp').value.trim().split(/[\s,]+/);
+  const arr = raw.map(x => Number(x)).filter(x => Number.isFinite(x)).map(x => Math.min(1e9, Math.max(1, Math.round(x))));
+  let want = Math.floor(Number(document.getElementById('inn').value));
+  if (!Number.isFinite(want) || want < 1) want = arr.length;
+  want = Math.min(40, want);
+  while (arr.length < want) arr.push(1);          // 价格给少了就补 1，保证 n 个
+  if (arr.length > want) arr.length = want;       // 给多了只画前 want 个（可视化上限 40）
+  n = arr.length;
+  let dv = Math.floor(Number(document.getElementById('ind').value));
+  if (!Number.isFinite(dv) || dv < 1) dv = 1;
+  d = Math.min(5000, dv);
+  p = [0].concat(arr);
+  document.getElementById('inn').value = n;
+  document.getElementById('ind').value = d;
+  document.getElementById('inp').value = arr.join(' ');
+  geom(); t = 0; build(); render();
+}
+
+document.getElementById('next').onclick = () => { if (t < steps.length - 1) { t++; render(); } };
+document.getElementById('prev').onclick = () => { if (t > 0) { t--; render(); } };
+document.getElementById('load').onclick = load;
+document.querySelectorAll('button.pre').forEach(btn => {
+  btn.onclick = () => {
+    document.getElementById('inn').value = btn.dataset.n;
+    document.getElementById('ind').value = btn.dataset.d;
+    document.getElementById('inp').value = btn.dataset.p;
+    load();
+  };
+});
+document.getElementById('jump').onclick = () => { t = steps.length - 1; render(); };
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+  e.target.textContent = '⏸ 暂停';
+  timer = setInterval(() => {
+    if (t >= steps.length - 1) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+    t++; render();
+  }, 520);
+};
+
+load();
+</script>
+</body>
+</html>
