@@ -1,0 +1,22 @@
+id: T228758
+title: "L1-008 字符串"
+source: luogu
+url: https://www.luogu.com.cn/problem/T228758
+alias: 洛谷训练单 320175
+topics: [greedy/exchange-argument, string/prefix-compare]
+difficulty: 入门
+tags: [贪心, 字符串, 字典序, 前缀]
+complexity:
+  time: O(|s1| + |s2|)
+  space: O(1)
+status: 未本地评测（洛谷题目页需登录）；本地 g++ -static -O2 编译运行，2 个官方样例输出 hab / abcd 全对；与"枚举全部非空前缀对"的暴力随机对拍 200000 组 0 不一致，另用编译好的 C++ 程序复核 300 组 0 不一致
+visualization: false
+samples:
+  - in: "happy birthday"
+    out: "hab"
+  - in: "abc defg"
+    out: "abcd"
+notes: |
+  两个"非空"约束把答案钉成 s1 的某段前缀 + s2[0]：s2' 取多长都必亏（真前缀更小），
+  于是只剩 |s1'| 一个变量；任意两个候选的第一个不同位恰好落在分岔点，
+  判据是"下一个字符严格小于 s2[0] 才延长"。相等必须停（<= 会把 zzz/z 从 zz 变成 zzzz）。

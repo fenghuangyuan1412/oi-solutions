@@ -1,0 +1,24 @@
+id: U397952
+title: "L1-006 AC数"
+source: luogu
+url: https://www.luogu.com.cn/problem/U397952
+alias: 洛谷训练单 320175
+topics: [basic/prefix-sum, basic/counting, string/scanning]
+difficulty: 入门
+tags: [计数, 字符串, 前缀和, 一遍扫描]
+complexity:
+  time: O(|S|)
+  space: O(1)
+status: 未本地评测（洛谷题目页需登录）；本地 g++ -static -O2 编译运行，3 个官方样例输出 2 / 0 / 2 全对；与 O(n^2) 双重循环暴力随机对拍 200000 组 0 不一致，另用编译好的 C++ 程序复核 400 组 0 不一致
+visualization: false
+samples:
+  - in: "ACCA"
+    out: "2"
+  - in: "CA"
+    out: "0"
+  - in: "CAAC"
+    out: "2"
+notes: |
+  "组合"= 下标对 (i<j, S[i]='A', S[j]='C')，不要求相邻、同一个字符可参与多对（CAAC 的两对共用第 4 位的 C）。
+  按右端点分类：遇 C 就加上"左边 A 的个数"，cntA 边扫边维护 ⇒ O(n^2) 降为 O(n)。
+  答案上界 n^2/4 = 2.5e7（n=1e4）不爆 int，但 n 到 1e5 就爆，统一写 long long。

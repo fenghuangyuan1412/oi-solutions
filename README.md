@@ -11,12 +11,12 @@
 
 | 主题 | 题数 | 目录 |
 | --- | --- | --- |
-| 基础 | 1 | [solutions/basic](solutions/basic) |
+| 基础 | 2 | [solutions/basic](solutions/basic) |
 | 动态规划 | 1 | [solutions/dp](solutions/dp) |
 | 数据结构 | 0 | [solutions/ds](solutions/ds) |
 | 图论 | 0 | [solutions/graph](solutions/graph) |
 | 搜索 | 0 | [solutions/search](solutions/search) |
-| 贪心 | 2 | [solutions/greedy](solutions/greedy) |
+| 贪心 | 3 | [solutions/greedy](solutions/greedy) |
 | 数学 | 0 | [solutions/math](solutions/math) |
 | 字符串 | 0 | [solutions/string](solutions/string) |
 | 计算几何 | 0 | [solutions/geometry](solutions/geometry) |
@@ -29,6 +29,8 @@
 | [P14358](https://www.luogu.com.cn/problem/P14358) | [CSP-J 2025] 座位 | 基础 / 模拟·排序 | 名次 k → 列 ceil(k/n)，行按列号奇偶翻转 | [html](solutions/basic/p14358-seat/visualization.html) |
 | [P14359](https://www.luogu.com.cn/problem/P14359) | [CSP-J 2025] 异或和 | 贪心 / 前缀异或 | 前缀异或配对 + 最多不相交区间最早结束贪心 | [html](solutions/greedy/p14359-xor/visualization.html) |
 | [P14360](https://www.luogu.com.cn/problem/P14360) | [CSP-J 2025] 多边形 | 动态规划 / 背包计数 | 极值锚定 + 补集转化，m≥3 由判据自动蕴含 | [html](solutions/dp/p14360-polygon/visualization.html) |
+| [T228758](https://www.luogu.com.cn/problem/T228758) | [L1-008 字符串](solutions/greedy/t228758-string/README.md) | 贪心 / 字符串字典序 | 两个"非空"把首尾钉死 ⇒ 只看下一个字符与 s2[0]，严格更小才延长 | —— |
+| [U397952](https://www.luogu.com.cn/problem/U397952) | [L1-006 AC数](solutions/basic/u397952-ac-count/README.md) | 基础 / 计数·前缀和 | 按右端点分类：遇 C 就加"左边 A 的个数"，O(n²) → O(n) | —— |
 
 ## 单题格式
 
