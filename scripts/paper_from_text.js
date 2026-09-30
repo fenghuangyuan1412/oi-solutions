@@ -20,13 +20,24 @@ function convert(src, numAt) {
   const out = [];
   let code = [];
 
-  const isCode = (l) => /^\d{2}(\s\s|\s*$)/.test(l);
+  // CCF 真卷的行号和代码之间只隔一个空格，洛谷卷隔两个，这里都认
+  const isCode = (l) => /^\d{2}(\s|\s*$)/.test(l);
   const codeEndNum = (l) => Number(/(\d{1,2})\s*$/.exec(l)[1]);
   const codeEndBody = (l) => l.replace(/\s*\d{1,2}\s*$/, '');
   const flushCode = () => {
     if (!code.length) return;
     out.push('```text', ...code.map((c) => c.replace(/\s+$/, '')), '```', '');
     code = [];
+  };
+
+  // CCF 真卷第 8 题的迷宫图：一行的字符只有 S # E . 和空格。
+  // 这种行必须原样对齐显示，否则 markdown 会把 5 行并成 1 段，格子位置全丢。
+  const isGrid = (l) => /^[S#E. ]{3,}$/.test(l) && /[S#E.]/.test(l) && /\s/.test(l);
+  let grid = [];
+  const flushGrid = () => {
+    if (!grid.length) return;
+    out.push('```text', ...grid.map((c) => c.replace(/\s+$/, '')), '```', '');
+    grid = [];
   };
 
   const skipRe = new RegExp(
@@ -88,6 +99,9 @@ function convert(src, numAt) {
       flushCode(); lastNum = 0;
     }
 
+    if (isGrid(l)) { flushCode(); grid.push(l); continue; }
+    flushGrid();
+
     if (!/参考答案\s*$/.test(l.trim()) && skipRe.test(l.trim())) continue;
     if (!l.trim()) { if (out.length && out[out.length - 1] !== '') out.push(''); continue; }
 
@@ -96,12 +110,19 @@ function convert(src, numAt) {
       out.push('', inAnswers ? '**' + l + '**' : '## ' + l, '');
       continue;
     }
-    if (/^（\d+）\s*$/.test(l.trim()) || /^（\d+）（/.test(l.trim())) {
-      const n = /\d+/.exec(l.trim())[0];
+    // 分组标题有三种卷面写法：
+    //   洛谷：（1）单独一行 / （1）（序列第 k 小）后面紧跟题干
+    //   CCF 真卷：阅读程序用半角 (1)，完善程序用（1 进制减半）
+    const t = l.trim();
+    let gn = null, gname = '', gtail = '';
+    let m = /^（(\d+)）\s*$/.exec(t) || /^\((\d+)\)\s*$/.exec(t);
+    if (m) { gn = m[1]; }
+    else if ((m = /^（(\d+)\s+([^）)]+)）\s*$/.exec(t))) { gn = m[1]; gname = m[2]; }
+    else if ((m = /^（(\d+)）\s*(（[^）]*）)(.*)$/.exec(t))) { gn = m[1]; gname = m[2].slice(1, -1); gtail = m[3].trim(); }
+    if (gn !== null) {
       const name = section === '三' ? '完善程序' : '阅读程序';
-      const rest = l.trim().replace(/^（\d+）\s*/, '');
-      out.push('', '### ' + name + '（' + n + '）', '');
-      if (rest) out.push(rest);
+      out.push('', '### ' + name + '（' + gn + (gname ? ' ' + gname : '') + '）', '');
+      if (gtail) out.push(gtail);
       continue;
     }
     if (/^·\s*(判断题|单选题)/.test(l.trim())) { out.push('', '**' + l.trim().slice(1) + '**', ''); continue; }
@@ -121,6 +142,7 @@ function convert(src, numAt) {
     }
     out.push(l.trim());
   }
+  flushGrid();
   flushCode();
   return out.join('\n').replace(/\n{3,}/g, '\n\n') + '\n';
 }
