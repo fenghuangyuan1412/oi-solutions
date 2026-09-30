@@ -1,0 +1,20 @@
+id: P2670
+title: "[NOIP 2015 普及组] 扫雷游戏"
+source: luogu
+url: https://www.luogu.com.cn/problem/P2670
+alias: NOIP2015 普及组 T1
+topics: [basic/simulation, basic/grid]
+difficulty: 入门
+tags: [模拟, 八方向偏移, 边界判断]
+complexity:
+  time: O(nm)
+  space: O(nm)
+status: 未本地评测（未在洛谷提交）；本机 g++ -static -O2 -std=c++14 编译无警告，官方 2 组样例全对，与独立八邻域计数参照实现随机对拍 600 组 0 不一致
+limits: 1 <= n <= 100, 1 <= m <= 100
+visualization: false
+samples:
+  - in: "3 3\n*??\n???\n?*?"
+    out: "*10\n221\n1*1"
+  - in: "2 3\n?*?\n*??"
+    out: "2*1\n*21"
+notes: 8 个方向用 dx/dy 偏移数组表达；雷格原样输出 *；行内无分隔符；越界判断不能省

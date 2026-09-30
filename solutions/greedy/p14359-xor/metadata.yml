@@ -9,7 +9,7 @@ tags: [贪心, 前缀异或, 区间调度, 桶]
 complexity:
   time: O(n + N)，原代码 N = 1e7；按值域可降到 O(n + 2^20)
   space: O(n + N)，约 48 MB
-status: 未本地评测（本机无 C++ 编译器）；贪心与 O(n^2) DP、O(n) DP 三方对拍 60000 组零分歧
+status: 未本地评测（未在洛谷提交）；本机 g++ -static -O2 -std=c++14 编译无警告、3 组官方样例实跑全对（2/2/1）；JS 移植贪心与 O(n^2) DP、O(n) DP 三方对拍 60000 组零分歧
 limits: 1 <= n <= 5e5, 0 <= k,a_i < 2^20；时间 1s，内存 512MB
 visualization: true
 samples:

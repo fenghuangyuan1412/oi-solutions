@@ -1,0 +1,18 @@
+id: P2241
+title: 统计方形（数据加强版）
+source: luogu
+url: https://www.luogu.com.cn/problem/P2241
+alias: 信息学奥赛一本通 1348 加强版
+topics: [basic/enumeration, math/counting, math/summation]
+difficulty: 入门
+tags: [枚举尺寸, 分类计数, long long 溢出, 数据范围反推复杂度]
+complexity:
+  time: O(nm)
+  space: O(1)
+status: 未本地评测（未在洛谷提交）；本机 g++ -static -O2 -std=c++14 编译无警告，官方样例全对，与 BigInt 闭式公式随机对拍 400 组 0 不一致，5000x5000 极限与公式逐项相等
+limits: 1 <= n <= 5000, 1 <= m <= 5000；最大答案约 1.56e14，必须 long long
+visualization: false
+samples:
+  - in: "2 3"
+    out: "8 10"
+notes: 按尺寸 h*w 分类计数，个数 = (n-h+1)(m-w+1)；枚举四个边界是 O(n^2 m^2)=6.25e14 会超时；n,m 也要声明成 long long，否则乘法先按 int 算再转照样溢出

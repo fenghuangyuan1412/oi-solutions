@@ -1,0 +1,28 @@
+id: P1095
+title: "[NOIP 2005 提高组] 守望者的逃离"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1095
+alias: NOIP2005 提高组 守望者的逃离
+topics: [greedy, dp/sequence, basic/data-range-analysis]
+difficulty: 普及+/提高
+tags: [枚举闪烁次数, 贪心反面教材, 向上取整, 输出格式, 骗分阶梯]
+complexity:
+  time: O((M + 4T) / 10) 枚举 k；DP 参照档 O(T·(M+4T))
+  space: O(1)
+status: 未本地评测（未在洛谷提交）；本机 g++ -static -O2 -std=c++14 编译无警告，官方两组样例全对（No 197 / Yes 6），与"逐秒 DP 穷举三动作"的独立参照对拍 1200 组 0 不一致；极限 M=1000,S=1e8,T=3e5 实测 6~7 ms 输出 No 5147142；反面教材 solution_partial.cpp 在 500 组随机数据上三轮正确率 25.0% / 21.4% / 21.2%，且官方样例 2 就输出 Yes 8（应为 Yes 6）
+limits: 30%: 1<=T<=10, 1<=S<=100; 50%: 1<=T<=10^3, 1<=S<=10^4; 100%: 1<=T<=3e5, 0<=M<=10^3, 1<=S<=10^8
+visualization: false
+files:
+  solution.cpp: 满分档（枚举一共闪几次 k，把休息秒数用 ceil 算出来）
+  solution_partial.cpp: 反面教材（能闪就闪、从不休息；样例 2 即错）
+  verify.js: Node 验算脚本（逐秒 DP 参照 + 正确率统计 + 计时），仅用于验证，非讲解代码
+samples:
+  - in: "39 200 4"
+    out: "No\n197"
+  - in: "36 255 10"
+    out: "Yes\n6"
+notes: |
+  规则三条必须逐条抄进草稿：跑 17m/s；闪 1s 60m 耗 10 魔法；休息 1s 回 4 魔法且只有休息才回。
+  正解的关键前提：题面没有魔法上限 ⇒ 总量可先算、顺序随便排，rest(k)=ceil(max(0,10k-M)/4)。
+  若变式题加了魔法上限，此公式立即失效，必须退回逐秒 DP。
+  输出 Yes/No 首字母大写、两行；整数向上取整写 (a+b-1)/b。

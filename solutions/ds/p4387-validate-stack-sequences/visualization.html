@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P4387 验证栈序列 · 能弹就弹分步演示</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:18px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:16px 18px; margin-bottom:16px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 14px; font-size:14px; cursor:pointer; margin-right:8px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  input.num { background:#0d1020; color:var(--ink); border:1px solid #3d4778;
+              border-radius:8px; padding:8px 10px; font:15px/1.4 Consolas,monospace; width:230px; }
+  .topbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+  .prog { color:var(--dim); font-size:14px; margin-left:auto; }
+  label.f { font-size:13px; color:var(--dim); }
+  .grp { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+  /* 序列格子 */
+  .seq { display:flex; flex-wrap:wrap; gap:6px; }
+  .tk { width:40px; height:46px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+        border-radius:8px; background:#232a4a; border:1px solid #333c66; font:18px Consolas,monospace; }
+  .tk .idx { font-size:9px; color:var(--dim); margin-top:2px; }
+  .tk.active { outline:3px solid var(--acc); outline-offset:1px; }
+  .tk.done { border-color:#2f7a55; background:#12312a; color:var(--ok); text-decoration:line-through; }
+  .tk.target { outline:3px solid #f6c177; }
+  .tk.future { opacity:.45; }
+  /* 栈 */
+  .stack { display:flex; flex-direction:column-reverse; gap:4px; min-height:64px; }
+  .frame { background:#20264a; border:1px solid #3a4680; border-radius:7px;
+           padding:6px 12px; font:18px Consolas,monospace; text-align:center; }
+  .frame.top { background:#15405a; border-color:var(--acc); color:var(--acc); font-weight:700; }
+  .frame.block { background:#3a1414; border-color:var(--warn); color:var(--warn); }
+  .empty { color:var(--dim); font-style:italic; }
+  .stackbase { border-top:2px solid #3a4680; margin-top:4px; padding-top:2px; text-align:center; color:var(--dim); font-size:11px; }
+  /* 代码 */
+  pre.code { margin:0; font:13.5px/1.6 Consolas,monospace; }
+  .ln { display:block; padding:1px 8px; border-radius:4px; color:#c7cee6; white-space:pre; }
+  .ln.on { background:#173a4a; color:var(--acc); }
+  .ln .no { color:var(--dim); margin-right:10px; }
+  /* 变量表 */
+  table.v { width:100%; border-collapse:collapse; font-size:14px; }
+  table.v td { padding:5px 8px; border-bottom:1px solid #262c4a; }
+  table.v td.k { color:var(--dim); width:40%; }
+  table.v td.val { font-family:Consolas,monospace; }
+  .note { color:var(--dim); font-size:14.5px; min-height:96px; }
+  .note b { color:var(--ink); }
+  .note .g { color:var(--ok); } .note .r { color:var(--warn); } .note .a { color:var(--acc); } .note .y { color:#f6c177; }
+  .badge { display:inline-block; padding:1px 10px; border-radius:20px; font-size:14px; font-weight:700; }
+  .badge.yes { background:#12312a; color:var(--ok); } .badge.no { background:#3a1414; color:var(--warn); }
+  .row { display:flex; gap:16px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:260px; }
+</style>
+</head>
+<body>
+<h1>P4387 验证栈序列 · 能弹就弹</h1>
+<div class="sub">入栈顺序被 pushed 钉死，唯一自由是"何时弹"：栈顶一旦等于当前目标 poped[j] 就立刻弹（while 连弹），压完弹不完即 <b>No</b></div>
+
+<div class="grp">
+  <label class="f">pushed：</label><input class="num" id="pin" value="1 2 3 4 5">
+  <label class="f">poped：</label><input class="num" id="qin" value="5 4 3 2 1">
+  <button id="load">载入</button>
+  <button data-p="1 2 3 4 5" data-q="5 4 3 2 1">样例组1 Yes</button>
+  <button data-p="1 2 3 4" data-q="2 4 1 3">样例组2 No</button>
+</div>
+<div class="topbar">
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到结尾</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="row">
+  <div class="card"><h2>① 入栈序列 pushed（蓝框=当前指针 i，暗=未压）</h2>
+    <div class="seq" id="pseq"></div>
+  </div>
+  <div class="card"><h2>③ 出栈序列 poped（绿划=已弹，黄框=下一个目标）</h2>
+    <div class="seq" id="qseq"></div>
+  </div>
+  <div class="card" style="flex:0.55"><h2>② 栈（栈顶在上，红=挡路）</h2>
+    <div class="stack" id="stack"></div>
+    <div class="stackbase">栈底</div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="card" style="flex:1.2"><h2>④ 核心代码（当前执行行高亮）</h2>
+    <pre class="code" id="code"></pre>
+  </div>
+  <div class="card"><h2>⑤ 变量状态</h2>
+    <table class="v" id="vars"></table>
+    <h2 style="margin-top:14px">讲解</h2>
+    <div class="note" id="note"></div>
+  </div>
+</div>
+
+<script>
+const CODE = [
+  'int j = 0;',
+  'for (int i = 0; i < n; ++i) {',
+  '    st.push(pushed[i]);                  // 按 pushed 顺序压入',
+  '    while (!st.empty() && st.top()==poped[j]) {',
+  '        st.pop(); ++j;                   // 能弹就弹，可连弹多个',
+  '    }',
+  '}',
+  'cout << (j == n ? "Yes" : "No");',
+];
+
+let P = [], Q = [], steps = [], t = 0, timer = null;
+
+function build() {
+  steps = [];
+  const n = P.length;
+  const stack = [];
+  let j = 0;
+  steps.push({ phase:'init', line:0, i:-1, j, stack:[], blockers:[],
+    note:`入栈序列 <b>${P.join(' ')}</b>，期望出栈 <b>${Q.join(' ')}</b>。开始模拟：指针 i 只管压，指针 j 记"下一个该弹出的目标 poped[${j}] = ${Q[0]}"。` });
+  for (let i = 0; i < n; i++) {
+    stack.push(P[i]);
+    const eq = P[i] === Q[j];
+    steps.push({ phase:'push', line:2, i, j, stack:[...stack], blockers:[],
+      note:`压入 <b class="a">pushed[${i}] = ${P[i]}</b>。当前目标 poped[${j}] = <b class="y">${Q[j]!=null?Q[j]:'—'}</b>，栈顶 = ${P[i]} → ${eq?'<b class="g">相等，接着看能不能连弹</b>':'不等，先不弹'}` });
+    while (stack.length && j < n && stack[stack.length-1] === Q[j]) {
+      const x = stack.pop(); j++;
+      steps.push({ phase:'pop', line:4, i, j, stack:[...stack], blockers:[], popped:x,
+      note:`栈顶 <b>${x}</b> == 目标 poped[${j-1}] → <b class="g">弹出</b>，出栈序列确认第 ${j-1} 个是 ${x}。新目标 poped[${j}]${j<n?' = <b class="y">'+Q[j]+'</b>':'（已弹完）'}${j<n&&stack.length?'，栈顶='+stack[stack.length-1]+'，'+(stack[stack.length-1]===Q[j]?'继续弹':'先停手去压')+'':''}` });
+    }
+  }
+  const ok = (j === n);
+  let blockers = [], target = Q[j];
+  if (!ok) { const pos = stack.indexOf(target); blockers = pos >= 0 ? stack.slice(pos+1) : []; }
+  steps.push({ phase:'done', line:7, i:n-1, j, stack:[...stack], ok, blockers, target,
+    note: ok
+      ? `全部压完，j = ${j} = n → poped 的每个目标都被按序弹出。<b class="g">答案 Yes</b>。<br>（这段"压 / 弹"顺序就是构造出的一组合法操作。）`
+      : `全部压完却 j = ${j} < ${n}。目标 <b class="y">${target}</b> 早已被压入，但不在栈顶——它上面还压着 <b class="r">[${blockers.join(', ')||'无'}]</b>。这些元素在 poped 里排在 ${target} <b>之后</b>、本就该晚弹，谁也没法先把它们挪走再弹 ${target}。由"能弹就弹"的交换论证，任何策略都救不回来。<b class="r">答案 No</b>。` });
+}
+
+function el(tag, cls, txt){ const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; }
+
+function render() {
+  const st = steps[t], n = P.length;
+
+  // pushed
+  const ps = document.getElementById('pseq'); ps.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    let cls = 'tk';
+    if (st.i >= 0 && i <= st.i) cls += (i === st.i && st.phase !== 'done') ? ' active' : ' done';
+    if (i > st.i) cls += ' future';
+    if (st.phase === 'done' && i <= n-1) cls = 'tk done';
+    const b = el('div', cls); b.appendChild(el('span', null, P[i])); b.appendChild(el('span','idx',i));
+    ps.appendChild(b);
+  }
+
+  // poped
+  const qs = document.getElementById('qseq'); qs.innerHTML = '';
+  for (let k = 0; k < n; k++) {
+    let cls = 'tk';
+    if (k < st.j) cls += ' done';
+    else if (k === st.j && st.phase !== 'done') cls += ' target';
+    else if (st.phase === 'done' && !st.ok && k === st.j) cls += ' target';
+    const b = el('div', cls); b.appendChild(el('span', null, Q[k])); b.appendChild(el('span','idx',k));
+    qs.appendChild(b);
+  }
+
+  // stack (top up)
+  const stk = document.getElementById('stack'); stk.innerHTML = '';
+  if (!st.stack.length) stk.appendChild(el('span', 'empty', '（空栈）'));
+  st.stack.forEach((v, k) => {
+    let cls = 'frame';
+    if (k === st.stack.length - 1) cls += ' top';
+    if (st.phase === 'done' && st.blockers.indexOf(v) >= 0) cls += ' block';
+    else if (st.phase === 'done' && v === st.target && !st.ok) cls += ' block';
+    stk.appendChild(el('div', cls, v));
+  });
+
+  // code
+  const code = document.getElementById('code'); code.innerHTML = '';
+  CODE.forEach((lineText, k) => {
+    const ln = el('span', 'ln' + (k === st.line ? ' on' : ''));
+    ln.appendChild(el('span', 'no', String(k+1).padStart(2,' ')));
+    ln.appendChild(document.createTextNode(lineText));
+    code.appendChild(ln);
+  });
+
+  // vars
+  const vars = document.getElementById('vars'); vars.innerHTML = '';
+  const top = st.stack.length ? st.stack[st.stack.length-1] : '—';
+  const rows = [
+    ['i（压入指针）', st.i < 0 ? '—' : st.i],
+    ['pushed[i]', st.i < 0 ? '—' : P[st.i]],
+    ['j（弹出目标指针）', st.j],
+    ['poped[j]（目标 p）', Q[st.j]!=null ? Q[st.j] : '（弹完）'],
+    ['栈顶', top],
+    ['判定', st.phase==='done' ? (st.ok?'Yes':'No') : '进行中'],
+  ];
+  rows.forEach(([k,v]) => { const tr=document.createElement('tr'); tr.appendChild(el('td','k',k)); tr.appendChild(el('td','val',v)); vars.appendChild(tr); });
+
+  document.getElementById('note').innerHTML = st.note;
+  document.getElementById('prog').textContent = `第 ${t+1} / ${steps.length} 步`;
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === steps.length - 1;
+}
+
+function parse(s){ return s.trim().split(/\s+/).filter(x=>x.length).map(Number); }
+function load(p, q) {
+  const pv = p != null ? p : document.getElementById('pin').value;
+  const qv = q != null ? q : document.getElementById('qin').value;
+  P = parse(pv); Q = parse(qv);
+  document.getElementById('pin').value = P.join(' ');
+  document.getElementById('qin').value = Q.join(' ');
+  t = 0; build(); render();
+}
+
+document.getElementById('next').onclick = () => { if (t < steps.length-1){ t++; render(); } };
+document.getElementById('prev').onclick = () => { if (t > 0){ t--; render(); } };
+document.getElementById('load').onclick = () => load();
+document.querySelectorAll('[data-p]').forEach(b => b.onclick = () => load(b.dataset.p, b.dataset.q));
+document.getElementById('jump').onclick = () => { t = steps.length-1; render(); };
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer=null; e.target.textContent='▶ 自动播放'; return; }
+  e.target.textContent = '⏸ 暂停';
+  timer = setInterval(() => {
+    if (t >= steps.length-1){ clearInterval(timer); timer=null; e.target.textContent='▶ 自动播放'; return; }
+    t++; render();
+  }, 850);
+};
+
+load('1 2 3 4 5', '5 4 3 2 1');
+</script>
+</body>
+</html>

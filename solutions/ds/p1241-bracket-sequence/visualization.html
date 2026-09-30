@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1241 括号序列 · 栈匹配分步演示</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:18px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:16px 18px; margin-bottom:16px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 14px; font-size:14px; cursor:pointer; margin-right:8px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  input[type=text] { background:#0d1020; color:var(--ink); border:1px solid #3d4778;
+                     border-radius:8px; padding:8px 10px; font:16px/1.4 Consolas,monospace; width:220px; }
+  .topbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+  .prog { color:var(--dim); font-size:14px; margin-left:auto; }
+  /* 字符串格子 */
+  .cells { display:flex; flex-wrap:wrap; gap:6px; }
+  .cell { width:40px; height:52px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+          border-radius:8px; background:#232a4a; border:1px solid #333c66; font:20px Consolas,monospace; }
+  .cell .idx { font-size:9px; color:var(--dim); margin-top:2px; }
+  .cell.matched { border-color:#2f7a55; background:#12312a; color:var(--ok); }
+  .cell.unmatched { border-color:#7a5a2f; background:#302313; color:#f6c177; }
+  .cell.active { outline:3px solid var(--acc); outline-offset:1px; }
+  .cell.fail { outline:3px solid var(--warn); outline-offset:1px; }
+  /* 栈 */
+  .stack { display:flex; flex-direction:column-reverse; gap:4px; min-height:60px; }
+  .frame { background:#20264a; border:1px solid #3a4680; border-radius:7px;
+           padding:4px 10px; font:16px Consolas,monospace; text-align:center; }
+  .frame.top { background:#15405a; border-color:var(--acc); color:var(--acc); font-weight:700; }
+  .empty { color:var(--dim); font-style:italic; }
+  .stackbase { border-top:2px solid #3a4680; margin-top:4px; padding-top:2px; text-align:center; color:var(--dim); font-size:11px; }
+  /* 答案 */
+  .ans { font:20px/1.4 Consolas,monospace; word-break:break-all; min-height:28px; letter-spacing:1px; }
+  .ans .new { color:var(--acc); font-weight:700; }
+  /* 代码 */
+  pre.code { margin:0; font:13.5px/1.55 Consolas,monospace; }
+  .ln { display:block; padding:1px 8px; border-radius:4px; color:#c7cee6; white-space:pre; }
+  .ln.on { background:#173a4a; color:var(--acc); }
+  .ln .no { color:var(--dim); margin-right:10px; }
+  /* 变量表 */
+  table.v { width:100%; border-collapse:collapse; font-size:14px; }
+  table.v td { padding:5px 8px; border-bottom:1px solid #262c4a; }
+  table.v td.k { color:var(--dim); width:38%; }
+  table.v td.val { font-family:Consolas,monospace; }
+  .note { color:var(--dim); font-size:14.5px; min-height:78px; }
+  .note b { color:var(--ink); }
+  .note .g { color:var(--ok); } .note .r { color:var(--warn); } .note .a { color:var(--acc); }
+  .row { display:flex; gap:16px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:260px; }
+</style>
+</head>
+<body>
+<h1>P1241 括号序列 · 栈匹配补全</h1>
+<div class="sub">左括号入栈；右括号只看栈顶 —— 类型符就配对弹栈，类型不符则右括号作废、<b>栈顶不动</b>（本题唯一陷阱）</div>
+
+<div class="topbar">
+  <input type="text" id="src" value="([()" maxlength="20">
+  <button id="load">载入</button>
+  <button data-pre="([()">样例1 ([()</button>
+  <button data-pre="([)">样例2 ([)</button>
+  <button data-pre="([)]">([)]</button>
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到结尾</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="row">
+  <div class="card"><h2>① 输入串（绿=已配对 / 橙=未配对 / 蓝框=当前 / 红框=作废）</h2>
+    <div class="cells" id="cells"></div>
+  </div>
+  <div class="card" style="flex:0.6"><h2>② 栈（栈顶在上）</h2>
+    <div class="stack" id="stack"></div>
+    <div class="stackbase">栈底</div>
+  </div>
+</div>
+
+<div class="card"><h2>③ 正在构造的答案</h2><div class="ans" id="ans"></div></div>
+
+<div class="row">
+  <div class="card" style="flex:1.3"><h2>④ 核心代码（当前执行行高亮）</h2>
+    <pre class="code" id="code"></pre>
+  </div>
+  <div class="card"><h2>⑤ 变量状态</h2>
+    <table class="v" id="vars"></table>
+    <h2 style="margin-top:14px">讲解</h2>
+    <div class="note" id="note"></div>
+  </div>
+</div>
+
+<script>
+const CODE = [
+  'for (int i = 0; i < n; ++i) {',
+  '    char c = s[i];',
+  '    if (isOpen(c)) st.push_back(i);        // 左括号入栈',
+  '    else if (!st.empty()',
+  '             && sameType(s[st.back()], c)) {',
+  '        matched[st.back()] = true;',
+  '        matched[i] = true;                 // 配成功才弹栈',
+  '        st.pop_back();',
+  '    }                                      // 否则右括号作废，栈不动',
+  '}',
+  'for (int i = 0; i < n; ++i) {              // 逐字符补全输出',
+  '    若 matched → 原样；未匹配左 → 补右；未匹配右 → 补左',
+  '}',
+];
+const isOpen = c => c === '(' || c === '[';
+const sameType = (a, b) => (a === '(' && b === ')') || (a === '[' && b === ']');
+
+let S = '', steps = [], t = 0, timer = null;
+
+function build() {
+  steps = [];
+  const n = S.length;
+  const matched = new Array(n).fill(false);
+  const stack = [];
+  steps.push({ phase:'init', line:0, i:-1, stack:[], matched:[...matched], ans:'', note:`输入串 <b>${S||'（空）'}</b>。目标：给每个括号找搭档，配不上的补成一对。开始从左到右扫描。` });
+
+  for (let i = 0; i < n; i++) {
+    const c = S[i];
+    if (isOpen(c)) {
+      stack.push(i);
+      steps.push({ phase:'open', line:2, i, stack:[...stack], matched:[...matched], ans:'',
+        cur:c, top:i,
+        note:`位置 ${i} 的 <b class="a">${c}</b> 是左括号 → 下标 <b>${i}</b> 入栈。此刻它还没有搭档，先攒着，等右边的右括号来配。<br>栈里越靠顶 = 越靠右 = "左侧最近的未匹配左括号"。` });
+    } else {
+      const topIdx = stack.length ? stack[stack.length-1] : -1;
+      if (topIdx !== -1 && sameType(S[topIdx], c)) {
+        matched[topIdx] = true; matched[i] = true;
+        const popped = stack.pop();
+        steps.push({ phase:'match', line:6, i, stack:[...stack], matched:[...matched], ans:'',
+          cur:c, topIdx:popped, topChar:S[popped],
+          note:`位置 ${i} 的 <b class="a">${c}</b> 是右括号，栈顶是 <b>${S[popped]}</b>（下标 ${popped}），类型<b class="g">对应</b> → 两者配对，两端标绿，栈顶<b class="g">弹栈</b>。` });
+      } else {
+        const mismatch = topIdx !== -1;
+        steps.push({ phase:'fail', line:8, i, stack:[...stack], matched:[...matched], ans:'',
+          cur:c, topChar: mismatch ? S[topIdx] : null,
+          note: mismatch
+            ? `位置 ${i} 的 <b class="a">${c}</b> 是右括号，栈顶是 <b>${S[topIdx]}</b>，类型<b class="r">不对应</b> → <b class="r">${c} 配对失败（作废）</b>，但栈顶那枚 <b>${S[topIdx]}</b> 只是暂时没人配，<b class="r">绝不弹出</b>（它还可能被后面的 ${S[topIdx]==='(' ? ')' : ']'} 配走）。<br>—— 这就是本题与普通合法括号判定唯一的区别。`
+            : `位置 ${i} 的 <b class="a">${c}</b> 是右括号，但<b>栈是空的</b>，左边根本没有未匹配的左括号 → 本右括号<b class="r">作废</b>。` });
+      }
+    }
+  }
+
+  let ans = '', newStart = -1;
+  for (let i = 0; i < n; i++) {
+    const c = S[i];
+    let add = '';
+    if (matched[i]) { add = c; }
+    else if (isOpen(c)) { add = c + (c==='(' ? ')' : ']'); }
+    else { add = (c===')' ? '(' : '[') + c; }
+    ans += add;
+    let why;
+    if (matched[i]) why = `位置 ${i} 的 <b>${c}</b> 已配对 → 原样输出 <b>${c}</b>`;
+    else if (isOpen(c)) why = `位置 ${i} 的 <b class="r">${c}</b> 是未匹配<b>左</b>括号 → 在<b>右边</b>补 <b class="a">${c==='(' ? ')' : ']'}</b>，输出 <b class="a">${add}</b>`;
+    else why = `位置 ${i} 的 <b class="r">${c}</b> 是未匹配<b>右</b>括号 → 在<b>左边</b>补 <b class="a">${c===')' ? '(' : '['}</b>，输出 <b class="a">${add}</b>`;
+    steps.push({ phase:'build', line:10, i, stack:[...stack], matched:[...matched], ans, lastAdd:add, note:why });
+  }
+  steps.push({ phase:'done', line:10, i:n-1, stack:[...stack], matched:[...matched], ans, note:`完成。最终答案 <b class="g">${ans||'（空）'}</b> —— 所有括号都成了对，且相对顺序与原串一致。` });
+}
+
+function el(tag, cls, txt){ const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; }
+
+function render() {
+  const st = steps[t];
+
+  const cells = document.getElementById('cells'); cells.innerHTML = '';
+  for (let i = 0; i < S.length; i++) {
+    let cls = 'cell';
+    if (st.matched[i]) cls += ' matched'; else cls += ' unmatched';
+    if (st.i === i && st.phase !== 'done' && (st.phase==='open')) cls += ' active';
+    else if (st.i === i && st.phase==='match') cls += ' active';
+    else if (st.i === i && st.phase==='fail') cls += ' fail';
+    else if (st.i === i && st.phase==='build') cls += ' active';
+    const box = el('div', cls);
+    box.appendChild(el('span', null, S[i]));
+    box.appendChild(el('span', 'idx', i));
+    cells.appendChild(box);
+  }
+
+  const stk = document.getElementById('stack'); stk.innerHTML = '';
+  if (!st.stack.length) stk.appendChild(el('span', 'empty', '（空栈）'));
+  st.stack.forEach((idx, k) => {
+    const f = el('div', 'frame' + (k === st.stack.length-1 ? ' top' : ''), `${S[idx]} (${idx})`);
+    stk.appendChild(f);
+  });
+
+  const ans = document.getElementById('ans'); ans.innerHTML = '';
+  if (st.phase === 'build' && st.lastAdd) {
+    const head = st.ans.slice(0, st.ans.length - st.lastAdd.length);
+    ans.appendChild(el('span', null, head));
+    ans.appendChild(el('span', 'new', st.lastAdd));
+  } else {
+    ans.textContent = st.ans || '（还没开始输出）';
+    if (!st.ans) ans.style.color = 'var(--dim)';
+  }
+
+  const code = document.getElementById('code'); code.innerHTML = '';
+  CODE.forEach((lineText, k) => {
+    const ln = el('span', 'ln' + (k === st.line ? ' on' : ''));
+    ln.appendChild(el('span', 'no', String(k+1).padStart(2, ' ')));
+    ln.appendChild(document.createTextNode(lineText));
+    code.appendChild(ln);
+  });
+
+  const vars = document.getElementById('vars'); vars.innerHTML = '';
+  const rows = [
+    ['i（当前下标）', st.i < 0 ? '—' : st.i],
+    ['s[i]', st.i < 0 ? '—' : S[st.i]],
+    ['栈内容(底→顶)', st.stack.length ? st.stack.map(x=>S[x]).join(' ') : '空'],
+    ['栈顶字符', st.stack.length ? S[st.stack[st.stack.length-1]] : '—'],
+  ];
+  rows.forEach(([k,v]) => {
+    const tr = document.createElement('tr');
+    tr.appendChild(el('td', 'k', k)); tr.appendChild(el('td', 'val', v));
+    vars.appendChild(tr);
+  });
+
+  document.getElementById('note').innerHTML = st.note;
+  document.getElementById('prog').textContent = `第 ${t+1} / ${steps.length} 步`;
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === steps.length - 1;
+}
+
+function load(v) {
+  S = v != null ? v : document.getElementById('src').value;
+  document.getElementById('src').value = S;
+  t = 0; build(); render();
+}
+
+document.getElementById('next').onclick = () => { if (t < steps.length-1){ t++; render(); } };
+document.getElementById('prev').onclick = () => { if (t > 0){ t--; render(); } };
+document.getElementById('load').onclick = () => load();
+document.querySelectorAll('[data-pre]').forEach(b => b.onclick = () => load(b.dataset.pre));
+document.getElementById('jump').onclick = () => { t = steps.length-1; render(); };
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+  e.target.textContent = '⏸ 暂停';
+  timer = setInterval(() => {
+    if (t >= steps.length-1) { clearInterval(timer); timer=null; e.target.textContent='▶ 自动播放'; return; }
+    t++; render();
+  }, 900);
+};
+
+load('([()');
+</script>
+</body>
+</html>

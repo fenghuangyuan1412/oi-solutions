@@ -1,0 +1,23 @@
+id: P1005
+title: "[NOIP 2007 提高组] 矩阵取数游戏"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1005
+alias: NOIP2007 提高组 T4
+topics: [dp/interval, math/big-integer, basic/data-range-analysis]
+difficulty: 普及+/提高
+tags: [区间DP, 按行独立, 数据类型骗分, 高精度, 2^k 乘数]
+complexity:
+  time: O(n m^2)
+  space: O(m^2)
+status: 未本地评测（未在洛谷提交）；本机 g++ -static -O2 -std=c++14 编译无警告，官方样例两版全对，与"逐行枚举 2^m 种取法"暴力随机对拍 800 组 0 不一致，两版互拍 400 组（$m\le4$，保证不溢出）0 不一致；__int128 版在 80x80 全 1000 极限上与 BigInt 真值 193428131138340667952988000000 逐位相等，long long 版同一数据输出 -160000
+limits: 60%: 1<=n,m<=30 且答案不超过 1e16; 100%: 1<=n,m<=80, 0<=a<=1000; 满分上限约 1.93e29
+visualization: false
+files:
+  solution.cpp: 60 分档（long long 区间 DP，算法即正解，类型不够）
+  solution_full.cpp: 满分档（__int128 + 手写输出函数）
+  int_array.cpp: 反面教材（逻辑同上，但数组全用 int ⇒ 溢出发生在相加之前）
+  verify.js: Node 验算脚本（2^m 枚举参照 + 溢出边界扫描 + 80x80 闭式比对），仅用于验证，非讲解代码
+samples:
+  - in: "2 3\n1 2 3\n3 4 2"
+    out: "82"
+notes: 题面 60% 档写明"答案不超过 10^16"，等于直接把 60 分交给 long long；行与行完全独立（乘数 2^i 对所有行一致）；k = m - len + 1 是最容易写反的一处

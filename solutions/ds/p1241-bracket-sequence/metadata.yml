@@ -1,0 +1,25 @@
+id: P1241
+title: "括号序列"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1241
+alias: 洛谷训练单 320175
+topics: [ds/stack, string/parsing]
+difficulty: 普及-
+tags: [栈, 括号匹配, 字符串, 模拟]
+complexity:
+  time: O(n)
+  space: O(n)
+status: 本地 g++ -static -O2 -std=c++14 编译运行，两组官方样例均输出 ()[]() 正确；与"数组两两扫描模拟原始定义"的暴力随机对拍 200000 组 0 不一致，另用编译好的 C++ 程序复核 500 组 0 不一致；未在洛谷提交
+visualization: true
+samples:
+  - in: |
+      ([()
+    out: |
+      ()[]()
+  - in: |
+      ([)
+    out: |
+      ()[]()
+notes: |
+  与普通合法括号判定的唯一区别：右括号遇到栈顶类型不符时，右括号作废但栈顶左括号【不弹出】，
+  它仍可能匹配后面的右括号。类型不符若弹栈，样例 #2 的 ([) 就会算错。

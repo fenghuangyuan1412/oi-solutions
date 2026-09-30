@@ -1,0 +1,18 @@
+id: P1540
+title: "[NOIP 2010 提高组] 机器翻译"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1540
+alias: NOIP2010 提高组 T1
+topics: [basic/simulation, ds/queue, ds/set]
+difficulty: 普及-
+tags: [模拟, FIFO 队列, 淘汰规则, 读入顺序]
+complexity:
+  time: O(N log M)
+  space: O(M)
+status: 未本地评测（未在洛谷提交）；本机 g++ -static -O2 -std=c++14 编译无警告，官方样例全对，与"数组手工 shift 淘汰"参照实现随机对拍 800 组 0 不一致；另实测 LRU 误写在官方样例上输出 4（正确为 5）
+limits: 1 <= M <= 100, 1 <= N <= 1000, 单词编号 <= 1000
+visualization: false
+samples:
+  - in: "3 7\n1 2 1 5 4 4 1"
+    out: "5"
+notes: 题面淘汰规则是"最早进入"（FIFO），不是"最久未使用"（LRU）；第一行读入顺序是先 M 后 N；命中时内存内容完全不动

@@ -1,0 +1,20 @@
+id: P1003
+title: "[NOIP 2011 提高组] 铺地毯"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1003
+alias: NOIP2011 提高组 day1 T1
+topics: [basic/simulation, basic/enumeration]
+difficulty: 入门/普及-
+tags: [模拟, 倒序枚举, 闭区间判定, 内存账]
+complexity:
+  time: O(n)
+  space: O(n)
+status: 未本地评测（未在洛谷提交）；本机 g++ -static -O2 -std=c++14 编译无警告，官方 2 组样例全对，与"逐层涂二维网格"参照实现随机对拍 800 组 0 不一致
+limits: 0 <= n <= 1e4, 0 <= a,b,g,k <= 1e5
+visualization: false
+samples:
+  - in: "3\n1 0 2 3\n0 2 3 3\n2 1 3 3\n2 2"
+    out: "3"
+  - in: "3\n1 0 2 3\n0 2 3 3\n2 1 3 3\n4 5"
+    out: "-1"
+notes: 后铺的在上面 ⇒ "最上面"= 编号最大 ⇒ 倒序枚举第一个命中即 break；坐标 1e5 使涂网格需要 40 GB 数组，这正是本题要避开的写法

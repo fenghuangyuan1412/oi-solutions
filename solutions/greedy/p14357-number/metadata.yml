@@ -9,7 +9,7 @@ tags: [贪心, 计数排序, 字符串]
 complexity:
   time: O(n)
   space: O(1)
-status: 未本地评测（本机无 C++ 编译器），算法经 2957 组随机数据与暴力枚举对拍一致
+status: 未在洛谷提交；本机 g++ -static -O2 -std=c++14 -Wall 编译无警告，2 组官方样例实跑正确（5 / 92100）；算法经 2957 组随机数据与暴力枚举对拍一致
 visualization: true
 samples:
   - in: "5"

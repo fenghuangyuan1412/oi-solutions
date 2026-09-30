@@ -1,0 +1,38 @@
+id: P2058
+title: "[NOIP 2016 普及组] 海港 / harbour"
+source: luogu
+url: https://www.luogu.com.cn/problem/P2058
+alias: 洛谷训练单 320175
+topics: [ds/queue, ds/sliding-window]
+difficulty: 普及/提高−
+tags: [队列, 滑动窗口, 计数数组, 均摊分析, 边界]
+complexity:
+  time: O(n + sum k_i)
+  space: O(sum k_i + max x)
+status: 未本地评测（洛谷题目页需登录）；本地 g++ -static -O2 -std=c++14 编译运行，样例 #1 输出 3/4/4、样例 #2 输出 3/3/3/4 均逐字正确；与"每艘船重建 Set"的暴力随机对拍 200000 组 0 不一致，另用编译好的 C++ 程序复核 300 组 0 不一致；60000 艘船 / 300000 名乘客压力测试 15~21ms
+visualization: true
+samples:
+  - in: |
+      3
+      1 4 4 1 2 2
+      2 2 2 3
+      10 1 3
+    out: |
+      3
+      4
+      4
+  - in: |
+      4
+      1 4 1 2 2 3
+      3 2 2 3
+      86401 2 3 4
+      86402 1 5
+    out: |
+      3
+      3
+      3
+      4
+notes: |
+  唯一的坑是窗口左开右闭 (t_i-86400, t_i]：过期判定必须写 t <= t_i-86400（等于左边界也要弹）。
+  实测把 <= 写成 < 时样例 #1 碰巧全对、样例 #2 第 3 行变 4（第 4 行又被盖回 4），
+  随机 20 万组里错 4 万余组，所以"只看最后一行输出"发现不了这个 bug。

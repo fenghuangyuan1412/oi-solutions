@@ -9,7 +9,7 @@ tags: [模拟, 排序, 下标推导, 蛇形填充]
 complexity:
   time: O(nm log(nm))
   space: O(nm)
-status: 未本地评测（本机无 C++ 编译器）；逻辑经 200000 组随机数据与蛇形暴力模拟对拍全部一致
+status: 未本地评测（未在洛谷提交）；本机 g++ -static -O2 -std=c++14 编译通过（1 条 -Wmaybe-uninitialized 警告，见 README 验证结论），实跑 3 组官方样例全对；JS 移植版与蛇形暴力模拟对拍 200000 组全一致
 limits: 1 <= n,m <= 10, 1 <= a_i <= 100 且互不相同
 visualization: true
 samples:

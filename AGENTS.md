@@ -30,6 +30,10 @@ bash scripts/new_problem.sh <P题号> <主题路径> <中文名>
 
 ## 3. 每道题的工作流
 
+**语言硬性要求：所有题解代码一律用 C++。** `solution.cpp` / `programs/*.cpp` / README「讲解代码」
+统一 C++14，按 `g++ -static -O2 -std=c++14` 能过；其他语言只允许出现在 `verify/` 下当对拍或
+验算工具，并且必须在 metadata.yml 或 README 里注明"仅用于验证，非讲解代码"。
+
 按顺序完成以下步骤，不得跳过验证直接写答案：
 
 ### 3.1 读题与代码验证

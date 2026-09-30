@@ -1,0 +1,21 @@
+id: P1309
+title: "[NOIP 2011 普及组] 瑞士轮"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1309
+alias: NOIP2011 普及组 T3
+topics: [basic/sorting, basic/simulation, ds/merge]
+difficulty: 普及+/提高-
+tags: [暴力部分分, 归并, 有序性观察, 同分排序]
+complexity:
+  time: O(RN log N) 暴力 / O(RN) 归并
+  space: O(N)
+status: 未本地评测（未在洛谷提交）；本机 g++ -static -O2 -std=c++14 编译无警告，官方样例两版全对，1500 组随机对拍里"暴力 vs 归并""暴力 vs JS 全模拟参照"均 0 不一致；极限 N=1e5,R=50 同一份随机数据两轮实测暴力 465~501ms、归并 149~153ms，两版每轮输出同一个数
+limits: 30% N<=100; 50% N<=1e4; 100% N<=1e5, 1<=R<=50, 1<=Q<=2N, 0<=s<=1e8, 1<=w<=1e8
+visualization: false
+files:
+  solution.cpp: 暴力档（每轮 sort，O(RN log N)）
+  solution_full.cpp: 正解（胜者/负者两队列归并，O(RN)）
+samples:
+  - in: "2 4 2\n7 6 6 7\n10 5 20 15"
+    out: "1"
+notes: 本题是"暴力值多少分"的样板：分档表算操作量要真代入；暴力在本机没超时，说明拿分只能靠提交实测；正解的钥匙是"胜者队列与负者队列各自天然有序"

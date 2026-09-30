@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P3017 布朗尼切片 · 二分答案 + 带内贪心 + 选带 DP 分步演示</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:20px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:14px; margin-bottom:16px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .card h2 { font-size:14px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 13px; font-size:14px; cursor:pointer; margin-right:6px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  textarea { background:#0d1020; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+             padding:8px 10px; font:14px/1.45 Consolas,monospace; width:210px; height:98px; }
+  .lab { font-size:14px; color:var(--dim); margin-top:6px; }
+  .prog { color:var(--dim); font-size:14px; margin-left:auto; white-space:nowrap; }
+  .topbar { display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; }
+  .row > .card { flex:1 1 320px; min-width:0; }
+  #grid { display:inline-flex; flex-direction:column; }
+  #gridbox, #dpwrap { overflow-x:auto; max-width:100%; }
+  #dpwrap table.dp { margin-bottom:2px; }
+  .grow { display:flex; align-items:stretch; }
+  .rowtag { min-width:46px; font-size:13px; color:var(--dim); display:flex; align-items:center;
+            justify-content:flex-end; padding-right:6px; }
+  .cell { width:36px; height:30px; display:flex; align-items:center; justify-content:center;
+          background:#232a4a; border:1px solid #333c66; font:15px Consolas,monospace; }
+  .cell.zero { color:#5a6288; }
+  .cell.hot { background:#1b3b4a; outline:2px solid var(--acc); outline-offset:-2px; }
+  .cell.stripTop { border-top:3px solid var(--acc); }
+  .cell.cutL { border-left:3px solid var(--warn); }
+  .striplist { display:flex; flex-direction:column; gap:5px; margin-top:10px; }
+  .sline { display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:14px; }
+  .sline .tag { color:var(--dim); min-width:118px; }
+  .pk { padding:2px 8px; border-radius:6px; background:#173a4a; color:var(--ok);
+        font:14px Consolas,monospace; border:1px solid #234a5a; }
+  .pk.tail { background:#242044; color:var(--dim); border-style:dashed; }
+  .pk.min { background:#4a1c1c; color:var(--warn); border:1px solid var(--warn); font-weight:700; }
+  .cols { display:flex; gap:6px; flex-wrap:wrap; align-items:flex-end; }
+  .colb { display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .colb .v { width:46px; height:28px; display:flex; align-items:center; justify-content:center;
+             border-radius:6px; background:#232a4a; border:1px solid #333c66; font:14px Consolas,monospace; }
+  .colb .a { width:46px; height:22px; display:flex; align-items:center; justify-content:center;
+             border-radius:5px; background:#0d1020; color:var(--dim); font:13px Consolas,monospace; }
+  .colb .n { font-size:13px; color:var(--dim); }
+  .colb.active .v { background:#1b3b4a; outline:2px solid var(--acc); }
+  .colb.active .a { color:var(--acc); }
+  .colb.done .v { background:#1c2b24; border-color:#2f5d44; color:var(--ok); }
+  .colb.closed .a { background:#4a1c1c; color:var(--warn); font-weight:700; }
+  table.dp { border-collapse:collapse; font:14px Consolas,monospace; }
+  table.dp th, table.dp td { border:1px solid #2c3358; padding:3px 6px; text-align:center; min-width:30px; }
+  table.dp th { color:var(--dim); font-weight:400; background:#141830; }
+  table.dp td.good { background:#1c2b24; color:var(--ok); }
+  table.dp td.bad { color:#5a6288; }
+  table.dp td.cur { outline:2px solid var(--acc); }
+  table.dp td.na { color:#2f3554; }
+  table.dp td.fv { background:#173a4a; color:var(--acc); font-weight:700; }
+  pre.code { margin:0 0 10px; background:#0d1020; border:1px solid #262c4a; border-radius:8px; overflow-x:auto;
+             padding:8px 10px; font:13px/1.6 Consolas,monospace; }
+  pre.code .ln { display:block; color:#7b84ab; border-radius:4px; padding:0 6px; white-space:pre-wrap; }
+  pre.code .ln.on { background:#1b3b4a; color:var(--ink); box-shadow:inset 3px 0 0 var(--acc); }
+  table.vars { border-collapse:collapse; width:100%; font-size:14px; }
+  table.vars td { border-bottom:1px solid #262c4a; padding:3px 6px; }
+  table.vars td.k { color:var(--dim); width:46%; }
+  table.vars td.v { font-family:Consolas,monospace; color:var(--acc); }
+  .note { font-size:14.5px; min-height:88px; }
+  .note b { color:var(--ink); }
+  .why { color:var(--dim); }
+  .badge { display:inline-block; padding:1px 9px; border-radius:20px; font-size:13px; }
+  .badge.ok { background:#173a2a; color:var(--ok); }
+  .badge.no { background:#4a1c1c; color:var(--warn); }
+  .err { color:var(--warn); font-size:14px; }
+  .note i, .why i { color:#7dd3fc; font-style:normal; font-family:Consolas,monospace; }
+</style>
+</head>
+<body>
+<h1>P3017 [USACO11MAR] Brownie Slicing G · 布朗尼切片</h1>
+<div class="sub">默认数据 = <b>题面示例（非洛谷评测样例）</b>：5×4 网格，横切成 A=4 条带，<b>每条带各自</b>竖切成 B=2 块，正确答案 3。<br>
+青色横线 = 水平带边界；<span style="color:#f87171">红色竖线</span> = 该带自己的竖切点（注意各带位置不同）—— 读懂这一点本题就做对了一半。</div>
+
+<div class="topbar">
+  <div>
+    <textarea id="src" spellcheck="false">5 4 4 2
+1 2 2 1
+3 1 1 1
+2 0 1 3
+1 1 1 1
+1 1 1 1</textarea>
+    <div class="lab">格式：R C A B，其后 R 行 × C 列（演示限制 R,C ≤ 10）</div>
+  </div>
+  <div>
+    <div>
+      <button id="load">载入</button>
+      <button id="prev">◀ 上一步</button>
+      <button id="next">下一步 ▶</button>
+      <button id="play">▶ 自动播放</button>
+      <button id="jump">跳到结尾</button>
+    </div>
+    <div class="lab" id="errbox"></div>
+  </div>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="row">
+  <div class="card" style="flex:1 1 392px">
+    <h2>① 布朗尼：带边界 + 每带竖切点 + 各块豆数</h2>
+    <div id="gridbox"></div>
+    <div class="striplist" id="strips"></div>
+  </div>
+  <div class="card">
+    <h2>② check(X) 内部：本带列和 + 竖向贪心指针</h2>
+    <div class="lab" id="xhead" style="margin:0 0 8px"></div>
+    <div class="cols" id="cols"></div>
+    <div class="lab" id="xsum"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="card">
+    <h2>③ 选带 DP：格子 = 带[起点..终点]的块数，f[i] = 前 i 行最多合格带数</h2>
+    <div id="dpwrap"></div>
+    <div class="lab" id="dpnote"></div>
+  </div>
+  <div class="card" style="flex:1 1 330px">
+    <h2>④ 核心代码（当前执行行高亮）+ 变量状态</h2>
+    <pre class="code" id="code"></pre>
+    <table class="vars" id="vars"></table>
+  </div>
+</div>
+
+<div class="card"><h2>讲解</h2><div class="note" id="note"></div></div>
+
+<script>
+'use strict';
+/* ================= 算法（与 solution.cpp / verify/dp_check.cpp 同一套逻辑，仅演示用） ================= */
+let R = 5, C = 4, A = 4, B = 2, G = [], steps = [], t = 0, timer = null;
+
+function colsumOf(r1, r2) {                     // 带 [r1..r2]（0 基行号）自己的列和
+  const v = new Array(C).fill(0);
+  for (let r = r1; r <= r2; r++) for (let c = 0; c < C; c++) v[c] += G[r][c];
+  return v;
+}
+function greedyScan(cs, X) {                    // 带内贪心：cur >= X 就收口
+  let cur = 0, cnt = 0, start = 0;
+  const pieces = [], trace = [];
+  for (let c = 0; c < cs.length; c++) {
+    cur += cs[c];
+    const acc = cur;                              // 本列累加后的值（判定用这个数）
+    let closed = false;
+    if (cur >= X) { pieces.push({ from: start, to: c, sum: cur }); cnt++; cur = 0; start = c + 1; closed = true; }
+    trace.push({ c, acc, after: cur, cnt, closed });
+  }
+  if (start < cs.length) {                      // 右侧零头（不构成一块）
+    let s = 0; for (let c = start; c < cs.length; c++) s += cs[c];
+    pieces.push({ from: start, to: cs.length - 1, sum: s, tail: true });
+  }
+  return { cnt, pieces, trace };
+}
+function checkFast(X) {                          // solution.cpp：每条带取最短可行终点
+  const chosen = []; let i = 0;
+  while (i < R) {
+    let found = -1;
+    for (let j = i; j < R; j++) { if (greedyScan(colsumOf(i, j), X).cnt >= B) { found = j; break; } }
+    if (found < 0) break;
+    chosen.push({ from: i, to: found });
+    i = found + 1;
+    if (chosen.length >= A) break;              // 剩余行并进最后一条带
+  }
+  return { ok: chosen.length >= A, chosen };
+}
+function checkDP(X) {                            // 讲解版：f[i] = max{ f[k]+1 | 带 (k..i] 合格 }
+  const f = [0], cell = [];
+  for (let i = 1; i <= R; i++) {
+    f.push(-1);
+    const row = [];
+    for (let k = 0; k < i; k++) {
+      const cnt = greedyScan(colsumOf(k, i - 1), X).cnt;
+      row.push(cnt);
+      if (cnt >= B && f[k] >= 0) f[i] = Math.max(f[i], f[k] + 1);
+    }
+    cell.push(row);
+  }
+  return { ok: f[R] >= A, f, cell };
+}
+function toCuts(cs, pieces) {                    // 恰好 B 块：多出的块与零头并入最后一块
+  const full = pieces.filter(p => !p.tail);
+  const cuts = [], sums = [];
+  for (let i = 0; i < B - 1 && i < full.length; i++) { cuts.push(full[i].to); sums.push(full[i].sum); }
+  const last = full.length >= B ? full[B - 1] : full[full.length - 1];
+  const startCol = last ? last.from : 0;
+  let s = 0; for (let c = startCol; c < C; c++) s += cs[c];
+  sums.push(s);
+  while (sums.length < B) sums.push(0);
+  return { cuts, sums };
+}
+const comb = (n, k) => { if (k < 0 || k > n) return 0; let r = 1; for (let i = 1; i <= k; i++) r = r * (n - k + i) / i; return Math.round(r); };
+
+const CODE = [
+  '// ---- check(X)：能不能让 A*B 块每块都 >= X ----',
+  'int strips = 0, i = 1;',
+  'while (i <= R) {                          // 从第 i 行开一条新带',
+  '  for (c = 1..C) col[c] = 0;              //   换带必须清零列和',
+  '  for (j = i; j <= R; ++j) {              //   向下找"最短"的合格带 [i..j]',
+  '    for (c = 1..C) col[c] += a[j][c];     //     把第 j 行并进本带列和',
+  '    for (c = 1..C) { cur += col[c];       //       带内贪心：从左往右累加',
+  '      if (cur >= X) { ++cnt; cur = 0; } } //       够 X 就立刻收口切一刀',
+  '    if (cnt >= B) { i = j+1; ++strips; break; }  // 本带合格 -> 开下一条带',
+  '  }',
+  '  if (j > R) return false;                // 凑不出合格带 -> 带数不足',
+  '  if (strips >= A) return true;           // 剩余行并进最后一条带（仍合格）',
+  '}                                         // DP 版：f[i]=max{f[k]+1 | 带(k..i]合格}',
+  'return strips >= A;                       // 二分：check(mid) ? lo=mid+1 : hi=mid-1'
+];
+
+function build() {
+  const st = [];
+  const total = G.reduce((s, row) => s + row.reduce((a, v) => a + v, 0), 0);
+  const hi0 = Math.floor(total / (A * B));
+  const v = (o) => { st.push(Object.assign({ line: null, X: null, strip: null, probe: null, chosen: null, dpf: null, dpCell: null, dpAt: null, vars: [], note: '' }, o)); };
+
+  v({ vars: [['total（全部豆数）', total], ['A * B（块数）', A * B], ['二分上界 floor(total/(A*B))', hi0]],
+    note: `<b>输入</b>：${R}×${C} 网格，共 ${total} 颗豆。Bessie 先横切 <b>A=${A} 条水平带</b>（切线贯穿整块），再<b>每条带独立</b>竖切成 <b>B=${B} 块</b>，一共 ${A * B} 块。<br>
+    <span class="why">其他牛挑走大的 ${A * B - 1} 块，Bessie 只剩<b>和最小</b>的一块 ⇒ 她的收益 = min(块和)。要<b>最大化这个最小值</b>。注意最小块不可能超过平均块 ${hi0}，它就是二分的上界。</span>` });
+
+  const ways = comb(R - 1, A - 1) * Math.pow(comb(C - 1, B - 1), A);
+  v({ line: 0,
+    note: `<b>学生第一版：全部切法枚举一遍。</b>水平切点 C(${R - 1},${A - 1}) = ${comb(R - 1, A - 1)} 种，<b>每条带再单独</b>选 C(${C - 1},${B - 1}) = ${comb(C - 1, B - 1)} 种竖切点 → 共 <b>${ways}</b> 种切法，逐个算 ${A * B} 块的和、取最小、再取最大。<br>
+    <span class="why">本机实测（verify/RESULTS.md §4）：12×12(A=6,B=6) 方案数 4.49×10<sup>18</sup> → 暴力 196 ms；14×14 → 1.7 s；16×16 → <b>30 s</b>；题目上限 500×500(A=B=250) 方案数约 10<sup>37340</sup>。枚举不是"慢一点"，是根本不可能。</span>` });
+
+  /* ---------- 二分主循环（只展示真实迭代的每一步）---------- */
+  let lo = 0, hi = hi0, ans = 0;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const ok = checkFast(mid).ok;
+    v({ line: 13, X: mid, vars: [['lo', lo], ['hi', hi], ['mid（候选答案 X）', mid], ['check(mid)', ok ? 'true 可行' : 'false 不可行']],
+      note: `<b>二分答案：把"最优"换成"判定"。</b>试 <i>X</i> = ${mid} —— "A·B = ${A * B} 块能不能<b>每块都</b> ≥ ${mid}？" <span class="badge ${ok ? 'ok' : 'no'}">${ok ? '可行' : '不可行'}</span> ${ok ? `→ ans=${mid}，lo = mid+1 = ${mid + 1}` : `→ hi = mid-1 = ${mid - 1}`}<br>
+      <span class="why">可行性对 <i>X</i> 单调：<i>X</i> 变小只会更容易做到（同一套切法照样合格），所以"能不能"关于 <i>X</i> 是一串 真真真…假假，可以二分。</span>` });
+    if (ok) { ans = mid; lo = mid + 1; } else hi = mid - 1;
+  }
+  const X = Math.max(1, ans);
+
+  /* ---------- check(X) 逐带展开：带内竖向贪心 ---------- */
+  const fast = checkFast(X);
+  const chosen = fast.chosen.slice(0, A);
+  if (chosen.length === A) chosen[A - 1] = { from: chosen[A - 1].from, to: R - 1 };   // 剩余行并入最后一条带
+  const cutsOf = chosen.map(s => toCuts(colsumOf(s.from, s.to), greedyScan(colsumOf(s.from, s.to), X).pieces));
+  v({ line: 2, X, vars: [['X（本次判定阈值）', X], ['A（需要的带数）', A], ['B（每带需要的块数）', B], ['R（总行数）', R]],
+    note: `<b>展开 check(X = ${X})：目标是每一块都 ≥ ${X}。</b>第 1 条带从第 1 行开始。注意接下来的<b>列和</b>数组是"这条带内部各行同列相加"，每条带各算各的。<br>
+    <span class="why">因为竖切只在带内生效：上一条带的红竖线位置对下一条带毫无约束。</span>` });
+
+  chosen.forEach((s, idx) => {
+    const cs = colsumOf(s.from, s.to);
+    const g = greedyScan(cs, X);
+    const done = chosen.slice(0, idx + 1).map((p, i) => Object.assign({}, p, { cuts: cutsOf[i].cuts, sums: cutsOf[i].sums }));
+    for (let k = 0; k < g.trace.length; k++) {
+      v({ line: 6, X, strip: s, probe: { cs, g, k }, chosen: idx ? done.slice(0, idx) : null,
+        vars: [['X', X], ['当前带（行号 1 基）', (s.from + 1) + '..' + (s.to + 1)], ['列指针 c', k + 1], ['累加 cur（本列加完）', g.trace[k].acc + (g.trace[k].closed ? ' → 收口清零' : '')], ['已切块数 cnt', g.trace[k].cnt], ['B（要求）', B]],
+        note: `<b>第 ${idx + 1} 条带（行 ${s.from + 1}~${s.to + 1}）</b>的列和 = [${cs.join(', ')}]。贪心扫到第 <b>${k + 1}</b> 列：累加到本列 cur = ${g.trace[k].acc}，已收口 <b>${g.trace[k].cnt}</b> 块。${g.trace[k].closed ? '<span class="badge ok">cur ≥ X → 就地切一刀，cur 清零</span>' : '<span class="why">cur &lt; X → 还不能切，继续往右吃一列。</span>'}<br>
+        <span class="why">贪心规则就一句：<b>够 X 立刻收口</b>。越早收口，留给后面块的列越长，块数不可能更少（交换论证：任何方案第一刀的位置 ≥ 贪心第一刀的位置，把它的刀往前挪不会破坏前面那块）。</span>` });
+    }
+    v({ line: 8, X, strip: s, probe: { cs, g, k: g.trace.length - 1 }, chosen: done,
+      vars: [['X', X], ['当前带（行号 1 基）', (s.from + 1) + '..' + (s.to + 1)], ['块数 cnt', g.cnt], ['B', B], ['合格?', g.cnt >= B ? '是' : '否'], ['strips（已定带数）', idx + 1], ['A', A]],
+      note: `<b>带 ${idx + 1} 贪心出 ${g.cnt} 块</b>，块和 = [${g.pieces.map(p => p.sum + (p.tail ? '（零头）' : '')).join(', ')}]；cnt = ${g.cnt} ≥ B = ${B} <span class="badge ok">合格</span> → 这条带<b>就到此为止</b>，下一条从行 ${Math.min(R, s.to + 2)} 开始。<br>
+      <span class="why">"块数 ≥ B" 就够用：把零头和多余块并进最后一块，和只增不减，块数正好回落到 B。而"到此为止"是关键——多吸一行只会把行浪费掉，让后面的带更难合格。</span>` });
+  });
+
+  /* ---------- 选带 DP 表逐格填 ---------- */
+  const dp = checkDP(X);
+  v({ line: 12, X, vars: [['X', X]], note:
+    `<b>换 DP 的眼光看同一件事（O(R²C) 版，也就是课堂推导的顺序）。</b>状态 f[i] = "把前 i 行<b>全部用完</b>，最多能切出几条合格带"；转移枚举最后一条带的起点 k+1。下面表格里第 i 行第 k+1 列 = 带 [起点..终点] 的<b>贪心块数</b>。<br>
+    <span class="why">为什么需要 DP：光看单条带不够，"这一行归上一条带还是下一条带"是要整体权衡的分配问题。</span>` });
+  for (let i = 1; i <= R; i++) {
+    for (let k = 0; k < i; k++) {
+      const cnt = dp.cell[i - 1][k];
+      v({ line: 12, X, dpf: dp.f.slice(0, i + 1), dpCell: dp.cell, dpAt: { i, k },
+        vars: [['X', X], ['带终点 i', i], ['带起点 k+1', k + 1], ['这条带的块数 cnt', cnt], ['cnt >= B ?', cnt >= B ? '是（合格）' : '否'], ['f[k]', dp.f[k]], ['f[i]', dp.f[i]], ['A', A]],
+        note: `带 <b>[${k + 1}..${i}]</b> 贪心出 <b>${cnt}</b> 块 → ${cnt >= B ? `<span class="badge ok">合格</span>` : `<span class="badge no">不足 ${B} 块，不合格</span>`}${cnt >= B && dp.f[k] >= 0 ? `，转移 f[${i}] = max(f[${i}], f[${k}]+1) = ${Math.max(dp.f[i], dp.f[k] + 1)}` : cnt >= B ? `，但 f[${k}] = −1：前 ${k} 行本身就分不出来，这条转移不合法` : ''}。` });
+    }
+  }
+  v({ line: 13, X, dpf: dp.f, dpCell: dp.cell, chosen: chosen.map((p, i) => Object.assign({}, p, { cuts: cutsOf[i].cuts, sums: cutsOf[i].sums })),
+    vars: [['X', X], ['f[R]', dp.f[R]], ['A', A], ['check(X)（DP 口径）', dp.ok ? 'true' : 'false'], ['贪心带数（solution 口径）', fast.chosen.length]],
+    note: `<b>check(X = ${X}) = ${dp.ok ? '可行' : '不可行'}</b>：f[R] = ${dp.f[R]}，与要求 A = ${A} 比 ${dp.ok ? `<span class="badge ok">达标</span>` : `<span class="badge no">不足</span>`}；solution.cpp 用"每带取最短终点"的贪心也数出 ${fast.chosen.length} 条带，两者结论一致。<br>
+    <span class="why">一致不是巧合：合格性对<b>扩行单调</b>（多吸一行 → 每列列和只增 → 块数不减），所以 DP 里每条带只剩"最短可行终点"这一个选择，f 被一个指针代替，O(R²C) 塌成 O(RC)。</span>` });
+
+  /* ---------- 反方向：X+1 为什么做不到 ---------- */
+  const Xb = X + 1, dpb = checkDP(Xb), fb = checkFast(Xb);
+  v({ line: 13, X: Xb, dpf: dpb.f, dpCell: dpb.cell,
+    vars: [['X', Xb], ['f[R]', dpb.f[R]], ['A', A], ['check(X)', dpb.ok ? 'true' : 'false'], ['贪心带数', fb.chosen.length]],
+    note: `<b>把阈值再加 1：X = ${Xb}</b> —— 表里绿格（块数 ≥ B = ${B} 的合格带）明显变少，f[R] = ${dpb.f[R]} &lt; A = ${A} <span class="badge no">不可行</span>。<br>
+    <span class="why">${Xb > hi0 ? `顺带一提：${Xb}·(A·B) = ${Xb * A * B} > total = ${total}，连"平均块"这一关都过不去，二分上界本来就把 ${Xb} 挡在外面。` : `可行与不可行的分界线就落在 ${X} 与 ${Xb} 之间，这正是二分要找的答案 X*。`}</span>` });
+
+  /* ---------- 终态：完整切割方案 ---------- */
+  const allSums = cutsOf.map(x => x.sums).flat();
+  const mn = Math.min.apply(null, allSums);
+  v({ line: null, X, chosen: chosen.map((p, i) => Object.assign({}, p, { cuts: cutsOf[i].cuts, sums: cutsOf[i].sums })),
+    vars: [['答案（Bessie 最多能拿到）', ans], ['全部块的和里最小的', mn], ['带数', chosen.length], ['块数', A * B]],
+    note: `<b>答案 = ${ans}</b>。图①的青横线是 A−1 = ${A - 1} 道水平切，红竖线是<b>每条带各自</b>的 B−1 = ${B - 1} 道竖切：${chosen.map((s, i) => `带${i + 1}(行${s.from + 1}~${s.to + 1}) 切在第${cutsOf[i].cuts.map(c => c + 1).join('/') || '—'}列后[${cutsOf[i].sums.join(',')}]`).join('；')}。<br>
+    ${A * B} 块的和 = [${allSums.join(', ')}]，最小那块 <b style="color:#f87171">${mn}</b> 归 Bessie —— 和题面描述那张图完全一致。<br>
+    <span class="why">坑：如果把竖切误读成"整块共用一套切点"，同一份数据只能拿到 <b>2</b>（本机 verify/brute_global.cpp 实测；300 组随机数据里 17 组两种理解答案不同）。"每条带独立"就是本题的全部难度。</span>` });
+  return { steps: st, ans };
+}
+
+/* ================= 渲染（每步全量重绘） ================= */
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = String(txt); return e; }
+
+function render() {
+  const st = steps[t];
+  /* ① 网格 */
+  const gb = document.getElementById('gridbox'); gb.innerHTML = '';
+  const grid = el('div'); grid.id = 'grid';
+  const stripOf = new Array(R).fill(-1), cutsOf = {};
+  (st.chosen || []).forEach((s, k) => {
+    for (let r = s.from; r <= s.to; r++) stripOf[r] = k;
+    cutsOf[k] = s.cuts || [];
+  });
+  for (let r = 0; r < R; r++) {
+    const row = el('div', 'grow');
+    let tag = '行' + (r + 1);
+    if (stripOf[r] >= 0) tag = (st.chosen[stripOf[r]].from === r ? '带' + (stripOf[r] + 1) : '');
+    row.appendChild(el('div', 'rowtag', tag));
+    for (let c = 0; c < C; c++) {
+      let cls = 'cell' + (G[r][c] === 0 ? ' zero' : '');
+      if (st.probe && st.strip && r >= st.strip.from && r <= st.strip.to && st.probe.k === c) cls += ' hot';
+      if (stripOf[r] >= 0 && st.chosen[stripOf[r]].from === r && r > 0) cls += ' stripTop';
+      if (stripOf[r] >= 0 && c > 0 && cutsOf[stripOf[r]].indexOf(c - 1) >= 0) cls += ' cutL';
+      row.appendChild(el('div', cls, G[r][c]));
+    }
+    grid.appendChild(row);
+  }
+  gb.appendChild(grid);
+  const sb = document.getElementById('strips'); sb.innerHTML = '';
+  if (st.chosen && st.chosen.length) {
+    const all = st.chosen.flatMap(s => s.sums || []);
+    const mn = all.length ? Math.min.apply(null, all) : null;
+    let marked = false;
+    st.chosen.forEach((s, k) => {
+      const line = el('div', 'sline');
+      line.appendChild(el('span', 'tag', '带' + (k + 1) + '：行' + (s.from + 1) + '~' + (s.to + 1)));
+      if (s.sums) s.sums.forEach(v => {
+        const isMin = !marked && v === mn;
+        if (isMin) marked = true;
+        line.appendChild(el('span', 'pk' + (isMin ? ' min' : ''), v));
+      });
+      else line.appendChild(el('span', 'lab', '（本带竖切点待定）'));
+      sb.appendChild(line);
+    });
+    if (mn != null) {
+      const l = el('div', 'sline');
+      l.appendChild(el('span', 'tag', 'Bessie 拿到：'));
+      l.appendChild(el('span', 'pk min', mn + ' 颗（全部块中最小的一块）'));
+      l.appendChild(el('span', 'lab', '其余 ' + (A * B - 1) + ' 块被贪心的牛挑走'));
+      sb.appendChild(l);
+    }
+  } else {
+    sb.innerHTML = '<div class="lab">带边界与红竖线会在 check(X) 展开时一条条出现。</div>';
+  }
+  /* ② 贪心累加 */
+  document.getElementById('xhead').innerHTML = st.X != null
+    ? '判定阈值 <b>X = ' + st.X + '</b>' + (st.strip ? '　当前带：行 ' + (st.strip.from + 1) + '~' + (st.strip.to + 1) : '')
+    : '还没进入 check(X) 的带内检查';
+  const cb = document.getElementById('cols'); cb.innerHTML = '';
+  if (st.probe) {
+    const cs = st.probe.cs, g = st.probe.g, k = st.probe.k;
+    for (let c = 0; c < C; c++) {
+      const box = el('div', 'colb' + (c === k ? ' active' : '') + (c < k ? ' done' : '') + (g.trace[c].closed && c <= k ? ' closed' : ''));
+      box.appendChild(el('div', 'v', cs[c]));
+      box.appendChild(el('div', 'a', c <= k ? (g.trace[c].closed ? g.trace[c].acc + '✔' : g.trace[c].acc) : '·'));
+      box.appendChild(el('div', 'n', '第' + (c + 1) + '列'));
+      cb.appendChild(box);
+    }
+    document.getElementById('xsum').innerHTML =
+      '上格 = 本带列和；下格 = 累加值 cur（<span style="color:#f87171">红底 ✔</span> = 在此收口切一刀，cur 清零）。当前 cnt = ' + g.trace[k].cnt + '，要求 ≥ B = ' + B + '。';
+  } else {
+    document.getElementById('xsum').innerHTML = '本步不涉及带内贪心；走到 check(X) 展开时，这里会亮出该带的列和与累加指针。';
+  }
+  /* ③ DP 表 */
+  const dw = document.getElementById('dpwrap'); dw.innerHTML = '';
+  if (st.dpf) {
+    const tb = el('table', 'dp');
+    const h = el('tr'); h.appendChild(el('th', null, '终点↓ / 起点→'));
+    for (let k = 0; k < R; k++) h.appendChild(el('th', null, String(k + 1)));
+    h.appendChild(el('th', null, 'f[i]'));
+    tb.appendChild(h);
+    for (let i = 1; i <= R; i++) {
+      const tr = el('tr');
+      tr.appendChild(el('th', null, String(i)));
+      for (let k = 0; k < R; k++) {
+        if (k >= i || !st.dpCell[i - 1] || st.dpCell[i - 1][k] == null) { tr.appendChild(el('td', 'na', '·')); continue; }
+        const cnt = st.dpCell[i - 1][k];
+        const cls = (cnt >= B ? 'good' : 'bad') + (st.dpAt && st.dpAt.i === i && st.dpAt.k === k ? ' cur' : '');
+        tr.appendChild(el('td', cls, cnt));
+      }
+      tr.appendChild(el('td', 'fv', st.dpf[i] == null ? '·' : st.dpf[i]));
+      tb.appendChild(tr);
+    }
+    dw.appendChild(tb);
+    document.getElementById('dpnote').innerHTML = '格中数字 = 该带贪心能切出的<b>块数</b>；' +
+      '<span style="color:#86efac">绿底</span> 表示 ≥ B=' + B + ' 合格。f[i] = 前 i 行（全部用完）最多几条合格带；f[i] = −1 表示分不出来。';
+  } else {
+    document.getElementById('dpnote').innerHTML = 'DP 表在进入"选带 DP"阶段后逐格填出。';
+  }
+  /* ④ 代码 + 变量 */
+  const cp = document.getElementById('code'); cp.innerHTML = '';
+  CODE.forEach((line, idx) => cp.appendChild(el('span', 'ln' + (st.line === idx ? ' on' : ''), line)));
+  const vt = document.getElementById('vars'); vt.innerHTML = '';
+  (st.vars || []).forEach(p => {
+    const tr = el('tr');
+    tr.appendChild(el('td', 'k', p[0]));
+    tr.appendChild(el('td', 'v', String(p[1])));
+    vt.appendChild(tr);
+  });
+  document.getElementById('note').innerHTML = st.note;
+  document.getElementById('prog').textContent = '第 ' + (t + 1) + ' / ' + steps.length + ' 步';
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === steps.length - 1;
+}
+
+function parse(txt) {
+  const p = txt.trim().split(/[^0-9]+/).filter(s => s.length).map(Number);
+  if (p.length < 4) return '数据太短：至少要 R C A B 加网格';
+  const r = p[0], c = p[1], a = p[2], b = p[3];
+  if (!(r >= 1 && c >= 1 && a >= 1 && b >= 1 && a <= r && b <= c)) return '要求 1≤A≤R、1≤B≤C';
+  if (r > 10 || c > 10) return '演示限制 R,C ≤ 10，否则一屏放不下';
+  if (p.length < 4 + r * c) return '网格不够：需要 ' + r + ' 行 × ' + c + ' 列';
+  R = r; C = c; A = a; B = b; G = [];
+  let idx = 4;
+  for (let i = 0; i < R; i++) { const row = []; for (let j = 0; j < C; j++) row.push(p[idx++]); G.push(row); }
+  return '';
+}
+
+function load() {
+  const err = parse(document.getElementById('src').value);
+  document.getElementById('errbox').innerHTML = err ? '<span class="err">' + err + '</span>' : '';
+  if (err) return;
+  steps = build().steps; t = 0;
+  const m = /^#(\d+)$/.exec(location.hash);
+  if (m) t = Math.min(steps.length - 1, Math.max(0, +m[1] - 1));
+  render();
+}
+
+document.getElementById('load').onclick = load;
+document.getElementById('prev').onclick = () => { if (t > 0) { t--; render(); } };
+document.getElementById('next').onclick = () => { if (t < steps.length - 1) { t++; render(); } };
+document.getElementById('jump').onclick = () => { t = steps.length - 1; render(); };
+document.getElementById('play').onclick = (e) => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+  e.target.textContent = '⏸ 暂停';
+  timer = setInterval(() => {
+    if (t >= steps.length - 1) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+    t++; render();
+  }, 1100);
+};
+load();
+</script>
+</body>
+</html>

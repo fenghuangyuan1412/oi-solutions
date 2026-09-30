@@ -1,0 +1,30 @@
+id: P7074
+title: "[CSP-J 2020] 方格取数"
+source: luogu
+url: https://www.luogu.com.cn/problem/P7074
+alias: CSP-J 2020 T4 方格取数
+topics: [dp/sequence, basic/prefix-sum, basic/data-range-analysis, search/dfs]
+difficulty: 普及/提高-（洛谷页面标注难度 4）
+tags: [骗分阶梯, 结构观察, 前缀最优, 负数初值-INF, DFS对拍]
+complexity:
+  time: DFS 指数级 / O(n^2 m) / O(n m)
+  space: O(n m)
+status: 未本地评测（未在洛谷提交）；本机 g++ -static -O2 -std=c++14 三版编译均无警告，官方两组样例三版全对（9 / -10）；n,m<=5 随机 1500 组 DFS vs O(n^2m) vs O(nm) 两两 0 不一致；n,m<=20 值 ±1e4 随机 600 组 O(n^2m) vs O(nm) 0 不一致；计时取两轮实测区间：300x300 O(n^2m) 52~63ms、O(nm) 21~26ms；1000x1000（同一份网格）O(nm) 163~178ms、O(n^2m) 1706~1807ms，两版答案同为 175847995；DFS 6x6 6~9ms、7x7 12~13ms、8x8 124~138ms
+limits: 20%: n,m<=5; 40%: n,m<=50; 70%: n,m<=300; 100%: 1<=n,m<=10^3, 方格整数绝对值 <= 10^4; 题面注明 2024/2/4 添加一组 hack 数据
+visualization: false
+files:
+  solution_dfs.cpp: 20 分档（DFS 穷举所有不自交路径，同时是两版 DP 的对拍暴力）
+  solution_mid.cpp: 70 分档（每列单向 + 枚举进列点 k，O(n^2 m)）
+  solution.cpp: 满分档（把内层 max 提成前/后缀最优，O(nm)）
+  verify.js: Node 验算脚本（样例 + 三版两两对拍 + 各档计时），仅用于验证，非讲解代码
+samples:
+  - in: "3 4\n1 -1 3 2\n2 -1 4 -1\n-2 2 -3 -1"
+    out: "9"
+  - in: "2 5\n-1 -1 -3 -2 -7\n-2 -1 -4 -1 -2"
+    out: "-10"
+notes: |
+  结构观察是本题唯一难点：只能上/下/右且不能重复经过 ⇒ 每列必为"从第 k 行进、单向走到第 i 行、向右离开"。
+  真实最优路径（DFS 打印）：样例 1 = (1,1)(2,1)(2,2)(2,3)(1,3)(1,4)(2,4)(3,4) = 9；样例 2 = 沿第 1 行走 4 格后下移到 (2,4) 再到 (2,5) = -10。
+  历史 bug（已修，写进 README 当教材）：向上转移里 pre[i] 应为 pre[i-1]，漏加当前格；样例 1 变 11、样例 2 变 -3，两个都是"偏大"，肉眼看不出。
+  初值必须是 -INF：NEG 写成 0 时样例 1 仍 9（碰巧对），样例 2 变 7 ⇒ 正数样例查不出这个坑。
+  O(n^2 m) 在 1000x1000 实测 1.6~1.7s，洛谷时限 1.00s，不能赌；70 分是它的天花板。

@@ -1,0 +1,40 @@
+id: P3017
+title: "[USACO11MAR] Brownie Slicing G / 布朗尼切片"
+source: luogu
+url: https://www.luogu.com.cn/problem/P3017
+alias: 洛谷训练单 320175
+topics: [dp/linear-partition, greedy/exchange-argument, math/binary-search-answer, basic/prefix-sum]
+difficulty: 提高+/省选−（洛谷 difficulty=5，USACO Gold）
+tags: [二分答案, 贪心, 交换论证, 线性DP, 列前缀和, 最大化最小值]
+complexity:
+  time: O(R*C*log(total/(A*B))) ≈ 7.5e6（solution.cpp 实测 R=C=500 全组 0.05~0.09 s）；讲解里作为跳板的"DP 选带"版是 O(R^2*C*log) ≈ 7.5e8，本机实测最慢 1.264 s，超洛谷 1 s 时限
+  space: O(R*C)（int a[505][505] 约 1 MB，时限 1000 ms / 内存 128 MB）
+status: 未本地评测（无洛谷登录，仅本地自测）；对拍验证（5700 组随机 + 9 组定向边界 + 200 组中等规模三路互校，0 不一致）；题面示例本地输出 3；未在洛谷提交
+visualization: true
+limits: 1 <= R <= 500, 1 <= C <= 500, 0 <= N_ij <= 4000, 1 <= A <= R, 1 <= B <= C；时间 1000 ms，内存 128 MB
+samples:
+  - in: |
+      5 4 4 2
+      1 2 2 1
+      3 1 1 1
+      2 0 1 3
+      1 1 1 1
+      1 1 1 1
+    out: |
+      3
+sample_note: 题面示例（非洛谷评测样例）—— 快照未登录，官方输入/输出样例区块没有渲染，这组即题面描述里的切割图；本地 solution.cpp / verify/brute.cpp / verify/dp_check.cpp 三方都输出 3
+verify:
+  compile: g++ -static -O2 -std=c++14 solution.cpp -o sol.exe
+  stress: node verify/stress.js ./sol.exe ./brute.exe verify/gen.py 5000   # 共 5000 组，不一致 0 组
+  extra: |
+    sol vs 独立暴力：5000 组（R,C<=6）+ 400 组（R,C 5..8）+ 300 组（gen.py 出数据）= 5700 组，0 不一致
+    DP 选带版 vs 暴力：800 组，0 不一致
+    solution vs DP 版（中等规模 R,C<=30）：200 组，0 不一致
+    定向边界 9 例（全零 / A=R且B=C / 单行 / 单列 / A=B=1 / 1x1）三方一致
+    R=C=500 大数据 11 组：sol 与 dp 输出逐位相同；sol 0.05~0.09 s，dp 最慢 1.264 s
+    详见 verify/RESULTS.md（所有数字均为本机实测）
+notes: |
+  唯一的坑是"竖切在每条水平带里各自独立"：水平线贯穿整块，竖线只在本带内有效，
+  所以判定能拆成"带内贪心数块数 + 带间 DP 选分段"两步；把竖切成全局一套切点，
+  实测 300 组随机数据里 17 组答案偏小（题面示例上会得 2 而不是 3）。
+authoring_note: 代码一律 C++14；verify/ 下的 brute.cpp、dp_check.cpp、brute_global.cpp、sol_2dpre_greedy.cpp、gen.py、stress.js 仅用于验证/变式对照，非主讲解代码。sol_2dpre_greedy.cpp 是"二分+二维前缀和+贪心选带"的已验证变式（README 变式节），最坏 500×500 实测 0.138 s 过；DP 选带版（dp_check.cpp）1.264 s 超时
