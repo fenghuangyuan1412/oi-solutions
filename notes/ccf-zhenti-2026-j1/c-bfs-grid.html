@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>题 8 · 5×5 网格 BFS：E 第一次入队时累计入了几个格</title>
+<style>
+  :root{--bg:#0f1220;--card:#1a1f35;--ink:#e8ecff;--dim:#8b93b5;--acc:#5eead4;--bad:#f59e6b;--good:#5eead4;--line:#262c4a;}
+  *{box-sizing:border-box}
+  body{margin:0;padding:20px 22px 40px;background:var(--bg);color:var(--ink);font:15px/1.65 "Segoe UI",system-ui,sans-serif;max-width:1280px}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+  .card h2{font-size:14px;letter-spacing:.05em;color:var(--dim);margin:0 0 10px;font-weight:600}
+  button{background:#2b3358;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 12px;font-size:14px;cursor:pointer;margin:0 6px 6px 0}
+  button:hover{background:#394373}
+  button.at{opacity:.45}
+  button.on{background:#16323f;border-color:var(--acc);color:var(--acc)}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
+  .col-l{flex:1 1 400px;min-width:300px}
+  .col-r{flex:1 1 480px;min-width:300px}
+  .prog{color:var(--dim);font-size:14px}
+  .hint{color:var(--dim);font-size:14px}
+  /* ---- 网格主画面 ---- */
+  #gridWrap{position:relative;display:inline-block;line-height:0;border:1px solid #3d4778;border-radius:6px;overflow:hidden;vertical-align:top}
+  #grid{display:grid}
+  .gc{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#131730;border:1px solid #232a4a;font:13px Consolas,monospace;color:#8b93b5}
+  .gc .sy{font:16px Consolas,monospace;color:#aab3d8}
+  .gc .cd{font:11px Consolas,monospace;color:#5c6488;margin-top:1px}
+  .gc.wall{background:#2a2f4d}
+  .gc.wall .sy{color:#6b7499;font-size:17px}
+  .gc.slab .sy,.gc.elab .sy{color:var(--acc);font-weight:700}
+  .gc.qd{background:#152a3d;border-color:#3a6b78}
+  .gc.qd .cd{color:#8b93b5}
+  .gc .od{position:absolute;right:2px;top:0;font:11px Consolas,monospace;color:#7f8ac0}
+  .gc.cur{background:#16323f;border-color:var(--acc);color:var(--ink);animation:pulse 1s ease-in-out infinite}
+  .gc.cur .cd{color:var(--acc)}
+  @keyframes pulse{0%,100%{box-shadow:inset 0 0 0 2px var(--acc)}50%{box-shadow:inset 0 0 0 6px #5eead455}}
+  .gc.chk{background:#25204d;border-color:#9d6bff}
+  .gc.chk .sy{color:#d3c2ff}
+  .gc.chk.okc{background:#1d3b33;border-color:var(--good)}
+  .gc.chk.okc .sy{color:var(--good)}
+  .gc.chk.badc{background:#3a2a1c;border-color:var(--bad)}
+  .gc.chk.badc .sy{color:var(--bad)}
+  .gc .mk{position:absolute;left:2px;bottom:0;font:12px Consolas,monospace}
+  .gc.okc .mk{color:var(--good)}
+  .gc.badc .mk{color:var(--bad)}
+  .gc.newq{background:#1d3b33;border-color:var(--good)}
+  .gc.newq .cd{color:var(--good)}
+  .gc.win{background:#1d3b33;border-color:var(--good);box-shadow:inset 0 0 0 3px var(--good)}
+  .gc.win .sy{color:var(--good)}
+  #gridSvg{position:absolute;left:0;top:0;pointer-events:none}
+  .legend{font-size:13px;color:var(--dim);margin-top:8px;line-height:1.9}
+  .legend i{display:inline-block;width:13px;height:13px;vertical-align:-2px;margin:0 4px 0 10px;border:1px solid #3d4778}
+  /* ---- 方向顺序指示 ---- */
+  #dirs{display:flex;gap:7px;flex-wrap:wrap}
+  .dc{padding:5px 10px;border-radius:8px;background:#131730;border:1px solid #2b3358;font:14px Consolas,monospace;color:#7f8ac0}
+  .dc b{font-size:15px}
+  .dc.act{background:#25204d;border-color:#9d6bff;color:#e2d7ff;font-weight:700;box-shadow:inset 0 0 0 1px #9d6bff}
+  .dc.doneok{background:#1d3b33;border-color:var(--good);color:var(--good)}
+  .dc.doneno{background:#2a2336;border-color:#4a4166;color:#8b7fae}
+  #chkInfo{margin-top:9px;font-size:14px;min-height:44px}
+  #chkInfo b{color:var(--acc)}
+  /* ---- 队列 ---- */
+  #queue{display:flex;gap:5px;flex-wrap:wrap;align-items:center;min-height:30px}
+  .qc{padding:4px 7px;border-radius:7px;background:#232a4a;border:1px solid #333c66;font:13px Consolas,monospace}
+  .qc.front{background:#16323f;border-color:var(--acc);color:var(--acc);font-weight:700}
+  .qc.new{background:#1d3b33;border-color:var(--good);color:var(--good);font-weight:700}
+  .qarrow{color:var(--dim);font-size:13px}
+  #takeout{display:inline-block;margin-left:8px;padding:3px 8px;border-radius:7px;background:#16323f;border:1px dashed var(--acc);color:var(--acc);font:13px Consolas,monospace}
+  /* ---- 大数字 ---- */
+  .bignum{font:16px Consolas,monospace}
+  .bignum em{font-style:normal;font-size:34px;color:var(--acc);font-weight:700}
+  /* ---- 累计表 ---- */
+  table{width:100%;border-collapse:collapse;font:13px/1.5 Consolas,monospace}
+  th,td{padding:3px 6px;border-bottom:1px solid #222743;text-align:left;vertical-align:top;white-space:nowrap}
+  th{color:var(--dim);font-weight:600}
+  td.ok{color:var(--acc)}
+  td.no{color:#8b7fae}
+  td.pend{color:#4c5478}
+  td.na{color:#3f4763}
+  tr.act td{background:#20263f}
+  tr.act td.cum{color:var(--acc);font-weight:700}
+  td.cum{color:#aab3d8}
+  /* ---- 台词 ---- */
+  #note{font-size:15px;min-height:88px}
+  #note b{color:var(--acc)}
+  #note .x{color:var(--bad)}
+  .badge{display:inline-block;background:#2b3358;border:1px solid #3d4778;border-radius:6px;padding:1px 8px;font-size:13px;color:var(--dim);margin-right:8px}
+  /* ---- 答案区 ---- */
+  #ans{font-size:14px}
+  #ans .big{font-size:20px;color:var(--good)}
+  #ans pre{background:#0d1020;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:13px/1.6 Consolas,monospace;color:#c8cfe8;white-space:pre-wrap;word-break:break-all;margin:8px 0 0}
+  #cmp{border-left:3px solid var(--bad);padding-left:10px;margin-top:10px;color:#ffd9bd}
+  ul{margin:6px 0 0;padding-left:20px}
+  li{font-size:14px;color:#c8cfe8;margin-bottom:4px}
+  .blank{border:1px solid var(--line);border-radius:9px;background:#131730;padding:9px 11px;margin-bottom:8px;font-size:14px;color:#c8cfe8}
+  .blank b{color:var(--acc)}
+  .opt{display:inline-block;background:#2b3358;border:1px solid #3d4778;border-radius:6px;padding:1px 9px;margin-right:6px;font:14px Consolas,monospace}
+  .opt.sel{background:#16323f;border-color:var(--acc);color:var(--acc);font-weight:700}
+</style>
+</head>
+<body>
+<h1>题 8 · 5×5 网格上的 BFS：E 第一次入队时，已经入过队的格子有几个？</h1>
+<div class="sub">
+  2026 CCF CSP-J1 第一轮真题（入门组 C++ 卷）<b>一、单项选择题第 8 题</b>，卷面答案 <b>C</b>。
+  本页所有格子状态、入队顺序与累计个数，都由本机 <code>-static</code> 编译的
+  <code>verify/mc_choice.exe</code> 实测输出核对过（原文见页面末尾的「机器实测」框），不是手算的结论。
+</div>
+
+<div class="card">
+  <div style="display:flex;flex-wrap:wrap;align-items:center">
+    <button id="prev">上一步</button>
+    <button id="next">下一步</button>
+    <button id="play">自动播放</button>
+    <button id="end">跳到末尾</button>
+    <button id="home">回到开头</button>
+    <span class="qarrow" style="margin-right:6px">速度</span>
+    <button class="sp on" data-ms="900">1x</button>
+    <button class="sp" data-ms="450">2x</button>
+    <button class="sp" data-ms="200">4x</button>
+    <span class="prog" style="margin-left:auto"><span id="prog"></span></span>
+  </div>
+  <div class="hint" style="margin-top:2px">键盘：← 上一步 ／ → 下一步 ／ 空格 播放暂停。本题的教学核心是<b>方向顺序固定为「上 → 下 → 左 → 右」</b>，顺序一改，入队的先后就全变。</div>
+</div>
+
+<div class="card">
+  <h2>逐帧讲解（老师念这一段）</h2>
+  <div id="note"></div>
+</div>
+
+<div class="row">
+  <div class="col-l">
+    <div class="card">
+      <h2>① 卷面网格（行、列都从 0 开始）</h2>
+      <div id="gridWrap"><div id="grid"></div><svg id="gridSvg"></svg></div>
+      <div class="legend">
+        <i style="background:#2a2f4d"></i>障碍 #
+        <i style="background:#16323f;border-color:var(--acc)"></i>刚取出的队首
+        <i style="background:#25204d;border-color:#9d6bff"></i>正在看的邻居
+        <i style="background:#1d3b33;border-color:var(--good)"></i>本帧刚入队
+      </div>
+      <div class="legend" style="margin-top:2px">
+        格子上一行是符号、下一行是坐标 <code>(行,列)</code>；右上角小数字 = 它是<b>第几个入队</b>的（还没入队就没有数字）。
+      </div>
+    </div>
+  </div>
+  <div class="col-r">
+    <div class="card">
+      <h2>② 方向顺序：每个队首都按这四个方向看一遍</h2>
+      <div id="dirs"></div>
+      <div id="chkInfo"></div>
+    </div>
+    <div class="card">
+      <h2>③ 队列（左端 = 队首 front，右端 = 队尾 back；先进先出）</h2>
+      <div id="queue"></div>
+      <div id="queueSay" class="hint" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h2>④ 累计入队格子数（含 S 和 E）</h2>
+      <div class="bignum" id="counter"></div>
+      <div class="hint" id="counterSay" style="margin-top:6px"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>⑤ 入队累计表（和 README 讲评里那张 13 行的表逐行对应；最后一行累计停在 14）</h2>
+  <div style="overflow-x:auto"><table id="tbl"></table></div>
+  <div class="hint" id="tblSay" style="margin-top:8px"></div>
+</div>
+
+<div class="card">
+  <h2>⑥ 本步结论 / 最终答案</h2>
+  <div id="ans"></div>
+</div>
+
+<div class="card">
+  <h2>讲义小结（讲完动画再回头看）</h2>
+  <div class="blank"><b>卷面规则原文的三句话</b>：初始时把 S 入队 → 每次<b>取出队首</b>，按「上、下、左、右」（上 = 行号减 1，下 = 行号加 1，左 = 列号减 1，右 = 列号加 1）看它的四个邻居 → <b>越界、障碍、已访问</b>的跳过，其余<b>标记为已访问并入队</b>。终止条件：E 第一次入队。</div>
+  <div class="blank"><b>「标记已访问」发生在入队那一刻，不是取出的那一刻。</b>这是本题第一个坑：如果等到取出时才标记，同一个格子会被好几个邻居重复塞进队列，累计数就不是 14 了。卷面写的是「其余格子标记为已访问<b>并</b>入队」，顺序就是这个意思。</div>
+  <div class="blank"><b>「到 E 入队为止入过队的格子数」≠「这张图上总共能走到几个格子」。</b>只数到 E 进队那一瞬间为止：A 选项 15 是再往下多取一次队首 (4,1)、把它的左邻居 (4,0) 也算进去的结果；D 选项 13 是把 (4,1) 漏掉了；B 选项 12 是停在 (3,3) 入队、忘了 E 本身也要入队。</div>
+  <div class="blank"><b>易错点（本页最后一帧「常见错法」）</b>：<span class="opt">12</span><span class="opt">13</span>都是<b>少算了</b>。BFS 是「一层一层往外推」：(4,1) 是 (4,2) 的<b>左</b>邻居，(4,2) 又和 (3,3) 同一轮入队、还比 (3,3) 早一点，可 <b>(4,2) 要轮到自己被取出时才会去看邻居</b>，那时 (4,1) 才排得上队。所以入队顺序里 (4,1) 出现在 (3,3) 之后、E 之前。</div>
+  <div class="blank"><b>一句话提炼</b>：BFS 的入队顺序由「<b>谁先被取出</b>」决定，不是由「谁离终点近」决定；方向顺序 + 先进先出两件事一起，才能把 14 个数对。</div>
+</div>
+
+<div class="card">
+  <h2>机器实测原文（RESULTS.md §1 · mc_choice.exe）</h2>
+<pre id="verbatim">题8  E(3,4) 第一次入队时，累计入队过 14 个格子
+     入队顺序：(0,0) (1,0) (0,1) (2,0) (1,1) (0,2) (2,1) (1,2) (2,2) (3,2) (4,2) (3,3) (4,1) (3,4)</pre>
+  <div class="hint" style="margin-top:8px">
+    编译方式：<code>g++ -static -O2 -std=c++14 mc_choice.cpp -o mc_choice.exe</code>（本机两套 MinGW 路径冲突，不加 <code>-static</code> 会启动即段错误）。
+    上面这两行是程序的<b>原始输出</b>，逐帧动画的第 ⑤ 张表和这一页所有数字都由同一套规则生成，两边完全一致。
+  </div>
+</div>
+
+<script>
+/* ================= 卷面网格（逐字抄自 paper.md 第 79—83 行） ================= */
+const GRID = ["S..#.", "...#.", "...#.", "##..E", "...#."];
+const SZ = 5;
+const SR = 0, SC = 0, ER = 3, EC = 4;
+const DIRS = [
+  { n: '上', dr: -1, dc: 0, tip: '行号减 1' },
+  { n: '下', dr: 1, dc: 0, tip: '行号加 1' },
+  { n: '左', dr: 0, dc: -1, tip: '列号减 1' },
+  { n: '右', dr: 0, dc: 1, tip: '列号加 1' }
+];
+const co = (r, c) => '(' + r + ',' + c + ')';
+const ky = (r, c) => r + ',' + c;
+const chOf = (r, c) => GRID[r][c];
+const inb = (r, c) => r >= 0 && r < SZ && c >= 0 && c < SZ;
+
+/* ================= 严格按卷面规则模拟 BFS，逐帧产出 ================= */
+function buildFrames() {
+  const frames = [];
+  const seen = {};        // key -> 入队序号（有值 = 已标记已访问）
+  const q = [];           // 队列：{r,c}
+  const rows = [];        // 累计表的行
+  let cum = 0;
+
+  const rowSnap = () => rows.map(r => ({
+    no: r.no, front: r.front, cells: r.cells.slice(), push: r.push, cum: r.cum
+  }));
+
+  function snap(extra) {
+    const f = Object.assign({
+      kind: '', cur: null, chk: null, dirIdx: -1, rowCells: null,
+      q: q.map(u => ({ r: u.r, c: u.c })), newOnes: [],
+      seen: Object.assign({}, seen), cum: cum,
+      rows: rowSnap(), activeRow: rows.length - 1,
+      arrow: null, win: false, say: ''
+    }, extra);
+    frames.push(f);
+    return f;
+  }
+
+  /* --- 帧 0：读题面 --- */
+  snap({
+    kind: 'intro',
+    say: '先看卷子给的 5×5 网格：<b>行号和列号都是从 0 开始数的</b>，左上角是 (0,0)，右下角是 (4,4)。' +
+      '格子里<b>上面一行是符号、下面一行是坐标</b>。<b>S</b> 是起点，在 (0,0)；<b>E</b> 是终点，在 (3,4)；' +
+      '印着 <b class="x">#</b> 的格子是<b>障碍（走不进去）</b>，印着 <b>.</b> 的可以走。' +
+      '题目要我们数：<b>E 第一次排进队列的那一刻，一共有几个格子排过队</b>（起点 S 和终点 E 自己都算）。'
+  });
+
+  /* --- 帧 1：初始把 S 入队 --- */
+  seen[ky(SR, SC)] = ++cum;
+  q.push({ r: SR, c: SC });
+  rows.push({ no: 1, front: '—', cells: [{ t: '—', k: 'na' }, { t: '—', k: 'na' }, { t: '—', k: 'na' }, { t: '—', k: 'na' }], push: { t: 'S' + co(SR, SC), k: 'ok' }, cum: cum });
+  snap({
+    kind: 'init', newOnes: [{ r: SR, c: SC }], activeRow: 0,
+    say: '规则的<b>第一步</b>：初始时把起点 <b>S = (0,0)</b> 放进队列。<br>' +
+      '注意：它一<b>进队列</b>，就算「已经入过队」的格子了，所以累计是 <b>1</b>。' +
+      '现在队列里只有它一个，<b>还没有任何格子被取出过</b>，所以表里第 1 行的「取出的队首」是「—」，四个方向也都是「—」。'
+  });
+
+  /* --- 逐个取出队首，按 上→下→左→右 看四个邻居 --- */
+  let stop = false, guard = 0;
+  while (q.length > 0 && !stop) {
+    if (++guard > 500) break;
+    const u = q.shift();
+    const row = {
+      no: rows.length + 1, front: co(u.r, u.c),
+      cells: [{ t: '…', k: 'pend' }, { t: '…', k: 'pend' }, { t: '…', k: 'pend' }, { t: '…', k: 'pend' }],
+      push: { t: '—', k: 'na' }, cum: cum
+    };
+    rows.push(row);
+    snap({
+      kind: 'pop', cur: u,
+      say: '队列非空，<b>取出队首 ' + co(u.r, u.c) + '</b>（表里第 ' + row.no + ' 行就是它）。<br>' +
+        '「取出」的意思是：这个格子本身不再往里塞东西了，现在要看的是<b>它上下左右四个相邻的格子</b>，' +
+        '而且必须按卷面写死的顺序 <b>上 → 下 → 左 → 右</b> 一个一个看。当前累计入队 <b>' + cum + '</b> 个格子。'
+    });
+
+    for (let d = 0; d < 4; d++) {
+      const nr = u.r + DIRS[d].dr, nc = u.c + DIRS[d].dc;
+      let res, txt, why, say;
+      if (!inb(nr, nc)) {
+        res = 'oob'; txt = '越界'; why = '越界';
+        say = '第 ' + (d + 1) + ' 个方向：<b>' + DIRS[d].n + '</b>（' + DIRS[d].tip + '）。算出来的坐标是 <b>' + co(nr, nc) + '</b>，' +
+          '可是这个网格只有 0～4 这 5 行 5 列，<b class="x">' + co(nr, nc) + ' 这个格子根本不存在</b> —— 这就是「越界」，跳过，什么都不做。';
+      } else if (chOf(nr, nc) === '#') {
+        res = 'wall'; txt = '#'; why = '障碍';
+        say = '第 ' + (d + 1) + ' 个方向：<b>' + DIRS[d].n + '</b>（' + DIRS[d].tip + '）。目标格 <b>' + co(nr, nc) + '</b> 卷面上印的是 <b class="x">#</b>，' +
+          '它是<b>障碍</b>，进不去 —— 跳过。';
+      } else if (seen[ky(nr, nc)] !== undefined) {
+        res = 'seen'; txt = '已访问'; why = '已访问';
+        say = '第 ' + (d + 1) + ' 个方向：<b>' + DIRS[d].n + '</b>（' + DIRS[d].tip + '）。目标格 <b>' + co(nr, nc) + '</b> 是<b>第 ' + seen[ky(nr, nc)] + ' 个入队的格子</b>，' +
+          '早就排过队了。卷面规则：「<b>已访问的格子跳过</b>」，而且标记是在<b>入队那一刻</b>做的 —— 所以<b>每个格子一辈子只入队一次</b>，这里什么都不做。';
+      } else {
+        res = 'push'; txt = co(nr, nc) + ' ✓'; why = '入队';
+        seen[ky(nr, nc)] = ++cum;
+        q.push({ r: nr, c: nc });
+        row.push = row.push.k === 'ok'
+          ? { t: row.push.t + ' ' + co(nr, nc), k: 'ok' }
+          : { t: co(nr, nc), k: 'ok' };
+        row.cum = cum;
+        say = '第 ' + (d + 1) + ' 个方向：<b>' + DIRS[d].n + '</b>（' + DIRS[d].tip + '）。目标格 <b>' + co(nr, nc) + '</b>：' +
+          '①没越界 ②不是障碍 <b>#</b> ③也还没排过队 ⇒ <b>标记为已访问，放到队尾</b>。' +
+          '它是第 <b>' + cum + '</b> 个入队的格子（看它在队列最右边出现）。';
+        if (nr === ER && nc === EC) {
+          say = '第 4 个方向：<b>右</b>（列号加 1）。目标格 <b>E = (3,4)</b>：没越界、不是障碍、没排过队 ⇒ 标记并入队，' +
+            '它是第 <b>' + cum + '</b> 个入队的格子。<br><b class="x">题目说「当 E 第一次入队时」就停下来数数</b>，' +
+            '所以搜索<b>到这一刻结束</b>：队列里剩下的格子、以及后面本来还会入队的格子，<b>统统不算</b>。';
+          stop = true;
+        }
+      }
+      row.cells[d] = { t: txt, k: res === 'push' ? 'ok' : 'no' };
+      snap({
+        kind: 'dir', cur: u, dirIdx: d,
+        chk: inb(nr, nc) ? { r: nr, c: nc, res: res } : { r: nr, c: nc, res: res, ghost: true },
+        newOnes: res === 'push' ? [{ r: nr, c: nc }] : [],
+        arrow: { fr: u, to: { r: nr, c: nc }, d: d, ok: res === 'push' },
+        win: stop,
+        say: say
+      });
+      if (stop) break;
+    }
+  }
+
+  /* --- 答案帧 --- */
+  snap({
+    kind: 'answer', win: true,
+    say: '<b>数完了：E(3,4) 第一次入队时，累计入队过 14 个格子 ⇒ 选 C。</b><br>' +
+      '把上面表里「本步新入队」那一列加起来：第 1 行 1 个（S），第 2 行 2 个，第 3 行 2 个，第 4、5、6、8、10、11、12、13 行各 1～2 个，' +
+      '第 7、9 行是 0 个（四个邻居全被跳过）—— 一路加到第 13 行正好 <b>14</b>，' +
+      '和下面「机器实测」框里那两行输出<b>一模一样</b>。'
+  });
+
+  /* --- 对比帧：常见错法 --- */
+  snap({
+    kind: 'compare', win: true,
+    say: '<b>最容易数错的一处：为什么 (4,1) 排在 (3,3) 后面？</b><br>' +
+      '(4,1) 是 (4,2) 的<b>左</b>邻居。(4,2) 和 (3,3) 都是在「取出 (3,2)」那一步入队的，而且 (4,2) 还比 (3,3) <b>早一点</b>入队。' +
+      '但「入了队」不等于「马上就往外看」—— <b>(4,2) 必须轮到自己被取出时才会去看邻居</b>，(4,1) 就排在这之后。' +
+      '所以入队顺序是 (4,2) → (3,3) → (4,1) → E。<br>' +
+      '数成 13 的人，多半是<b>漏掉了 (4,1)</b>（或者漏掉了 E 自己）—— 顺序排错并不会改变总数，<b>漏数才会</b>。<br>' +
+      '<b>这就是 BFS「一层一层往外推」的味道</b>：谁先被<b>取出</b>由它入队的先后决定，跟它离终点近不近没有关系。'
+  });
+
+  return frames;
+}
+
+/* ================= 播放器 ================= */
+const frames = buildFrames();
+let t = 0, timer = null, ms = 900;
+const CS = 56;
+const $ = id => document.getElementById(id);
+const fr = () => frames[Math.min(Math.max(t, 0), frames.length - 1)];
+const isQ = (f, r, c) => f.q.some(u => u.r === r && u.c === c);
+const isNew = (f, r, c) => f.newOnes.some(u => u.r === r && u.c === c);
+const same = (p, r, c) => !!p && p.r === r && p.c === c;
+
+function renderGrid(f) {
+  const g = $('grid');
+  g.style.gridTemplateColumns = 'repeat(' + SZ + ',' + CS + 'px)';
+  g.style.gridTemplateRows = 'repeat(' + SZ + ',' + CS + 'px)';
+  g.innerHTML = '';
+  for (let r = 0; r < SZ; r++) for (let c = 0; c < SZ; c++) {
+    const sym = chOf(r, c);
+    let cls = 'gc';
+    if (sym === '#') cls += ' wall';
+    if (sym === 'S') cls += ' slab';
+    if (sym === 'E') cls += ' elab';
+    if (f.seen[ky(r, c)] !== undefined && !(f.chk && f.chk.res === 'push' && same(f.chk, r, c))) cls += ' qd';
+    if (same(f.cur, r, c)) cls += ' cur';
+    if (f.chk && same(f.chk, r, c)) cls += ' chk ' + (f.chk.res === 'push' ? 'okc' : 'badc');
+    if (isNew(f, r, c)) cls += ' newq';
+    if (f.win && r === ER && c === EC) cls += ' win';
+    const d = document.createElement('div');
+    d.className = cls;
+    let h = '<span class="sy">' + sym + '</span><span class="cd">' + r + ',' + c + '</span>';
+    if (f.seen[ky(r, c)] !== undefined) h += '<span class="od">' + f.seen[ky(r, c)] + '</span>';
+    if (f.chk && same(f.chk, r, c)) {
+      h += '<span class="mk">' + (f.chk.res === 'push' ? '✓' : '✗') + '</span>';
+    }
+    d.innerHTML = h;
+    d.title = co(r, c) + ' 符号 ' + sym +
+      (f.seen[ky(r, c)] !== undefined ? ' · 第 ' + f.seen[ky(r, c)] + ' 个入队' : ' · 尚未入队');
+    g.appendChild(d);
+  }
+  const svg = $('gridSvg');
+  svg.setAttribute('width', SZ * CS);
+  svg.setAttribute('height', SZ * CS);
+  svg.setAttribute('viewBox', '0 0 ' + (SZ * CS) + ' ' + (SZ * CS));
+  const cx = c => c * CS + CS / 2;
+  let s = '<defs><marker id="ahO" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4" markerHeight="4" orient="auto">' +
+    '<path d="M0,0 L10,5 L0,10 z" fill="#5eead4"/></marker>' +
+    '<marker id="ahX" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4" markerHeight="4" orient="auto">' +
+    '<path d="M0,0 L10,5 L0,10 z" fill="#f59e6b"/></marker></defs>';
+  if (f.arrow && f.cur) {
+    const dd = DIRS[f.arrow.d];
+    let tx = cx(f.arrow.to.c), ty = cx(f.arrow.to.r);
+    if (!inb(f.arrow.to.r, f.arrow.to.c)) {
+      tx = cx(f.cur.c) + dd.dc * CS * 0.85;
+      ty = cx(f.cur.r) + dd.dr * CS * 0.85;
+    }
+    const col = f.arrow.ok ? '#5eead4' : '#f59e6b';
+    s += '<line x1="' + cx(f.cur.c) + '" y1="' + cx(f.cur.r) + '" x2="' + tx + '" y2="' + ty +
+      '" stroke="' + col + '" stroke-width="3" stroke-opacity=".9" marker-end="url(#' + (f.arrow.ok ? 'ahO' : 'ahX') + ')"/>';
+  }
+  svg.innerHTML = s;
+}
+
+function renderDirs(f) {
+  const box = $('dirs');
+  let h = '';
+  for (let d = 0; d < 4; d++) {
+    let cls = 'dc', tail = '';
+    const cell = f.rows[f.activeRow] ? f.rows[f.activeRow].cells[d] : null;
+    if (f.kind === 'dir' && f.dirIdx === d) { cls += ' act'; tail = f.chk.res === 'push' ? ' ✓' : ' ✗'; }
+    else if (cell && cell.k === 'ok') cls += ' doneok';
+    else if (cell && cell.k === 'no') cls += ' doneno';
+    h += '<span class="' + cls + '"><b>' + DIRS[d].n + '</b>（' + DIRS[d].tip + '）' + tail + '</span>';
+  }
+  box.innerHTML = h;
+  const info = $('chkInfo');
+  if (f.kind === 'dir') {
+    const r = f.chk.r, c = f.chk.c, d = f.dirIdx;
+    const names = ['越界（格子不存在）', '障碍 #（走不进去）', '已访问（早就排过队了）', '三个条件都不犯 ⇒ 标记并入队'];
+    const map = { oob: 0, wall: 1, seen: 2, push: 3 };
+    info.innerHTML = '<b>正在看：' + co(r, c) + '</b>　方向 = ' + DIRS[d].n + '　判定 ⇒ <b>' + names[map[f.chk.res]] + '</b>' +
+      (f.chk.ghost ? '<br><span class="hint">这个坐标在网格外面，画面里点不出来，所以只在⑤表格里记一笔「越界」。</span>' : '');
+  } else if (f.kind === 'pop') {
+    info.innerHTML = '准备从 <b>' + DIRS[0].n + '</b> 开始，按 <b>上 → 下 → 左 → 右</b> 依次看 ' + co(f.cur.r, f.cur.c) + ' 的四个邻居。';
+  } else if (f.kind === 'answer' || f.kind === 'compare') {
+    info.innerHTML = '搜索已经停止（E 入队那一刻），方向顺序不再往下走。';
+  } else {
+    info.innerHTML = '还没开始取队首：四个方向都灰着。每取出一个格子，这四个标签就会亮一次。';
+  }
+}
+
+function renderQueue(f) {
+  const box = $('queue');
+  let h = '';
+  if (!f.q.length) h = '<span class="qarrow">（队列为空）</span>';
+  f.q.forEach((u, i) => {
+    if (i === 0) h += '<span class="qarrow">front →</span>';
+    let cls = 'qc' + (i === 0 ? ' front' : '') + (isNew(f, u.r, u.c) ? ' new' : '');
+    h += '<span class="' + cls + '">' + co(u.r, u.c) + (f.seen[ky(u.r, u.c)] !== undefined ? '#' + f.seen[ky(u.r, u.c)] : '') + '</span>';
+  });
+  if (f.q.length) h += '<span class="qarrow">← back</span>';
+  if (f.kind === 'pop' && f.cur) h += '<span id="takeout">本帧取出：' + co(f.cur.r, f.cur.c) + '</span>';
+  box.innerHTML = h;
+  $('queueSay').innerHTML = '现在队列里有 <b>' + f.q.length + '</b> 个格子。' +
+    (f.kind === 'pop'
+      ? '最左边的 <b>' + co(f.cur.r, f.cur.c) + '</b> 刚被取出来，它不再是队首了（队首是它右边那一个）。'
+      : '新入队的格子一定加在<b>最右边（队尾）</b>，这就是「先进先出」。');
+}
+
+function renderCounter(f) {
+  $('counter').innerHTML = '累计入队 <em>' + f.cum + '</em> 个格子　·　已取出 <b>' +
+    (f.rows.filter(r => r.front !== '—').length) + '</b> 个队首　·　E 入队序号 <b>' +
+    (f.seen[ky(ER, EC)] !== undefined ? f.seen[ky(ER, EC)] : '还没入队') + '</b>';
+  $('counterSay').innerHTML = f.win
+    ? '<b>到 E 入队为止：14 个。</b> 题目选项 A.15 B.12 C.14 D.13 ⇒ <b>选 C</b>。'
+    : 'E(3,4) 还没进队列，所以现在还不能给答案 —— 继续往下走。';
+}
+
+function renderTable(f) {
+  let h = '<tr><th>#</th><th>取出的队首</th><th>上</th><th>下</th><th>左</th><th>右</th><th>本步新入队</th><th>累计</th></tr>';
+  f.rows.forEach((r, i) => {
+    const act = i === f.activeRow && f.kind !== 'intro';
+    h += '<tr class="' + (act ? 'act' : '') + '"><td>' + r.no + '</td><td>' + r.front + '</td>';
+    r.cells.forEach(c => { h += '<td class="' + c.k + '">' + c.t + '</td>'; });
+    h += '<td class="' + r.push.k + '">' + r.push.t + '</td><td class="cum">' + r.cum + '</td></tr>';
+  });
+  $('tbl').innerHTML = h;
+  const last = f.rows[f.rows.length - 1];
+  const pend = last ? last.cells.some(c => c.t === '…') : false;
+  $('tblSay').innerHTML = f.kind === 'intro'
+    ? '这张表现在还是空的。表里一行 = 取出一个队首（第 1 行是「初始把 S 入队」，还没有队首被取出）。'
+    : '最后一行是第 <b>' + last.no + '</b> 行，当前累计 <b>' + last.cum + '</b>。' +
+      (pend ? '（「…」= 这一行右边的方向还没看到）' : '') +
+      (f.win ? ' E 已经入队，表到此停止，累计停在 <b>14</b>。' : '');
+}
+
+const KN = { intro: '读题面', init: '初始：S 入队', pop: '取出队首', dir: '检查一个邻居', answer: '得出答案', compare: '常见错法' };
+
+function renderAns(f) {
+  const e = $('ans');
+  if (f.kind === 'answer' || f.kind === 'compare') {
+    e.innerHTML = '<div class="big">E 第一次入队时，累计入队 <b>14</b> 个格子　⇒　选 C</div>' +
+      '<div style="margin-top:6px"><span class="opt">A. 15</span><span class="opt">B. 12</span>' +
+      '<span class="opt sel">C. 14</span><span class="opt">D. 13</span>　<span class="hint">（每题有且仅有一个正确选项）</span></div>' +
+      '<pre>题8  E(3,4) 第一次入队时，累计入队过 14 个格子\n     入队顺序：(0,0) (1,0) (0,1) (2,0) (1,1) (0,2) (2,1) (1,2) (2,2) (3,2) (4,2) (3,3) (4,1) (3,4)</pre>' +
+      (f.kind === 'compare'
+        ? '<div id="cmp"><b>常见错法（对比帧）</b>：(4,1) 夹在这一串的最后，很容易被漏掉 → 数成 13。<br>' +
+          '(4,1) 是 (4,2) 的<b>左</b>邻居，只有 (4,2) 被<b>取出</b>的那一刻才会轮到它入队；' +
+          '而 (4,2) 虽然比 (3,3) 早一点进队列，<b>进了队也不等于马上就能往外扩展</b>，它得先在队列里等着。' +
+          '真实顺序：… → (3,2)第10 → (4,2)第11 → (3,3)第12 → (4,1)第13 → (3,4)=E 第14。<br>' +
+          '<span class="hint">BFS 一层一层：入队的先后由「谁先被取出」决定，跟谁离终点近无关。</span></div>'
+        : '');
+  } else {
+    e.innerHTML = '<span class="hint">还没有答案：题目要的是「E <b>第一次入队</b>」那一刻的累计数，' +
+      '现在 E(3,4) 还没进队列（当前累计 <b>' + f.cum + '</b> 个）。继续按「下一步」。</span>';
+  }
+}
+
+function render() {
+  const f = fr();
+  renderGrid(f); renderDirs(f); renderQueue(f); renderCounter(f); renderTable(f); renderAns(f);
+  $('note').innerHTML = '<span class="badge">' + (KN[f.kind] || f.kind) +
+    '</span><span class="badge">第 ' + (t + 1) + ' / ' + frames.length + ' 帧</span>' + f.say;
+  $('prog').textContent = '第 ' + (t + 1) + ' / ' + frames.length + ' 帧';
+  $('prev').classList.toggle('at', t === 0);
+  $('home').classList.toggle('at', t === 0);
+  $('next').classList.toggle('at', t === frames.length - 1);
+  $('end').classList.toggle('at', t === frames.length - 1);
+}
+
+function stop() {
+  if (timer) { clearInterval(timer); timer = null; $('play').textContent = '自动播放'; $('play').classList.remove('on'); }
+}
+function play() {
+  if (t >= frames.length - 1) t = 0;
+  $('play').textContent = '暂停';
+  $('play').classList.add('on');
+  timer = setInterval(() => {
+    if (t >= frames.length - 1) { stop(); render(); return; }
+    t++; render();
+  }, ms);
+  render();
+}
+const goNext = () => { if (t < frames.length - 1) { t++; render(); } };
+const goPrev = () => { if (t > 0) { t--; render(); } };
+
+$('next').onclick = goNext;
+$('prev').onclick = goPrev;
+$('home').onclick = () => { stop(); t = 0; render(); };
+$('end').onclick = () => { stop(); t = frames.length - 1; render(); };
+$('play').onclick = () => { if (timer) stop(); else play(); };
+document.querySelectorAll('.sp').forEach(b => b.onclick = () => {
+  ms = +b.dataset.ms;
+  document.querySelectorAll('.sp').forEach(x => x.classList.toggle('on', x === b));
+  if (timer) { clearInterval(timer); timer = setInterval(() => { if (t >= frames.length - 1) { stop(); render(); return; } t++; render(); }, ms); }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  if (e.key === 'ArrowRight') { e.preventDefault(); goNext(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev(); }
+  else if (e.key === ' ') { e.preventDefault(); if (timer) stop(); else play(); }
+});
+
+render();
+</script>
+</body>
+</html>

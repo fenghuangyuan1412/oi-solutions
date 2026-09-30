@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CCF 2026 CSP-J1 阅读程序(3) · 逐位扩展质数的 DFS · 分步演示</title>
+<style>
+  :root{--bg:#0f1220;--card:#1a1f35;--ink:#e8ecff;--dim:#8b93b5;--acc:#5eead4;--bad:#f59e6b;--line:#262c4a;--blue:#8ab4ff;--gray:#5b6382;}
+  *{box-sizing:border-box}
+  body{margin:0;padding:22px;background:var(--bg);color:var(--ink);font:15px/1.65 "Segoe UI",system-ui,sans-serif}
+  h1{font-size:20px;margin:0 0 3px}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:16px}
+  .sub code{font:14px Consolas,monospace;color:#ffd9a8}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px;min-width:0}
+  .card h2{font-size:14px;letter-spacing:.04em;color:var(--dim);margin:0 0 10px;font-weight:600}
+  button{background:#2b3358;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 12px;font-size:14px;cursor:pointer;margin:0 6px 6px 0}
+  button:hover:not(:disabled){background:#394373}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.on{background:#14514a;border-color:var(--acc);color:#d5fff8}
+  button.pre{background:#232a4a}
+  button.warnon{background:#4d2f18;border-color:var(--bad);color:#ffe3cc}
+  input[type=text]{background:#0d1020;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 10px;font:14px Consolas,monospace;width:120px}
+  .wrap{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:14px;align-items:start}
+  .col{min-width:0}
+  .bar{display:flex;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+  .lab{font-size:14px;color:var(--dim);margin:0 8px 6px 0}
+  .prog{color:var(--ink);font:15px Consolas,monospace;margin-left:6px}
+  .notice{border:1px solid #4a3a20;background:#2a2013;color:var(--bad);border-radius:10px;padding:8px 12px;font-size:14px;margin-bottom:12px}
+  .notice.hide{display:none}
+  .code{font:14px/1.55 Consolas,monospace;background:#0d1020;border:1px solid var(--line);border-radius:9px;padding:8px 6px}
+  .cl{display:flex;gap:8px;padding:1px 6px;border-radius:5px}
+  .cl .no{color:#4d5578;width:22px;text-align:right;flex:none}
+  .cl .tx{white-space:pre-wrap;word-break:break-all}
+  .cl.cur{background:#154440;box-shadow:inset 3px 0 0 var(--acc)}
+  .cl.cur .tx{color:#d9fff6}
+  .cl.mod .tx{color:#ffd9a8;font-weight:700}
+  .leg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--dim);margin-bottom:8px}
+  .leg i{font-style:normal;padding:1px 7px;border-radius:6px;font-size:13px}
+  .leg .lg1{background:#154440;color:#d9fff6;border:1px solid var(--acc)}
+  .leg .lg2{background:#182648;color:#cfe0ff;border:1px solid var(--blue)}
+  .leg .lg3{background:#232a4a;color:#9aa4cc;border:1px solid #3d4778}
+  .leg .lg4{background:#1b1836;color:#c4a6ff;border:1px dashed #9d6bff}
+  #treewrap{border:1px solid var(--line);border-radius:9px;background:#10142a;padding:6px;overflow:hidden}
+  .ov{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .ovc{background:#131730;border:1px solid var(--line);border-radius:8px;padding:5px 8px;font:14px Consolas,monospace;min-width:78px;color:#9aa4cc}
+  .ovc.cur{border-color:var(--acc);background:#154440;color:#d9fff6}
+  .ovc.dead{color:var(--gray)}
+  .ovc.print .ovd{color:var(--acc);font-weight:700}
+  .ovc .ovd{color:var(--blue)}
+  .stk{font:14px Consolas,monospace;max-height:190px;overflow-y:auto;border:1px solid var(--line);border-radius:9px;background:#10142a;padding:5px}
+  .stk div{padding:3px 6px;border-bottom:1px solid #222743;word-break:break-all}
+  .stk div.cur{background:#154440;color:#d9fff6}
+  .outbox{max-height:250px;overflow-y:auto;border:1px solid var(--line);border-radius:9px;background:#0d1020;padding:6px}
+  .or{display:flex;align-items:baseline;gap:8px;padding:2px 0;font:14px/1.5 Consolas,monospace;border-bottom:1px solid #1c2140}
+  .or .oi{color:var(--dim);flex:none;width:64px}
+  .or .ov2{color:var(--ink);font-weight:700;flex:none}
+  .or .od{color:#6d76a0;flex:none}
+  .or.down .ov2{color:var(--bad)}
+  .or .oo{color:var(--bad);font-size:14px;margin-left:auto;text-align:right}
+  .empty{color:var(--dim);font-size:14px}
+  .note{background:#131730;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:15px;min-height:96px}
+  .note b{color:var(--acc)}
+  .note i{color:var(--bad);font-style:normal}
+  .note code,.dim code,.kv code,table code{font:14px Consolas,monospace;color:#ffd9a8;background:#0d1020;padding:1px 5px;border-radius:4px}
+  table{width:100%;border-collapse:collapse;font:14px Consolas,monospace}
+  th,td{padding:4px 6px;border-bottom:1px solid #222743;text-align:left;vertical-align:top;word-break:break-all}
+  th{color:var(--dim);font-weight:600}
+  .kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .k{background:#131730;border:1px solid var(--line);border-radius:9px;padding:8px 10px;min-width:0}
+  .k .lk{font-size:14px;color:var(--dim)}
+  .k .vv{font:15px Consolas,monospace;margin-top:2px;word-break:break-all}
+  .k.warn .vv{color:var(--bad)}
+  .k.answ .vv{color:var(--acc);font-size:22px;font-weight:700}
+  .dim{color:var(--dim);font-size:14px}
+  ul{margin:6px 0 0;padding-left:20px}
+  li{margin-bottom:5px}
+  .opt{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+  .o{background:#131730;border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+  .o.bad{border-color:#5a3520;background:#231a12}
+  .o.good{border-color:#1f6b5e;background:#12282a}
+  .o h3{margin:0 0 4px;font-size:15px}
+  .o .verdict{font:14px Consolas,monospace;margin-left:6px}
+  .o.bad .verdict{color:var(--bad)}
+  .o.good .verdict{color:var(--acc)}
+  .chain{font:14px Consolas,monospace;color:var(--blue);word-break:break-all}
+</style>
+</head>
+<body>
+<h1>逐位扩展质数的 DFS：往末尾添一位，每步都必须是质数</h1>
+<div class="sub">2026 CCF CSP-J1 第一轮真题·阅读程序(3)（卷面答案 28× 29√ 30√ 31B 32D 33C）· 所有输出由本机 <code>-static -O2 -std=c++14</code> 编译的 <code>ip3.exe / ip3_odd.exe</code> 实测核对 · 页面里的判质数和递归是 JS 按卷面语义逐行复刻的，与 C++ 输出逐行逐序一致</div>
+
+<div class="bar">
+  <span class="lab">输入 n（1..3000）</span>
+  <input type="text" id="src" value="24" spellcheck="false">
+  <button id="load">载入</button>
+  <span class="lab" style="margin-left:14px">预设</span>
+  <button class="pre" data-s="2">2</button>
+  <button class="pre" data-s="3">3（题 32-A 反例）</button>
+  <button class="pre" data-s="10">10（题 28）</button>
+  <button class="pre" data-s="24">24（题 31）</button>
+  <button class="pre" data-s="200">200（题 33）</button>
+</div>
+<div class="bar">
+  <button id="oddtgl">把第 17 行改成只枚举奇数位（题 30）</button>
+  <span class="dim" id="oddst">当前：卷面原样 <code>for (int i = 0; i &lt;= 9; i++)</code></span>
+</div>
+<div class="bar">
+  <button id="home">回到开头</button>
+  <button id="prev">上一步</button>
+  <button id="next">下一步</button>
+  <button id="play">自动播放</button>
+  <button id="end">跳到末尾</button>
+  <span class="lab" style="margin-left:10px">速度</span>
+  <button class="spd on" data-v="1">1x</button>
+  <button class="spd" data-v="2">2x</button>
+  <button class="spd" data-v="4">4x</button>
+  <span class="prog" id="prog"></span>
+  <span class="dim" style="margin-left:10px">快捷键：&larr; 上一步 &middot; &rarr; 下一步 &middot; 空格 播放/暂停</span>
+</div>
+<div class="notice hide" id="notice"></div>
+
+<div class="card"><h2>① 搜索树：一次只画 main 第 23 行循环里的一棵（当前正在访问的用青色描边）</h2>
+  <div class="leg">
+    <span><i class="lg1">绿 + 印</i> 质数且 x &ge; n：第 14 行打印，第 15 行 return，<b>不再往下长</b></span>
+    <span><i class="lg2">蓝</i> 质数且 x &lt; n：第 17 行末尾添一位继续展开</span>
+    <span><i class="lg3">灰 + ✗</i> 合数：第 12 行 return（第 ① 种剪枝）</span>
+    <span><i class="lg4">紫虚线 ✗skip</i> 题 30 改版跳过的偶数分支（本来也会在第 12 行 return）</span>
+  </div>
+  <div class="dim" id="curtree" style="margin-bottom:6px"></div>
+  <div id="treewrap"></div>
+  <div class="ov" id="overview"></div>
+</div>
+
+<div class="wrap">
+  <div class="col">
+    <div class="card"><h2>② 这一步在干什么（每帧一句）</h2><div class="note" id="note"></div></div>
+
+    <div class="card"><h2>③ 卷面程序（行号 = 卷面行号 = verify/src/ip3.cpp 行号；青色 = 当前执行到的行）</h2><div class="code" id="code"></div></div>
+  </div>
+
+  <div class="col">
+    <div class="card"><h2>④ 递归栈（就是"当前前缀链"）</h2>
+      <div class="stk" id="stk"></div>
+      <div class="kv" style="margin-top:10px">
+        <div class="k"><div class="lk">栈深（已添的位数）</div><div class="vv" id="kdepth">-</div></div>
+        <div class="k"><div class="lk">check_prime 结论</div><div class="vv" id="kprime">-</div></div>
+      </div>
+    </div>
+
+    <div class="card"><h2>⑤ 程序输出：按 cout 的真实顺序往下长（不是排序！）</h2>
+      <div class="outbox" id="out"></div>
+      <div class="dim" style="margin-top:8px">橙色 = 这一行比上一行<b>小</b>：DFS 先钻到深处再回来，顺序被彻底打乱，这就是题 32-A 的反例。</div>
+    </div>
+
+    <div class="card"><h2>⑥ 行数统计 + 前缀链小结</h2>
+      <div class="kv">
+        <div class="k answ"><div class="lk">已打印行数</div><div class="vv" id="st_rows">0</div></div>
+        <div class="k"><div class="lk">search_result 被调用次数</div><div class="vv" id="st_calls">-</div></div>
+      </div>
+      <div class="kv" style="margin-top:8px">
+        <div class="k"><div class="lk">第 ① 行剪掉的分支（合数）</div><div class="vv" id="st_cut">-</div></div>
+        <div class="k"><div class="lk">最深递归</div><div class="vv" id="st_deep">-</div></div>
+      </div>
+      <div class="dim" style="margin-top:8px" id="st_hint"></div>
+      <div style="margin-top:8px" id="chains"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card"><h2>⑦ 机器实测对照（verify/RESULTS.md &sect;4，ip3.exe 实跑，逐行逐序）</h2>
+  <table>
+    <tr><th>输入 n</th><th>实测输出（按打印顺序）</th><th>行数</th><th>对应题号</th></tr>
+    <tr><td>2</td><td>2 3 5 7</td><td>4</td><td>题 29（n&le;5 时输出含 5）</td></tr>
+    <tr><td>3</td><td>23 29 3 5 7</td><td>5</td><td>题 32-A 反例：29 后面跟着更小的 3</td></tr>
+    <tr><td>10</td><td>23 29 31 37 53 59 71 73 79</td><td><b>9</b>（不是 10）</td><td>题 28 答 <b>&times;</b></td></tr>
+    <tr><td>24</td><td>233 239 29 31 37 53 59 71 73 79</td><td>10，第 3 行 = <b>29</b></td><td>题 31 答 <b>B</b></td></tr>
+    <tr><td>200</td><td>233 239 293 311 313 317 373 379 593 599 719 733 739 797</td><td><b>14</b></td><td>题 33 答 <b>C</b></td></tr>
+  </table>
+  <div class="dim" style="margin-top:8px">上面 5 组在本页可逐个复现：点预设 &rarr; 「跳到末尾」，⑤ 的内容与行数应与本表逐字一致。帧数实测：n=2 &rarr; 37 帧，n=3 &rarr; 61，n=10 &rarr; 135，n=24 &rarr; 159，n=200 &rarr; 343（<code>search_result</code> 调用 139 次）；逐帧走完 n=200 要一会儿，直接跳末尾最快。</div>
+</div>
+
+<div class="card"><h2>⑧ 题 30：第 17 行改成只枚举奇数位，输出到底变不变（答案 &radic;）</h2>
+  <div class="kv">
+    <div class="k"><div class="lk">当前 n 的两种写法（JS 复刻逐行比对）</div><div class="vv" id="eqrow">-</div></div>
+    <div class="k"><div class="lk">改动只有一行</div><div class="vv">第 17 行 i=0..9 &rarr; i=1,3,5,7,9</div></div>
+  </div>
+  <ul class="dim" style="margin-top:8px">
+    <li><b>机器实测</b>：<code>ip3.exe</code> 与 <code>ip3_odd.exe</code> 在 <b>n = 2..100</b> 上逐行 <code>diff</code>，<b>完全相同</b>（本机实跑，不一致 0 个），比题面要求的 n &gt; 10 还宽。</li>
+    <li><b>为什么必然相同</b>：添上偶数位 d 得到的 <code>x*10+d</code> 个位是偶数，而它 <code>&ge; 10</code>，是<b>大于 2 的偶数</b>，一定是合数；原程序里它进到第 12 行 <code>if (!check_prime(x)) return;</code> 就当场 return，既不打印也不展开。把这些分支删掉，只是少算几步，<b>一个字的输出都不会少</b>。</li>
+    <li>切换开关后，紫色虚线 <code>✗skip</code> 节点就是"本来也会被第 ① 行 return"的那批：位置还留在树上，方便和原样模式一对一对比。</li>
+    <li><b>等价性题的通用打法</b>：先问"被删掉的分支能产出输出吗"，注定被 return 的分支删了等于没删。</li>
+  </ul>
+</div>
+
+<div class="card"><h2>⑨ 题 32：四个选项的实测判定（答案 D）</h2>
+  <div class="opt">
+    <div class="o bad"><h3>A. 输出的数一定按从小到大排列<span class="verdict">错 &times;</span></h3>
+      <div class="dim">反例（实测 n=3）：输出 <code>23 29 3 5 7</code> —— <b>29 后面跟着更小的 3</b>。DFS 先把 2 的分支钻到底（23、29），回到 main 才轮到 i=3、5、7。n=24 也一样：233、239 之后才冒出 29。选 n=3 或 n=24 自己看 ⑤ 的橙色行。</div></div>
+    <div class="o bad"><h3>B. 随着 n 增大，输出行数一定不增加<span class="verdict">错 &times;</span></h3>
+      <div class="dim">反例（实测）：n=2 是 <b>4</b> 行，n=3 变成 <b>5</b> 行，反而变多。原因：n 一大，原本满足 <code>x &ge; n</code> 的一位质数不再够大，于是它们转而展开成两位、三位，每展开一层都可能多出打印点。</div></div>
+    <div class="o bad"><h3>C. 输出数的个位只可能是 3 或 7<span class="verdict">错 &times;</span></h3>
+      <div class="dim">反例（实测 n=24 的输出）：<code>239 29 31 59 71 79</code> —— 个位 9、1 都出现了。大质数的个位只能是 1/3/7/9 四个，C 把 1 和 9 漏掉了。</div></div>
+    <div class="o good"><h3>D. 每个 &ge;10 的输出，删去末位后仍是质数<span class="verdict">对 &radic;</span></h3>
+      <div class="dim">结构性原因：能打印 x 说明它是由 <code>search_result(前缀)</code> 的第 18 行 <code>x*10+i</code> 生成的，而那个"前缀"在上层已经通过过一次 <code>check_prime</code>（第 12 行），否则走不到这一步。实测：<code>ip3_optD.exe</code> 把 <b>n = 2..3000</b> 的所有输出逐个"删末位再判质数"，反例 <b>0</b> 个。</div></div>
+  </div>
+</div>
+
+<div class="card"><h2>⑩ 人话版：这段程序在算什么</h2>
+  <ul class="dim">
+    <li><code>check_prime(x)</code>：标准的试除判质数，<code>for (i = 2; i * i &lt;= x; i++) if (x % i == 0) return false;</code>，只试到平方根。</li>
+    <li><code>search_result(x)</code> 三行骨架：① 第 12 行不是质数就 return；② 第 13-15 行是质数且 <code>x &ge; n</code> 就<b>打印并 return</b>；③ 第 17-18 行是质数但 <code>x &lt; n</code> 就往末尾添 0~9 各试一次。</li>
+    <li><code>main</code> 从 1~9 起步逐个调用，所以画面是 9 棵小树并排（本页一次画一棵）。</li>
+    <li><b>教学核心</b>：打印条件是"<b>整条前缀链每一步都是质数</b>"，比"这个数本身是质数"强得多。10~99 的两位质数有 21 个，可 n=10 时程序只印 9 个：十位不是质数的 11、13、17、19、41、43、47、61、67、83、89 全部到不了。</li>
+    <li>另一条容易被忽略的剪枝：打印之后紧跟 <code>return</code>，所以 <b>够大就停</b>，不会把更大的后代一起印出来（n=24 时印 29 就停，290~299 根本不看）。</li>
+    <li>做 DFS 阅读题第一件事：把<b>每一个 return</b> 标出来。本题有两个 return（合数、够大），少看任何一个，数出来的行数就不对。</li>
+  </ul>
+</div>
+
+<script>
+// ============ 卷面程序原文（逐字 = verify/src/ip3.cpp，文件行号 == 卷面行号）============
+var SRC = [
+  '#include <iostream>',
+  'using namespace std;',
+  'bool check_prime(int x) {',
+  '  if (x <= 1) return false;',
+  '  for (int i = 2; i * i <= x; i++) {',
+  '    if (x % i == 0) return false;',
+  '  }',
+  '  return true;',
+  '}',
+  'int n;',
+  'void search_result(int x) {',
+  '  if (!check_prime(x)) return;',
+  '  if (x >= n) {',
+  '    cout << x << endl;',
+  '    return;',
+  '  }',
+  '  for (int i = 0; i <= 9; i++) {',
+  '    search_result(x * 10 + i);',
+  '  }',
+  '}',
+  'int main() {',
+  '  cin >> n;',
+  '  for (int i = 1; i <= 9; i++) search_result(i);',
+  '  return 0;',
+  '}'
+];
+var L17 = 17;
+var LINE17 = {
+  orig: '  for (int i = 0; i <= 9; i++) {',
+  odd:  '  for (int i = 1; i <= 9; i += 2) {'
+};
+
+var NMAX = 3000, CAP = 20000, ROWH = 70, TOPPAD = 28;
+
+// ---- 判质数：与 check_prime 完全一致的试除法（不查表）----
+function checkPrime(x) {
+  if (x <= 1) return { prime: false, why: '第 4 行 <code>x &lt;= 1</code> 成立，直接 return false' };
+  for (var i = 2; i * i <= x; i++) {
+    if (x % i === 0) return { prime: false, why: '第 5-6 行试到 <code>i = ' + i + '</code>：' + x + ' % ' + i + ' == 0（' + x + ' = ' + i + ' × ' + (x / i) + '），return false' };
+  }
+  return { prime: true, why: '试除到 <code>i * i &gt; ' + x + '</code> 都没能整除，第 8 行 return true' };
+}
+
+// ---- 按卷面语义递归，生成 节点表 + 帧表 ----
+function buildRun(nv, oddMode) {
+  var nodes = [], frames = [], outs = [], trunc = false, lastRoot = 1, AB = {};
+  function pathIds(nd) {
+    var arr = [], p = nd;
+    while (p) { arr.push(p.id); p = p.par; }
+    return arr.reverse();
+  }
+  function mk(x, par, digit, rootIdx) {
+    var nd = { id: nodes.length, x: x, par: par, digit: digit, depth: par ? par.depth + 1 : 0,
+               kids: [], st: 'pending', enterF: -1, verdictF: -1, printF: -1, outIdx: -1,
+               ghost: false, root: rootIdx };
+    nodes.push(nd);
+    return nd;
+  }
+  function push(nd, line, text) {
+    if (frames.length >= CAP) { trunc = true; throw AB; }
+    var fr = { nid: nd ? nd.id : -1, line: line, text: text, outN: outs.length,
+               root: nd ? nd.root : lastRoot, stack: nd ? pathIds(nd) : [], printsHere: false };
+    frames.push(fr);
+    return frames.length - 1;
+  }
+  function visit(nd, revealAt) {
+    var cp = checkPrime(nd.x);
+    nd.enterF = push(nd, 12, '调用 <code>search_result(' + nd.x + ')</code>。第 12 行的第一件事是 <code>if (!check_prime(' + nd.x + ')) return;</code> —— 先问：' + nd.x + ' 是质数吗？判质数用试除法，从 <code>i = 2</code> 一直试到 <code>i * i &gt; ' + nd.x + '</code>。');
+    if (revealAt !== undefined && revealAt < nd.enterF) nd.enterF = revealAt;
+    if (!cp.prime) {
+      nd.st = 'composite';
+      nd.verdictF = push(nd, 12, cp.why + '。所以 check_prime(' + nd.x + ') = false，第 12 行立刻 <b>return</b> —— 这条分支到此为止，节点灰掉打叉。<i>这就是第 ① 种剪枝：整条 ' + nd.root + ' 开头的树里，' + nd.x + ' 以下一个节点都不会再长出来。</i>');
+      return;
+    }
+    push(nd, 13, cp.why + ' —— <b>' + nd.x + ' 是质数</b>，第 12 行放行。接着第 13 行 <code>if (x &gt;= n)</code>：' + nd.x + ' &ge; ' + nv + ' 吗？<b>' + (nd.x >= nv ? '成立' : '不成立') + '</b>。');
+    if (nd.x >= nv) {
+      nd.st = 'printed';
+      outs.push(nd.x); nd.outIdx = outs.length - 1;
+      var prev = outs.length > 1 ? outs[outs.length - 2] : null;
+      var txt = '第 14 行 <code>cout &lt;&lt; ' + nd.x + ' &lt;&lt; endl;</code> —— 输出<b>第 ' + outs.length + ' 行：' + nd.x + '</b>。';
+      if (prev !== null && nd.x < prev) txt += ' <i>注意：这一行比上一行（' + prev + '）还小！顺序是 DFS 的真实顺序，不是从小到大 —— 这就是题 32-A 的反例。</i>';
+      nd.printF = push(nd, 14, txt);
+      nd.verdictF = nd.printF;
+      nd.retF = push(nd, 15, '第 15 行 <code>return;</code>：印完就收，<b>' + nd.x + ' 不再往下长</b>（' + nd.x + '0…' + nd.x + '9 这些后代一个都不访问）。本题第二个 return，也是最容易看漏的剪枝：打印条件"是质数且够大"一满足就停，不是"把这棵子树全印完"。');
+      return;
+    }
+    nd.st = 'expand';
+    var digits = [], skipped = [], d;
+    for (d = oddMode ? 1 : 0; d <= 9; d += oddMode ? 2 : 1) digits.push(d);
+    if (oddMode) for (d = 0; d <= 9; d += 2) skipped.push(d);
+    nd.verdictF = push(nd, 17, '第 13 行不成立（' + nd.x + ' &lt; ' + nv + '），走到第 17 行的循环：' + (oddMode
+      ? '改版后 <code>for (i = 1; i &lt;= 9; i += 2)</code> 只在末尾添<b>奇数位 ' + digits.join(' / ') + '</b>，偶数位 ' + skipped.join('/') + ' 直接跳过。'
+      : '<code>for (int i = 0; i &lt;= 9; i++)</code> 在末尾添一位，0~9 十个分支挨个试：' + digits.join(' / ') + '。'));
+    var all = [], k;
+    for (d = 0; d <= 9; d++) {
+      if (oddMode && d % 2 === 0) {
+        var g = mk(nd.x * 10 + d, nd, d, nd.root);
+        g.ghost = true; g.st = 'skip'; all.push(g);
+      } else {
+        var c = mk(nd.x * 10 + d, nd, d, nd.root);
+        all.push(c);
+      }
+    }
+    for (k = 0; k < all.length; k++) {
+      nd.kids.push(all[k].id);
+      if (!all[k].ghost) visit(all[k]);
+    }
+    if (nd.depth === 0) {
+      lastRoot = nd.root;
+      push(null, 23, '<code>search_result(' + nd.x + ')</code> 这一棵走完了，回到 main 第 23 行的循环，准备 ' + (nd.x < 9 ? 'i = ' + (nd.x + 1) : '收尾') + '。');
+    } else {
+      push(nd.par, 20, '第 17-19 行的十个分支全部试完，<code>search_result(' + nd.x + ')</code> 在第 20 行结束，<b>返回上一层 ' + (nd.par ? nd.par.x : 'main') + '</b>，由它继续试下一个末尾位。');
+    }
+  }
+  push(null, 22, 'main 第 22 行 <code>cin &gt;&gt; n;</code> 读入 n = <b>' + nv + '</b>。第 23 行 <code>for (i = 1; i &lt;= 9; i++) search_result(i);</code> 从 1 到 9 挨个起步，所以整张图是 <b>9 棵小树</b>，下面一棵一棵看。');
+  var rootNodes = [];
+  for (var i = 1; i <= 9; i++) {
+    lastRoot = i;
+    var r = mk(i, null, i, i);
+    rootNodes.push(r);
+    push(r, 23, 'main 第 23 行：i = <b>' + i + '</b>，调用 <code>search_result(' + i + ')</code>（第 18 行的 <code>x * 10 + i</code> 是往末尾添一位，main 这里是直接从一位数起步）。');
+    visit(r, frames.length - 1);
+  }
+  push(null, 24, '9 棵小树全部走完，第 24 行 <code>return 0;</code>，程序结束。一共打印 <b>' + outs.length + ' 行</b>' + (outs.length ? '：' + outs.join(' ') : '（没有任何输出）') + '。');
+
+  // ---- 统计 ----
+  for (var z = 0; z < nodes.length; z++) {
+    var nz = nodes[z];
+    if (nz.printF >= 0 && frames[nz.printF]) frames[nz.printF].printsHere = true;
+  }
+  var calls = 0, maxDepth = 0, cut = 0, printed = 0, rootDone = {}, rootStart = {}, rootTotal = {};
+  for (var q = 0; q < nodes.length; q++) {
+    var nd2 = nodes[q];
+    if (nd2.ghost || nd2.enterF < 0) continue;
+    calls++;
+    if (nd2.depth > maxDepth) maxDepth = nd2.depth;
+    if (nd2.st === 'composite') cut++;
+    if (nd2.st === 'printed') printed++;
+    rootTotal[nd2.root] = (rootTotal[nd2.root] || 0) + (nd2.st === 'printed' ? 1 : 0);
+  }
+  for (var f2 = 0; f2 < frames.length; f2++) {
+    var rr = frames[f2].root;
+    if (rr >= 1 && rr <= 9) {
+      rootDone[rr] = f2;
+      if (rootStart[rr] === undefined) rootStart[rr] = f2;
+    }
+  }
+  return { nodes: nodes, frames: frames, outs: outs, trunc: trunc, calls: calls,
+           maxDepth: maxDepth, cut: cut, printed: printed, roots: rootNodes,
+           rootDone: rootDone, rootStart: rootStart, rootTotal: rootTotal };
+}
+
+// ============ 页面状态 ============
+var NV = 24, ODD = false, RUN = null, K = 0, timer = null, speed = 1;
+var FULLCACHE = {}, TREECACHE = {};
+
+function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+function setNotice(t) { var e = document.getElementById('notice'); e.innerHTML = t; e.className = 'notice' + (t ? '' : ' hide'); }
+
+function runOf(nv, odd) {
+  var key = nv + '|' + (odd ? 1 : 0);
+  if (!FULLCACHE[key]) FULLCACHE[key] = buildRun(nv, odd);
+  return FULLCACHE[key];
+}
+
+function build(nv, odd) {
+  NV = nv; ODD = odd;
+  RUN = runOf(nv, odd);
+  TREECACHE = {};
+  var notice = '';
+  if (RUN.trunc) notice = '帧数撞到上限 ' + CAP + '：本页只逐帧演示前 ' + RUN.frames.length + ' 帧，后面的分支没有展开（⑥ 的总量统计同样只算已演示部分）。演示大 n 建议 ≤3000。';
+  setNotice(notice);
+  K = 0;
+  markCode();
+  render();
+}
+
+// ============ 布局：按叶子顺序摆点（1 unit == 1 px；viewBox 在 drawTree 里按当前节点裁剪）============
+function layoutTree(rootNode) {
+  var key = rootNode.id;
+  if (TREECACHE[key]) return TREECACHE[key];
+  var gap = 30, cur = { x: 24 };
+  function place(nd) {
+    var kids = nd.kids || [];
+    if (!kids.length) {
+      nd.lx = cur.x; nd.ly = nd.depth * ROWH; cur.x += gap;
+      return nd.lx;
+    }
+    var xs = [], i;
+    for (i = 0; i < kids.length; i++) {
+      var ck = RUN.nodes[kids[i]];
+      xs.push(place(ck));
+    }
+    nd.lx = (xs[0] + xs[xs.length - 1]) / 2;
+    nd.ly = nd.depth * ROWH;
+    return nd.lx;
+  }
+  var rootLx = place(rootNode);
+  var totalW = cur.x + 24, maxDepth = 0;
+  var list = [];
+  (function collect(nd) {
+    if (nd.depth > maxDepth) maxDepth = nd.depth;
+    list.push(nd);
+    for (var i = 0; i < (nd.kids || []).length; i++) collect(RUN.nodes[nd.kids[i]]);
+  })(rootNode);
+  var vbH = Math.max(ROWH + TOPPAD + 14, maxDepth * ROWH + TOPPAD + 34);
+  var L = { list: list, vbX: 0, vbW: totalW, vbH: vbH, totalW: totalW, rootLx: rootLx, maxDepth: maxDepth };
+  TREECACHE[key] = L;
+  return L;
+}
+
+function statusAt(nd, k) {
+  if (nd.ghost) return k >= (nd.par ? nd.par.verdictF : CAP) ? 'skip' : 'hidden';
+  if (nd.enterF < 0 || k < nd.enterF) return 'hidden';
+  if (nd.verdictF < 0) return 'checking';
+  if (k < nd.verdictF) return 'checking';
+  return nd.st;
+}
+
+// 可见窗口：整棵放得下就居中，放不下就把窗口跟到 centerX（当前节点）上
+function viewFor(lay, centerX) {
+  var wrap = document.getElementById('treewrap');
+  var avail = wrap && wrap.clientWidth > 60 ? wrap.clientWidth : 1120;
+  var vbW = Math.max(340, Math.min(lay.totalW, avail));
+  var vbX;
+  if (lay.totalW <= vbW) vbX = (lay.totalW - vbW) / 2;
+  else {
+    vbX = (isFinite(centerX) ? centerX : lay.rootLx) - vbW / 2;
+    if (vbX < 0) vbX = 0;
+    if (vbX > lay.totalW - vbW) vbX = lay.totalW - vbW;
+  }
+  lay.vbX = vbX; lay.vbW = vbW;
+  return { vbX: vbX, vbW: vbW, clipped: lay.totalW > vbW };
+}
+
+// ============ ① 搜索树 ============
+var SVGNS = 'http://www.w3.org/2000/svg';
+function s(tag, attrs, txt) {
+  var e = document.createElementNS(SVGNS, tag);
+  if (attrs) for (var key in attrs) if (attrs.hasOwnProperty(key)) e.setAttribute(key, attrs[key]);
+  if (txt != null) e.textContent = txt;
+  return e;
+}
+
+function nodeVisual(g, nd, st, isCur) {
+  var box = g.appendChild(s('g', { class: 'nd' }));
+  var w = Math.max(22, String(nd.x).length * 8 + 10), h = 21, y = nd.ly + TOPPAD;
+  var fill = '#232a4a', stroke = '#3d4778', tcol = '#9aa4cc', dash = null, op = 1, badge = null, bcol = '#9aa4cc';
+  if (st === 'checking') { fill = '#3d2b58'; stroke = '#9d6bff'; tcol = '#f0e6ff'; badge = '?'; bcol = '#c4a6ff'; }
+  else if (st === 'printed') { fill = '#14514a'; stroke = '#5eead4'; tcol = '#d8fff7'; badge = '印'; bcol = '#5eead4'; }
+  else if (st === 'expand') { fill = '#182648'; stroke = '#8ab4ff'; tcol = '#cfe0ff'; }
+  else if (st === 'composite') { fill = '#191d33'; stroke = '#39406a'; tcol = '#6d76a0'; badge = '✗'; bcol = '#f59e6b'; op = .82; }
+  else if (st === 'skip') { fill = '#14122a'; stroke = '#5b4a86'; tcol = '#6b62a0'; dash = '4 3'; badge = '✗'; bcol = '#9d6bff'; op = .55; }
+  var rr = box.appendChild(s('rect', { x: nd.lx - w / 2, y: y - h / 2, width: w, height: h, rx: 6,
+    fill: fill, stroke: stroke, 'stroke-width': isCur ? 2.6 : 1.2, opacity: op }));
+  if (dash) rr.setAttribute('stroke-dasharray', dash);
+  box.appendChild(s('text', { x: nd.lx, y: y + 4.5, 'text-anchor': 'middle', 'font-size': 12,
+    'font-family': 'Consolas,monospace', fill: tcol, 'font-weight': st === 'printed' ? '700' : '400' }, String(nd.x)));
+  if (badge) {
+    box.appendChild(s('text', { x: nd.lx + w / 2 + 3, y: y - 5, 'font-size': 11, 'font-family': 'Consolas,monospace', fill: bcol }, badge));
+  }
+  if (isCur) {
+    box.appendChild(s('rect', { x: nd.lx - w / 2 - 4, y: y - h / 2 - 4, width: w + 8, height: h + 8, rx: 9,
+      fill: 'none', stroke: '#5eead4', 'stroke-width': 1.4, opacity: .65 }));
+  }
+  if (st === 'composite' || st === 'skip') {
+    box.appendChild(s('line', { x1: nd.lx - w / 2 + 3, y1: y + h / 2 - 3, x2: nd.lx + w / 2 - 3, y2: y + h / 2 - 3,
+      stroke: st === 'skip' ? '#5b4a86' : '#f59e6b', 'stroke-width': 1, opacity: .55 }));
+  }
+}
+
+function drawTree(k, curNid, curRoot) {
+  var wrap = document.getElementById('treewrap');
+  var rootNode = RUN.roots[curRoot - 1];
+  if (!rootNode) { wrap.innerHTML = ''; return { clipped: false, lay: null }; }
+  var lay = layoutTree(rootNode);
+  var curNd = (curNid >= 0 && RUN.nodes[curNid]) ? RUN.nodes[curNid] : null;
+  var vw = viewFor(lay, curNd ? curNd.lx : lay.rootLx);
+  lay.vbX = vw.vbX; lay.vbW = vw.vbW;
+  wrap.innerHTML = '';
+  var svg = s('svg', { viewBox: lay.vbX + ' 0 ' + lay.vbW + ' ' + lay.vbH, width: '100%', height: lay.vbH,
+    preserveAspectRatio: 'xMidYMin meet', role: 'img' });
+  svg.style.display = 'block';
+  var gl = svg.appendChild(s('g', {}));
+  var gr = svg.appendChild(s('g', {}));
+  var q = [];
+  (function collect(nd) { q.push(nd); for (var i = 0; i < (nd.kids || []).length; i++) collect(RUN.nodes[nd.kids[i]]); })(rootNode);
+  var hidden = 0, i2, nd2;
+  for (i2 = 0; i2 < q.length; i2++) if (statusAt(q[i2], k) === 'hidden') hidden++;
+  for (i2 = 0; i2 < q.length; i2++) {
+    nd2 = q[i2];
+    if (statusAt(nd2, k) === 'hidden') continue;
+    if (!nd2.par) continue;
+    var pcy = nd2.par.ly + TOPPAD, ccy = nd2.ly + TOPPAD;
+    gl.appendChild(s('line', { x1: nd2.par.lx, y1: pcy + 11, x2: nd2.lx, y2: ccy - 11,
+      stroke: nd2.ghost ? '#3b3466' : '#34406e', 'stroke-width': 1, 'stroke-dasharray': nd2.ghost ? '4 3' : 'none' }));
+    var mx = (nd2.par.lx + nd2.lx) / 2, my = (pcy + ccy) / 2;
+    var lw = 13;
+    gl.appendChild(s('rect', { x: mx - lw / 2, y: my - 8, width: lw, height: 15, rx: 4, fill: '#0d1020', stroke: '#2c3355', 'stroke-width': .8 }));
+    gl.appendChild(s('text', { x: mx, y: my + 3.5, 'text-anchor': 'middle', 'font-size': 10.5,
+      'font-family': 'Consolas,monospace', fill: nd2.ghost ? '#8f7ac0' : '#8b93b5' }, String(nd2.digit)));
+  }
+  for (i2 = 0; i2 < q.length; i2++) {
+    nd2 = q[i2];
+    var stt = statusAt(nd2, k);
+    if (stt === 'hidden') continue;
+    nodeVisual(gr, nd2, stt, nd2.id === curNid);
+  }
+  if (hidden > 0) {
+    svg.appendChild(s('text', { x: lay.vbX + 6, y: lay.vbH - 6, 'font-size': 11, 'font-family': 'Consolas,monospace', fill: '#5b6382' },
+      '还有 ' + hidden + ' 个节点没访问到（递归走到才会画出来）'));
+  }
+  wrap.appendChild(svg);
+  return { clipped: vw.clipped, lay: lay };
+}
+
+// ---- main 九棵小树总览 ----
+function drawOverview(k, curRoot) {
+  var box = document.getElementById('overview');
+  box.innerHTML = '';
+  var doneSoFar = {};
+  for (var i = 1; i <= 9; i++) doneSoFar[i] = 0;
+  for (var j = 0; j <= k; j++) {
+    var fr = RUN.frames[j];
+    if (fr && fr.printsHere && fr.root >= 1 && fr.root <= 9) doneSoFar[fr.root]++;
+  }
+  for (i = 1; i <= 9; i++) {
+    var cell = el('div', 'ovc' + (i === curRoot ? ' cur' : ''));
+    var doneF = RUN.rootDone[i], startF = RUN.rootStart[i];
+    var isDone = doneF !== undefined && k >= doneF;
+    var tot = RUN.rootTotal[i] || 0;
+    if (startF === undefined || k < startF) {
+      cell.className = 'ovc' + (i === curRoot ? ' cur' : '');
+      cell.appendChild(el('span', 'ovd', 'i=' + i));
+      cell.appendChild(document.createTextNode(' 未开始'));
+    } else if (isDone) {
+      if (tot === 0) cell.className = 'ovc dead' + (i === curRoot ? ' cur' : '');
+      else cell.className = 'ovc print' + (i === curRoot ? ' cur' : '');
+      cell.appendChild(el('span', 'ovd', 'i=' + i));
+      cell.appendChild(document.createTextNode(tot === 0 ? ' 全被剪' : ' 印 ' + tot + ' 个'));
+    } else {
+      cell.className = 'ovc' + (i === curRoot ? ' cur' : '');
+      cell.appendChild(el('span', 'ovd', 'i=' + i));
+      cell.appendChild(document.createTextNode(' 进行中 · 已印 ' + doneSoFar[i] + ' 个'));
+    }
+    box.appendChild(cell);
+  }
+}
+
+// ---- ② 代码面板 ----
+(function () {
+  var box = document.getElementById('code');
+  for (var i = 0; i < SRC.length; i++) {
+    var row = el('div', 'cl');
+    row.appendChild(el('span', 'no', String(i + 1)));
+    row.appendChild(el('span', 'tx', i === L17 - 1 ? LINE17.orig : SRC[i]));
+    box.appendChild(row);
+  }
+})();
+function markCode() {
+  var rows = document.getElementById('code').children;
+  for (var i = 0; i < rows.length; i++) {
+    var tx = rows[i].children[1];
+    var want = (i === L17 - 1) ? (ODD ? LINE17.odd : LINE17.orig) : SRC[i];
+    if (tx.textContent !== want) tx.textContent = want;
+    rows[i].className = 'cl' + (i === L17 - 1 && ODD ? ' mod' : '');
+  }
+}
+function curLine(no) {
+  var rows = document.getElementById('code').children;
+  for (var i = 0; i < rows.length; i++) {
+    var base = 'cl' + (i === L17 - 1 && ODD ? ' mod' : '');
+    rows[i].className = base + (i + 1 === no ? ' cur' : '');
+  }
+}
+
+// ---- ③ 递归栈 ----
+function drawStack(fr, k) {
+  var box = document.getElementById('stk');
+  box.innerHTML = '';
+  if (!fr.stack.length) {
+    box.appendChild(el('div', 'empty', '栈是空的：现在在 main 里（第 22 行读入、第 23 行准备发调用），还没有 search_result 在跑。'));
+  } else {
+    for (var i = 0; i < fr.stack.length; i++) {
+      var nd = RUN.nodes[fr.stack[i]];
+      if (!nd) continue;
+      var stt = statusAt(nd, k);
+      var via = nd.ghost ? '（题 30 改版跳过）' : stt === 'composite' ? '（第 12 行 return）'
+        : stt === 'printed' ? '（第 ' + (k >= nd.retF ? 15 : 14) + ' 行 return）'
+        : stt === 'expand' ? '（第 17 行循环中）' : '（正在判质数）';
+      var d = el('div', i === fr.stack.length - 1 ? 'cur' : null,
+        '第 ' + (i + 1) + ' 层  search_result(' + nd.x + ')  末尾添的是 ' + nd.digit + via);
+      box.appendChild(d);
+    }
+  }
+  document.getElementById('kdepth').textContent = String(fr.stack.length);
+  var cur = fr.nid >= 0 ? RUN.nodes[fr.nid] : null;
+  document.getElementById('kprime').textContent = cur ? (cur.x + ' 是质数吗 → ' + (checkPrime(cur.x).prime ? '是' : '不是')) : '-';
+}
+
+// ---- ④ 输出条 ----
+function drawOut(fr, k) {
+  var box = document.getElementById('out');
+  box.innerHTML = '';
+  var cnt = fr.outN;
+  if (!cnt) { box.appendChild(el('div', 'empty', '还没有任何 cout：第 14 行一次都没执行到。')); return; }
+  for (var i = 0; i < cnt && i < RUN.outs.length; i++) {
+    var v = RUN.outs[i];
+    var down = i > 0 && v < RUN.outs[i - 1];
+    var row = el('div', 'or' + (down ? ' down' : ''));
+    row.appendChild(el('span', 'oi', '第 ' + (i + 1) + ' 行'));
+    row.appendChild(el('span', 'ov2', String(v)));
+    row.appendChild(el('span', 'od', '#' + (i + 1)));
+    if (down) row.appendChild(el('span', 'oo', '比上一行 ' + RUN.outs[i - 1] + ' 小'));
+    box.appendChild(row);
+  }
+}
+
+// ---- ⑤ 统计 ----
+function drawStats(fr) {
+  var k = K;
+  document.getElementById('st_rows').textContent = String(fr.outN);
+  var calls = 0, cut = 0, deep = 0;
+  for (var i = 0; i < RUN.nodes.length; i++) {
+    var nd = RUN.nodes[i];
+    if (nd.ghost || nd.enterF < 0 || nd.enterF > k) continue;
+    calls++;
+    if (nd.depth > deep) deep = nd.depth;
+    if (nd.verdictF >= 0 && k >= nd.verdictF && nd.st === 'composite') cut++;
+  }
+  document.getElementById('st_calls').textContent = String(calls);
+  document.getElementById('st_cut').textContent = String(cut);
+  document.getElementById('st_deep').textContent = String(Math.max(0, deep + 1)) + ' 位';
+  var hint = '';
+  if (NV === 2) hint = '实测 n=2 共 <b>4</b> 行：2 3 5 7（1 不是质数被剪；2/3/5/7 都 &ge; 2，一位就打印）。题 29 说 n&le;5 时输出一定含 5 —— n=1..5 逐个跑都有 5，答案 √。';
+  else if (NV === 3) hint = '实测 n=3 共 <b>5</b> 行：<b>23 29 3 5 7</b>。29 后面跟着更小的 3 —— 题 32-A「从小到大」的反例就是它。';
+  else if (NV === 10) hint = '实测 n=10 共 <b>9</b> 行，<b>不是 10 行</b> —— 题 28 答 ×。两位质数一共 21 个，但十位必须是质数，只剩 23 29 31 37 53 59 71 73 79。';
+  else if (NV === 24) hint = '实测 n=24 共 <b>10</b> 行，<b>第 3 行 = 29</b> —— 题 31 选 B。前两条是 233、239：23 &lt; 24 所以不打印、再长一位，DFS 先钻到三层深才回到 29。';
+  else if (NV === 200) hint = '实测 n=200 共 <b>14</b> 行 —— 题 33 选 C。要的是"三位数、自己 &ge; 200、前两位是质数、十位也是质数"：233 239 293 311 313 317 373 379 593 599 719 733 739 797，按 DFS 顺序逐层收网数出来正好 14 个。';
+  else hint = '这个 n 不在 RESULTS.md §4 的实测表里（表里只有 2 / 3 / 10 / 24 / 200）。本页由同一套语义的 JS 复刻给出结果，行数以 ⑥ 为准；要和实机对照请自己跑 <code>ip3.exe</code>。';
+  document.getElementById('st_hint').innerHTML = 'n = ' + NV + (ODD ? '（题 30 改版：第 17 行只枚举奇数位）' : '（卷面原样）') + '：' + hint;
+
+  var chainBox = document.getElementById('chains');
+  chainBox.innerHTML = '';
+  var shown = 0;
+  for (i = 0; i < RUN.nodes.length && shown < fr.outN && shown <= 20; i++) {
+    var nd2 = RUN.nodes[i];
+    if (nd2.st !== 'printed' || nd2.printF < 0 || nd2.printF > k) continue;
+    shown++;
+    var chain = [], p = nd2;
+    while (p) { chain.unshift(p.x); p = p.par; }
+    var line = el('div', 'chain', '第 ' + (nd2.outIdx + 1) + ' 行 ' + nd2.x + '  ←  前缀链 ' + chain.join(' ← '));
+    chainBox.appendChild(line);
+  }
+  if (fr.outN === 0) chainBox.appendChild(el('div', 'empty', '还没有打印，所以还没有前缀链。'));
+  else {
+    var tail = el('div', 'dim');
+    tail.innerHTML = '每条链从 main 起步的一位数开始，<b>每一步都是质数</b>；&ge;10 的输出删掉末位就是它的上一层前缀，必为质数 —— 这就是题 32-D。';
+    chainBox.appendChild(tail);
+  }
+}
+
+// ---- 等价性核对（题 30）----
+function drawEq() {
+  var a = runOf(NV, false), b = runOf(NV, true);
+  var same = a.outs.length === b.outs.length;
+  if (same) for (var i = 0; i < a.outs.length; i++) if (a.outs[i] !== b.outs[i]) { same = false; break; }
+  var box = document.getElementById('eqrow');
+  box.textContent = same
+    ? 'n=' + NV + '：两种写法输出逐行相同（各 ' + a.outs.length + ' 行）√'
+    : 'n=' + NV + '：两种写法不同（原 ' + a.outs.length + ' 行 / 改版 ' + b.outs.length + ' 行）';
+  box.style.color = same ? '' : '#f59e6b';
+}
+
+// ============ 主渲染 ============
+function render() {
+  if (!RUN || !RUN.frames.length) return { nid: -1, line: 22, text: '这组输入没有生成任何帧。', outN: 0, root: 1, stack: [], printsHere: false };
+  if (K < 0) K = 0;
+  if (K > RUN.frames.length - 1) K = RUN.frames.length - 1;
+  var fr = RUN.frames[K];
+  var cur = fr.nid >= 0 && RUN.nodes[fr.nid] ? RUN.nodes[fr.nid] : null;
+  document.getElementById('note').innerHTML = fr.text;
+  curLine(fr.line);
+  var tv = drawTree(K, cur ? cur.id : -1, fr.root);
+  var lay = tv && tv.lay ? tv.lay : null;
+  document.getElementById('curtree').innerHTML = '现在画的是 main 第 23 行 <code>i = ' + fr.root + '</code> 起步的那棵树'
+    + (lay ? '（这棵树 ' + lay.list.length + ' 个节点、' + (lay.maxDepth + 1) + ' 层'
+      + (tv.clipped ? '，整棵比卡片宽，窗口自动跟着当前节点左右移动，不会出现横向滚动条' : '') + '）' : '');
+  drawStack(fr, K);
+  drawOut(fr, K);
+  drawStats(fr);
+  drawOverview(K, fr.root);
+  drawEq();
+  document.getElementById('prog').textContent = '第 ' + (K + 1) + ' / ' + RUN.frames.length + ' 帧 · 输出 ' + fr.outN + ' 行';
+  document.getElementById('prev').disabled = K <= 0;
+  document.getElementById('home').disabled = K <= 0;
+  document.getElementById('next').disabled = K >= RUN.frames.length - 1;
+  document.getElementById('end').disabled = K >= RUN.frames.length - 1;
+}
+
+// ============ 控件 ============
+function stopPlay() { if (timer) { clearInterval(timer); timer = null; } document.getElementById('play').className = ''; document.getElementById('play').textContent = '自动播放'; }
+function startPlay() {
+  if (timer) return;
+  document.getElementById('play').className = 'on';
+  document.getElementById('play').textContent = '暂停';
+  timer = setInterval(function () {
+    if (!RUN || K >= RUN.frames.length - 1) { stopPlay(); return; }
+    K++; render();
+  }, Math.max(60, Math.round(520 / speed)));
+}
+function togglePlay() { if (timer) stopPlay(); else startPlay(); }
+function step(d) {
+  if (!RUN) return;
+  if (K + d < 0) K = 0;
+  else if (K + d > RUN.frames.length - 1) K = RUN.frames.length - 1;
+  else K += d;
+  render();
+}
+function loadN(nv) {
+  if (!(nv >= 1) || nv > NMAX || Math.floor(nv) !== nv) return false;
+  build(nv, ODD);
+  return true;
+}
+
+document.getElementById('load').addEventListener('click', function () {
+  var raw = document.getElementById('src').value;
+  var v = parseInt(String(raw).replace(/[^0-9-]/g, ''), 10);
+  if (!isFinite(v)) { setNotice('请输入 1..' + NMAX + ' 之间的整数。'); return; }
+  if (v > NMAX) { setNotice('n = ' + v + ' 树太大，演示请 ≤' + NMAX + '（判质数、递归都按卷面原样跑，节点数会爆炸）。页面继续用 n = ' + NV + '。'); return; }
+  if (v < 1) { setNotice('卷面程序读入的 n 在这里按 1..' + NMAX + ' 演示，' + v + ' 太小了。页面继续用 n = ' + NV + '。'); return; }
+  build(v, ODD);
+});
+(function () {
+  var ps = document.querySelectorAll('.pre');
+  for (var i = 0; i < ps.length; i++) {
+    ps[i].addEventListener('click', function () {
+      var v = parseInt(this.getAttribute('data-s'), 10);
+      document.getElementById('src').value = String(v);
+      if (!loadN(v)) setNotice('预设值 ' + v + ' 超出 1..' + NMAX + '。');
+    });
+  }
+})();
+document.getElementById('oddtgl').addEventListener('click', function () {
+  ODD = !ODD;
+  this.className = ODD ? 'warnon' : '';
+  markCode();
+  document.getElementById('oddst').innerHTML = ODD
+    ? '当前：题 30 改版 <code>for (int i = 1; i &lt;= 9; i += 2)</code> —— 偶数分支画成紫色虚线 <code>✗skip</code>（本来也会在第 12 行 return）'
+    : '当前：卷面原样 <code>for (int i = 0; i &lt;= 9; i++)</code>';
+  build(NV, ODD);
+  setNotice(ODD
+    ? '已切到 <b>ip3_odd</b> 版执行：只添奇数位。实测 <code>ip3</code> 与 <code>ip3_odd</code> 在 <b>n = 2..100</b> 逐行 diff <b>完全相同</b>（本机跑过，不一致 0 个）；当前 n=' + NV + ' 本页两种写法也逐行相同 —— 添上偶数位得到的数 &ge; 10 又是偶数，必为合数，本来就被第 ① 行剪掉。题 30 答 √。'
+    : '');
+});
+document.getElementById('home').addEventListener('click', function () { stopPlay(); K = 0; render(); });
+document.getElementById('end').addEventListener('click', function () {
+  stopPlay();
+  if (RUN) { K = RUN.frames.length - 1; render(); }
+});
+document.getElementById('prev').addEventListener('click', function () { step(-1); });
+document.getElementById('next').addEventListener('click', function () { step(1); });
+document.getElementById('play').addEventListener('click', function () { togglePlay(); });
+(function () {
+  var sd = document.querySelectorAll('.spd');
+  for (var i = 0; i < sd.length; i++) {
+    sd[i].addEventListener('click', function () {
+      speed = parseInt(this.getAttribute('data-v'), 10) || 1;
+      for (var j = 0; j < sd.length; j++) sd[j].className = 'spd';
+      this.className = 'spd on';
+      if (timer) { clearInterval(timer); timer = null; startPlay(); }
+    });
+  }
+})();
+document.addEventListener('keydown', function (e) {
+  var tag = e.target && e.target.tagName ? e.target.tagName : '';
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag)) return;
+  if (e.keyCode === 37) { e.preventDefault(); step(-1); }
+  else if (e.keyCode === 39) { e.preventDefault(); step(1); }
+  else if (e.keyCode === 32) { e.preventDefault(); togglePlay(); }
+});
+
+build(24, false);
+</script>
+</body>
+</html>

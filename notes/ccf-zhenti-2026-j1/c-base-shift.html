@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>完善程序(1) 进制减半 · 题 34–38 分步演示</title>
+<style>
+  :root{--bg:#0f1220;--card:#1a1f35;--ink:#e8ecff;--dim:#8b93b5;--acc:#5eead4;--bad:#f59e6b;--good:#5eead4;--line:#262c4a;}
+  *{box-sizing:border-box}
+  body{margin:0;padding:20px 22px 34px;background:var(--bg);color:var(--ink);font:15px/1.65 "Segoe UI",system-ui,sans-serif}
+  h1{font-size:20px;margin:0 0 3px}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:16px;max-width:1180px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:13px}
+  .card h2{font-size:14px;letter-spacing:.06em;color:var(--dim);margin:0 0 10px;font-weight:600}
+  button{background:#2b3358;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 12px;font-size:14px;cursor:pointer;margin:0 6px 6px 0}
+  button:hover:not(:disabled){background:#394373}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.on{background:#1f5145;border-color:var(--acc);color:#d8fff6}
+  button.warn{background:#4a3020;border-color:#7c5233}
+  input[type=text],input[type=number]{background:#0d1020;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 10px;font:14px Consolas,monospace}
+  input[type=text]{width:250px}
+  input[type=number]{width:80px}
+  label{font-size:14px;color:var(--dim)}
+  .bar{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+  .sticky{position:sticky;top:0;z-index:9;background:#141830;border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:0 0 13px}
+  .prog{color:var(--ink);font:15px Consolas,monospace;margin-left:10px}
+  .prog b{color:var(--acc)}
+  .row{display:flex;gap:13px;flex-wrap:wrap}
+  .row>div{flex:1;min-width:420px}
+  .inv{background:#152a33;border:1px solid #2f6a78;border-radius:12px;padding:12px 15px;margin-bottom:13px;font-size:15px}
+  .inv b{color:var(--acc)}
+  .inv .bad{color:var(--bad)}
+  .note{color:var(--ink);font-size:15px;min-height:70px}
+  .note b{color:var(--acc)} .note .o{color:var(--bad)}
+  .o{color:var(--bad)}
+  .arrrow{margin:4px 0 12px;padding:8px 10px;background:#131730;border:1px solid var(--line);border-radius:10px}
+  .arrlab{font-size:14px;color:var(--dim);margin-bottom:2px}
+  .arrlab b{color:var(--acc)}
+  .arrlab .o{color:var(--bad)}
+  .cells{display:flex;gap:5px;flex-wrap:wrap;align-items:flex-end;margin-top:6px}
+  .cell{width:42px;text-align:center}
+  .cell .v{font:15px Consolas,monospace;background:#2a3156;border:1px solid #3a4270;border-radius:5px;padding:4px 0;min-height:27px}
+  .cell .ix{font-size:14px;color:var(--dim)}
+  .cell.over .v{background:#20253f;color:#4a5170;border-style:dashed}
+  .cell.bad .v{background:#4a3020;border-color:#7c5233;color:#ffd9c0}
+  .cell.chg .v{box-shadow:0 0 0 2px #9d6bff}
+  .cell.zeroed .v{border-color:#7c5233;color:#f0b892}
+  .chip{display:inline-block;background:#232a4a;border:1px solid #333c66;border-radius:6px;padding:1px 8px;font:14px Consolas,monospace;margin:2px 5px 2px 0;color:#c7cdea}
+  .chip.acc{border-color:var(--acc);color:#d8fff6}
+  .chip.o{border-color:#7c5233;color:#ffd9c0}
+  .kbig{display:flex;gap:9px;flex-wrap:wrap;margin-top:10px}
+  .k{background:#131730;border:1px solid var(--line);border-radius:9px;padding:8px 11px;min-width:150px}
+  .k .lab{font-size:14px;color:var(--dim)}
+  .k .val{font:16px Consolas,monospace;margin-top:2px;word-break:break-all}
+  .k.g .val{color:var(--good)} .k.b .val{color:var(--bad)}
+  pre{margin:0;font:14px/1.55 Consolas,monospace;white-space:pre;overflow-x:auto}
+  .cl{padding:1px 7px;border-left:3px solid transparent;border-radius:4px;color:#c7cdea}
+  .cl.hi{background:#243055;border-left-color:var(--acc);color:#eafffb}
+  .cl.hi.w{background:#3d2b1f;border-left-color:var(--bad)}
+  .bl{padding:0 4px;border-radius:4px;background:#2f3a6b;border:1px dashed #5567b8;color:#dfe6ff}
+  .bl.w{background:#4a3020;border-color:#a06a3a;color:#ffd9c0}
+  .warnbox{background:#3d2b1f;border:1px solid #7c5233;border-radius:9px;padding:10px 12px;color:#ffd9c0;font-size:15px;margin-top:8px}
+  .okbox{background:#1f5145;border:1px solid #2f6a78;border-radius:9px;padding:10px 12px;color:#d8fff6;font-size:15px;margin-top:8px}
+  .tag2{display:inline-block;background:#232a4a;border:1px solid #333c66;border-radius:6px;padding:1px 7px;font-size:14px;margin:2px 4px 2px 0;color:#c7cdea}
+  .btab{min-width:120px;text-align:left}
+  .btab.on{background:#1f5145;border-color:var(--acc)}
+  .btab.bad{background:#4a3020;border-color:#7c5233}
+  .optbtn.on{background:#1f5145;border-color:var(--acc);color:#d8fff6}
+  .optbtn.bad.on{background:#5c2d17;border-color:var(--bad);color:#ffe1cc}
+  .hidden{display:none}
+  .verdict{font-size:16px;font-weight:600}
+  .verdict.ok{color:var(--good)} .verdict.no{color:var(--bad)} .verdict.na{color:var(--dim);font-weight:400}
+</style>
+</head>
+<body>
+<h1>完善程序 (1)：进制减半 —— ×(mn) 拆成「左移 ×n + 每格乘 m」 · 题 34–38</h1>
+<div class="sub">
+  2026 CCF CSP-J1 第一轮真题·完善程序(1)（卷面答案 34D 35B 36D 37B 38C），
+  所有状态由本机 <code>-static -O2 -std=c++14</code> 编译的
+  <span class="tag2">verify/src/fill1_trace.cpp</span> <span class="tag2">fill1_tmpl.cpp</span> <span class="tag2">fill1_ref.cpp</span> 实测核对。<br>
+  算法立身之本：<b>b[] 存"当前已处理好的那部分值"，用 n 进制表示，b[0] 是最低位</b>。每读入一个新的 <b>mn 进制</b>位 x，
+  数学上做 <b>v = v×(m·n) + x</b>；卷面把它拆成「整体左移一格（= ×n）并且每格乘 m（= ×m）」，再紧跟着第 17—22 行逐格进位规格化。
+  ⚠️ <b>A 是 mn 进制的数，不是十进制</b>：n=2、m=10 时基数是 <b>20</b>，<code>1 2 3</code> = 1×400 + 2×20 + 3 = <b>443</b>，二进制 <code>110111011</code> —— 本卷最大的坑，见页下方警示块。
+</div>
+
+<div class="sticky">
+  <div class="bar">
+    <button id="prev">上一步</button>
+    <button id="next">下一步</button>
+    <button id="play">自动播放</button>
+    <button id="end">跳到末尾</button>
+    <button id="home">回到开头</button>
+    <button class="spd on" data-s="1">1x</button>
+    <button class="spd" data-s="2">2x</button>
+    <button class="spd" data-s="4">4x</button>
+    <span class="prog" id="prog"></span>
+    <span class="prog" style="margin-left:14px;color:var(--dim)">快捷键 ← → 空格</span>
+  </div>
+</div>
+
+<div class="card">
+  <h2>数据（老师可改：n、m 各 2..10，位数 d ≤ 6 演示用，真题 d ≤ 18；数位从<b>高位到低位</b>给，每位 0 ≤ a &lt; m·n）</h2>
+  <div class="bar">
+    <button class="pre" data-i="0">n=2 m=10 / 1 2 3 → 输出 1 1 0 1 1 1 0 1 1</button>
+    <button class="pre" data-i="1">n=8 m=2 / 1 0 4 → 输出 4 0 4</button>
+    <button class="pre" data-i="2">n=2 m=8 / 1 10 → 输出 1 1 0 1 0</button>
+    <span class="sub">（三组输出均为本机 fill1_trace.exe / fill1_ref.exe 实机跑出来的，与 README 手推表一致）</span>
+  </div>
+  <div class="bar" style="margin-top:6px">
+    <label>n <input type="number" id="inN" min="2" max="10" value="2"></label>
+    <label>m <input type="number" id="inM" min="2" max="10" value="10"></label>
+    <label>d <input type="number" id="inD" min="1" max="6" value="3"></label>
+    <label>高位→低位 <input type="text" id="inA" value="1 2 3"></label>
+    <button id="load">载入并重新生成</button>
+  </div>
+  <div class="sub" id="loadmsg" style="margin:8px 0 0"></div>
+</div>
+
+<div class="inv" id="inv"></div>
+
+<div class="card">
+  <h2>双 b 数组主画面（下标 0 在左边 = 最低位；≥ n 的格子是警示色：还不是合法 n 进制位）</h2>
+  <div id="arrbox"></div>
+  <div class="kbig" id="cmpbox"></div>
+  <div id="outbox"></div>
+</div>
+
+<div class="row">
+  <div class="card">
+    <h2>① 这一步在说什么</h2>
+    <div class="note" id="note"></div>
+    <div class="bar" style="margin-top:8px"><span class="prog" id="curline"></span></div>
+  </div>
+  <div class="card">
+    <h2>② 代码面板（行号 = 卷面行号；5 个空按下面的选项填入，醒目底色）</h2>
+    <pre id="code"></pre>
+  </div>
+</div>
+
+<div class="card">
+  <h2>③ 变量快照</h2>
+  <div class="bar" id="vars"></div>
+</div>
+
+<div class="card">
+  <h2>④ 五个空：点标签切换 A/B/C/D，选完立刻用改过的语义重跑整个动画（默认 = 卷面参考答案 D B D B C）</h2>
+  <div class="bar" id="tabs"></div>
+  <div id="optbox" style="margin-top:10px"></div>
+  <div class="bar" style="margin-top:12px">
+    <button id="demo5a" class="warn">当场演示 ⑤：把 C 切成 A，并载入 n=4 m=4 d=1 / 0 —— 正确答案输出 0，A 输出「空」（什么都不印）</button>
+  </div>
+  <div class="sub" style="margin-top:8px">
+    "错 N 组"照抄 <span class="tag2">verify/RESULTS.md §5</span>：300 组随机数据（n,m ∈ [2,10]，d ∈ [1,18]）与独立参考实现对拍，其余空保持参考答案填法。
+  </div>
+</div>
+
+<div class="card">
+  <h2>⑤ 题干与代码打架：这不是你读错了</h2>
+  <div class="warnbox">
+    卷面在代码前写的是：<b>"以下程序按『逐位除以 n』的方法完成进制转换。请补全程序。"</b><br>
+    但代码（第 13—22 行）里<b>一次除法拆数都没有</b>：它做的是 <b>当前数 ×(m·n) + x，再按 n 进位</b>（Horner 式），从头到尾没有短除过。
+    "逐位除以 n"的写法根本长不成卷面那个 <code>for (j = len; j >= 1; j--) b[j] = ...</code> 的循环。<br>
+    实测<b>站在代码这边</b>：③ 填 <code>b[j]/n</code>（D）才在 300 组随机数据上 300/300 全对
+    —— 那句话里唯一能对应上的"除法"，出现在进位里（上一格拿商），不是题干说的"拆数"。
+    讲评按代码讲。<b>看到题干和代码打架，以能跑的那份为准，这不是你读错了。</b>（原文见 RESULTS.md §5.1）
+  </div>
+  <div class="okbox">
+    本页三组预设的真值 <code>1 1 0 1 1 1 0 1 1</code> / <code>4 0 4</code> / <code>1 1 0 1 0</code> 和 ⑤A 的空输出，
+    都是本机编译 <span class="tag2">fill1_trace.exe</span> <span class="tag2">fill1_ref.exe</span> 实机跑出来的，页面与实机不一致时以实机为准改页面。
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============ 卷面 5 个空的选项原文（照抄 paper.md）与 RESULTS §5 实测数字 ============ */
+var ANSWER = ['D', 'B', 'D', 'B', 'C'];
+var BLANKS = [
+  { q: '①（第 34 行）', line: 14, ans: 'D',
+    opts: { A: 'b[j] * n', B: 'b[j] * m', C: 'b[j - 1] * n', D: 'b[j - 1] * m' },
+    wrong: { A: 269, B: 269, C: 244 },
+    why: {
+      A: '原地乘，没有移位，新读的那一位没有地方放（b[0] = x 会把整个数的低位覆盖掉）。',
+      B: '原地乘，没有移位，新读的那一位没有地方放（b[0] = x 会把整个数的低位覆盖掉）。',
+      C: '搬对了，但乘的是 n，等于按 n 进制读 mn 进制的位，基数错了。'
+    } },
+  { q: '②（第 15 行）', line: 15, ans: 'B',
+    opts: { A: 'x * n', B: 'x', C: '0', D: 'm' },
+    wrong: { A: 299, C: 299, D: 299 },
+    why: {
+      A: '凭空多乘一个 n。',
+      C: '新位丢了。',
+      D: '与 x 无关，彻底错。'
+    } },
+  { q: '③（第 19 行）', line: 19, ans: 'D',
+    opts: { A: 'b[j] / m', B: 'b[j] % n', C: 'b[j] % m', D: 'b[j] / n' },
+    wrong: { A: 268, B: 292, C: 290 },
+    why: {
+      A: '混进了 m，进位基数根本不该是 m。',
+      B: '这是留下的余数，应该给 ④，不是给上一格。',
+      C: '混进了 m，进位基数根本不该是 m。'
+    } },
+  { q: '④（第 20 行）', line: 20, ans: 'B',
+    opts: { A: 'b[j] / m', B: 'b[j] % n', C: 'b[j] % m', D: 'b[j] / n' },
+    wrong: { A: 284, C: 266, D: 292 },
+    why: {
+      A: '本格该留的是余数，不是"除以 m 的商"：③ 和 ④ 永远是 / 和 % 配对，上一格拿商、本格留余数。',
+      C: '混进了 m，留余数的基数应该是 n。',
+      D: '这是商 —— 那是 ③ 给上一格的，本格必须留余数。'
+    } },
+  { q: '⑤（第 24 行）', line: 24, ans: 'C',
+    opts: {
+      A: 'len > 0 && b[len - 1] == 0',
+      B: 'len > 0 && b[0] == 0',
+      C: 'len > 1 && b[len - 1] == 0',
+      D: 'len > 1 && b[0] == 0'
+    },
+    wrong: { A: 1, B: 80, D: 79 },
+    why: {
+      A: 'len > 0 会把表示数值 0 的最后那一位也剥掉，于是什么都不输出 —— 必须给数值 0 留一位。300 组里它只错 1 组，正是 A = 0 那组（4 4 1 / 0）：C 输出 0，A 输出空。',
+      B: '砍最高位要判 b[len-1] == 0，判 b[0]（最低位）是 0 太正常了，砍了数值就变；还和 A 一样会把 0 剥光。',
+      D: '最低位是 0 太正常了，砍了数值就变。'
+    } }
+];
+var PRESETS = [
+  { n: 2, m: 10, dig: [1, 2, 3], out: '1 1 0 1 1 1 0 1 1' },
+  { n: 8, m: 2, dig: [1, 0, 4], out: '4 0 4' },
+  { n: 2, m: 8, dig: [1, 10], out: '1 1 0 1 0' }
+];
+
+/* ============ 状态 ============ */
+var SC = { n: 2, m: 10, dig: [1, 2, 3], opt: ['D', 'B', 'D', 'B', 'C'] };
+var S = { frames: [], t: 0, cut: false };
+var timer = null, speed = 1;
+
+function fmtv(v) {
+  if (typeof v !== 'number' || !isFinite(v)) return '数值过大';
+  if (Math.abs(v) < 1e15) return String(Math.round(v));
+  return v.toExponential(4);
+}
+
+/* ============ 逐行照搬卷面 28 行语义的模拟器（每个空按所选候选生效） ============ */
+function evalB1(op, b, j, n, m) {
+  var bj = b[j] || 0, jm = b[j - 1] || 0;
+  if (op === 'A') return bj * n;
+  if (op === 'B') return bj * m;
+  if (op === 'C') return jm * n;
+  return jm * m;
+}
+function evalB2(op, x, n, m) {
+  if (op === 'A') return x * n;
+  if (op === 'B') return x;
+  if (op === 'C') return 0;
+  return m;
+}
+function evalB34(op, v, n, m) {
+  if (op === 'A') return Math.floor(v / m);
+  if (op === 'B') return v % n;
+  if (op === 'C') return v % m;
+  return Math.floor(v / n);
+}
+function testB5(op, len, b) {
+  var top = len > 0 ? b[len - 1] : 0;
+  if (op === 'A') return len > 0 && top === 0;
+  if (op === 'B') return len > 0 && (b[0] || 0) === 0;
+  if (op === 'C') return len > 1 && top === 0;
+  return len > 1 && (b[0] || 0) === 0;
+}
+
+/* 独立参考算法：完全不碰卷面那套"移位+进位"写法 */
+function refValues(n, m, dig) {
+  var base = m * n, refV = [0], i;
+  for (i = 0; i < dig.length; i++) refV.push(refV[i] * base + dig[i]);
+  var v = refV[dig.length], digs = [];
+  if (v === 0) digs.push(0);
+  var t = v;
+  while (t > 0) { digs.push(t % n); t = Math.floor(t / n); }
+  digs.reverse();
+  return { refV: refV, refDigits: digs, outStr: digs.join(' ') };
+}
+
+function snapshot(arr, len, dn) {
+  var a = [], i;
+  dn = dn || len;
+  for (i = 0; i < dn; i++) a.push(arr[i] || 0);
+  return { a: a, len: len };
+}
+function readBack(arr, len, n) {
+  var v = 0;
+  for (var j = len - 1; j >= 0; j--) v = v * n + (arr[j] || 0);
+  return v;
+}
+
+function genFrames(n, m, dig, opt) {
+  var F = [], CAP = 3000;
+  function push(fr) { if (F.length < CAP) F.push(fr); }
+  var b = new Array(400); for (var z = 0; z < 400; z++) b[z] = 0;
+  var len = 1, d = dig.length;
+  var R = refValues(n, m, dig);
+  var seg = -1, topSnap = null, topDone = false;
+  var base = m * n, p, i;
+
+  function frame(line, note, extra) {
+    extra = extra || {};
+    var dn = (extra.disp !== undefined) ? extra.disp : len;
+    var e = {
+      line: line, note: note, seg: seg,
+      top: topSnap ? snapshot(b, len, dn) : null,
+      bot: snapshot(b, len, dn), len: len,
+      hi: [], zeroed: [], mark: null, target: null, cmp: null, out: null, phase: '', trims: []
+    };
+    for (p in extra) if (Object.prototype.hasOwnProperty.call(extra, p)) e[p] = extra[p];
+    if (!e.top) e.top = snapshot(b, len, dn);
+    if (e.target !== null && (extra.cmp === undefined || extra.cmp === null)) {
+      var rb = readBack(b, len, n);
+      e.cmp = (rb === e.target);
+    }
+    if (topDone) e.top = topSnap;
+    push(e);
+    return e;
+  }
+
+  /* 初始：第 09 行 int len = 1; b[] 全局零初始化 */
+  frame(9, '<b>初始：第 09 行 int len = 1</b>，b[] 是全局数组（第 04 行），零初始化 → b = [0]，len = 1。'
+    + '<b>约定：b[0] 是 n 进制的最低位，b[len-1] 是最高位，左边是低位。</b>'
+    + '此刻按 n=' + n + ' 位权读回 = 0，与独立参考真值 0 相等。', { target: 0, phase: 'init' });
+
+  for (i = 0; i < d; i++) {
+    var x = dig[i]; seg = i; topSnap = null; topDone = false;
+    /* ① 读入 x（第 10—12 行） */
+    frame(12, '第 10—12 行：<b>读入 mn 进制（基数 = m×n = ' + base + '）从高位到低位的第 ' + (i + 1) + ' 位（共 ' + d + ' 位）：x = ' + x + '</b>。'
+      + '它在原数里的位权是 (' + base + ')<sup>' + (d - 1 - i) + '</sup> = ' + fmtv(Math.pow(base, d - 1 - i)) + '。'
+      + '数学上要做的是 <b>v = v×(m·n) + x</b>：上一个真值 ' + fmtv(R.refV[i]) + ' × ' + base + ' + ' + x + ' = <b>' + fmtv(R.refV[i + 1]) + '</b>。',
+      { target: R.refV[i], phase: 'read' });
+    /* ② 倒着移位：for (int j = len; j >= 1; j--) b[j] = ①（第 13—14 行） */
+    var j;
+    for (j = len; j >= 1; j--) {
+      var bv = evalB1(opt[0], b, j, n, m);
+      var bBefore = b[j] || 0; b[j] = bv;
+      var whyWrong = opt[0] === 'D' ? ''
+        : (opt[0] === 'C' ? '<span class="o">① 填 C（' + BLANKS[0].opts.C + '）：搬对了，但乘的是 n，等于按 n 进制读 mn 进制的位，基数错了（300 组错 244）。</span> '
+          : '<span class="o">① 填 ' + opt[0] + '（' + BLANKS[0].opts[opt[0]] + '）：没有把 b[j-1] 搬过来，等于没移位，新位没地方放（300 组各错 269）。</span> ');
+      frame(14, '第 13—14 行（移位循环，<b>倒着走</b>）：<b>j = ' + j + '</b> → b[' + j + '] = ' + BLANKS[0].opts[opt[0]] + ' = <b>' + fmtv(bv) + '</b>。'
+        + '整格左移一格就是 ×n，再每格乘 m，合起来 ×(m·n) = ' + base + '。' + whyWrong
+        + (j === len - 1 ? ' <b>必须倒着走</b>：b[j] 要用<b>旧的</b> b[j-1]；从小到大写会先把 b[1] 改掉，再算 b[2] 时读到的就是新值，全错。' : ''),
+        { hi: [j], phase: 'shift', jcur: j, disp: len + 1, mark: 'b[' + j + '] = ' + fmtv(bv) });
+      if (F.length >= CAP) break;
+    }
+    /* ③ b[0] = ②; len++（第 15—16 行） */
+    var b0 = evalB2(opt[1], x, n, m);
+    b[0] = b0; len++;
+    topSnap = snapshot(b, len); topDone = true;
+    frame(15, '第 15—16 行：<b>b[0] = ' + BLANKS[1].opts[opt[1]] + ' = ' + fmtv(b0) + '，len++ → len = ' + len + '</b>。这就是 Horner 式里那个 "+ x"。'
+      + (opt[1] !== 'B' ? '<span class="o">② 填 ' + opt[1] + '：' + BLANKS[1].why[opt[1]] + '（300 组错 299）。</span> ' : '')
+      + '上面那条"中间态行"就此定格 —— 注意 ≥ n 的警示格：此刻 b[] <b>还不是合法的 n 进制表示</b>，但按 n 进制位权求和仍等于真值，'
+      + '所以第 17—22 行的进位循环必须紧跟在后面。',
+      { hi: [0], target: R.refV[i + 1], phase: 'place', mark: 'b[0] = ' + fmtv(b0) + ' , len=' + len });
+    /* ④ 进位循环（第 17—22 行），j 从 0 往高位，一次一帧 */
+    j = 0;
+    while (j < len) {
+      var vj = b[j] || 0;
+      if (vj >= n) {
+        var q = evalB34(opt[2], vj, n, m);
+        var r = evalB34(opt[3], vj, n, m);
+        var wasLen = len;
+        b[j + 1] = (b[j + 1] || 0) + q;
+        b[j] = r;
+        var lenInc = false;
+        if (j + 1 === wasLen) { len++; lenInc = true; }
+        var noteC = '第 17—22 行：<b>j = ' + j + '</b>，判 <b>b[' + j + '] = ' + fmtv(vj) + ' ≥ n(' + n + ') ?</b> 是 → '
+          + '<b>上一格拿商</b>：b[' + (j + 1) + '] += ' + BLANKS[2].opts[opt[2]] + ' = ' + fmtv(q) + '；'
+          + '<b>本格留余数</b>：b[' + j + '] = ' + BLANKS[3].opts[opt[3]] + ' = ' + fmtv(r) + '。'
+          + (lenInc ? ' 又因为 <b>j + 1 = ' + (j + 1) + ' == len</b>，第 21 行 <b>len++ → ' + len + '</b>：'
+            + '<b>len 在这个循环里会长，for 的上界 j &lt; len 跟着变</b>，循环能一直推到最高格。' : '')
+          + (opt[2] !== 'D' ? '<span class="o">③ 填 ' + opt[2] + '：' + BLANKS[2].why[opt[2]] + '（错 ' + BLANKS[2].wrong[opt[2]] + '/300）。</span> ' : '')
+          + (opt[3] !== 'B' ? '<span class="o">④ 填 ' + opt[3] + '：' + BLANKS[3].why[opt[3]] + '（错 ' + BLANKS[3].wrong[opt[3]] + '/300）。</span> ' : '');
+        frame(lenInc ? 21 : 19, noteC,
+          { hi: [j, j + 1], zeroed: [j], target: R.refV[i + 1], phase: 'carry',
+            mark: 'j=' + j + ' 商 ' + fmtv(q) + ' 余 ' + fmtv(r) + (lenInc ? ' len++' : '') });
+      } else {
+        frame(18, '第 17—18 行：<b>j = ' + j + '</b>，判 <b>b[' + j + '] = ' + fmtv(vj) + ' ≥ n(' + n + ') ?</b> <b>否</b> → 这一格不处理，j++。',
+          { hi: [j], target: R.refV[i + 1], phase: 'carry', mark: 'j=' + j + ' 不 ≥ ' + n });
+      }
+      j++;
+      if (j > 260) { frame(17, '<span class="o">进位循环超过 260 格，演示截断（当前空填法把数搞爆了）。</span>', { cut: true }); break; }
+      if (F.length >= CAP) break;
+    }
+    /* ⑤ 这一段结束 */
+    var rbv = readBack(b, len, n);
+    frame(23, '这一段结束（第 23 行，回到外层 for）：规格化后 len = ' + len + '，按 n 进制位权读回 = <b>' + fmtv(rbv) + '</b>。'
+      + (rbv === R.refV[i + 1]
+        ? '✓ 它等于独立参考真值，也等于 <b>上一个真值 ' + fmtv(R.refV[i]) + ' × (m·n=' + base + ') + x=' + x + ' = ' + fmtv(R.refV[i + 1]) + '</b> —— "左移(×n) + 每格乘 m(×m)"确实等价于 ×(mn)。'
+        : '<span class="o">✗ 读回 ' + fmtv(rbv) + ' ≠ 独立参考真值 ' + fmtv(R.refV[i + 1]) + ' —— 本段某个空填错了。</span>'),
+      { target: R.refV[i + 1], phase: 'segend' });
+    if (F.length >= CAP) break;
+  }
+
+  /* 收尾两帧之一：第 24 行 while (⑤) len-- */
+  seg = d; topDone = true;
+  var trims = 0;
+  while (testB5(opt[4], len, b)) {
+    len--; trims++;
+    if (trims > 100) break;
+  }
+  var trimNote = '第 24 行：<b>while (⑤ = ' + BLANKS[4].opts[opt[4]] + ') len--;</b> —— 去掉最高位那些没用的 0。';
+  if (opt[4] !== 'C') {
+    trimNote += '<span class="o">⑤ 填 ' + opt[4] + '：' + BLANKS[4].why[opt[4]] + '（300 组错 ' + BLANKS[4].wrong[opt[4]] + '）。</span>';
+  } else {
+    trimNote += ' 两个条件缺一不可：判 b[len-1]（最高位）是 0 才该砍；要 len &gt; 1 —— <b>必须给数值 0 留下一个合法的位</b>。';
+  }
+  frame(24, trimNote + (trims > 0 ? ' 本次砍掉 ' + trims + ' 个前导零' : ' 本次一格没砍') + ' → <b>len = ' + len + '</b>。',
+    { target: R.refV[d], phase: 'trim', trims: trims, mark: '⑤=' + opt[4] + ' len=' + len });
+
+  /* 收尾两帧之二：第 25—26 行打印 */
+  var outArr = [];
+  for (i = len - 1; i >= 0; i--) outArr.push(b[i] || 0);
+  var outStr = outArr.map(fmtv).join(' ');
+  var noOut = (len === 0);
+  var pOut = noOut ? '' : outStr + ' ';
+  var outOk = (pOut.replace(/\s+$/, '') === R.outStr.replace(/\s+$/, '')) && !noOut;
+  frame(26, '第 25—26 行：从 b[' + (len - 1) + '] 往低位打印。'
+    + (noOut ? '<span class="o"><b>程序输出：（什么都没有，空）</b></span> —— len 被 ⑤ 砍成 0，一次循环都不进。独立参考输出：<b>' + R.outStr + '</b>。'
+      : '程序输出：<b>' + (outOk ? pOut : '<span class="o">' + pOut + '（与参考不符）</span>') + '</b>；独立参考（短除法）输出：<b>' + R.outStr + '</b>。'),
+    { target: R.refV[d], cmp: outOk, phase: 'out', out: noOut ? '(空)' : pOut });
+  return { frames: F, cut: F.length >= CAP, ref: R };
+}
+
+/* ============ 渲染 ============ */
+function el(tt, cls, x) { var e = document.createElement(tt); if (cls) e.className = cls; if (x !== undefined && x !== null) e.textContent = x; return e; }
+
+function renderArrays(fr) {
+  var box = document.getElementById('arrbox'); box.innerHTML = '';
+  var n = SC.n;
+  function row(title, snap, isMid, live) {
+    var div = el('div', 'arrrow');
+    var lab = el('div', 'arrlab');
+    if (!snap) { lab.innerHTML = title + '：<span class="o">本段还没开始</span>（读入下一位后这里显示移位×m 的中间态）'; div.appendChild(lab); return div; }
+    var badN = 0, i;
+    for (i = 0; i < snap.len; i++) if (snap.a[i] >= n) badN++;
+    var extra = '';
+    if (isMid) {
+      extra = live ? '（移位进行中）'
+        : (badN > 0 ? ' —— <span class="o">有 ' + badN + ' 格 ≥ n：还不是合法 n 进制！这就是必须紧跟进位循环的视觉证据</span>' : '（这一格段内没有 ≥ n 的值）');
+    } else {
+      extra = '（进位规格化后的工作区）';
+    }
+    var rb = readBackArr(snap, n);
+    lab.innerHTML = title + extra + '<br><span class="sub">len = ' + snap.len + '，按 n=' + n + ' 位权读回 = ' + fmtv(rb) + '</span>';
+    var cells = el('div', 'cells');
+    if (snap.len === 0 && snap.a.length === 0) {
+      cells.appendChild(el('div', 'sub', '（len = 0：b 里已经没有位可看了 —— 这就是"空输出"的样子）'));
+    }
+    var shown = Math.min(snap.a.length, 60);
+    for (i = 0; i < shown; i++) {
+      var c = el('div', 'cell');
+      var v = el('div', 'v', fmtv(snap.a[i]));
+      if (i >= snap.len) c.className += ' over';
+      if (isMid && i < snap.len && snap.a[i] >= n) c.className += ' bad';
+      if (!isMid && fr.phase !== 'shift' && i < snap.len && snap.a[i] >= n) c.className += ' bad';
+      if (!isMid && fr.hi.indexOf(i) >= 0) c.className += ' chg';
+      if (!isMid && fr.zeroed.indexOf(i) >= 0) c.className += ' zeroed';
+      c.appendChild(v);
+      c.appendChild(el('div', 'ix', String(i)));
+      cells.appendChild(c);
+    }
+    if (snap.a.length > shown) cells.appendChild(el('div', 'sub', '… 共 ' + snap.a.length + ' 格'));
+    div.appendChild(cells);
+    var lo = el('div', 'sub', '◀ 左端 = 下标 0 = 最低位（n 进制）｜右端 = 最高位 ▶');
+    div.appendChild(lo);
+    return div;
+  }
+  function readBackArr(snap2, nn) { var v = 0; for (var j = snap2.len - 1; j >= 0; j--) v = v * nn + snap2.a[j]; return v; }
+  box.appendChild(row('<b>中间态行</b>：移位 ×m → 放 x（还没进位）', fr.top, true, fr.phase === 'shift'));
+  box.appendChild(row('<b>规格化行</b>：b[] 当前状态（第 17—22 行逐格进位后应成为合法 n 进制）', fr.bot, false, true));
+  if (fr.mark) {
+    var ch = el('div');
+    ch.appendChild(el('span', 'chip acc', '本帧：' + fr.mark));
+    box.appendChild(ch);
+  }
+}
+
+function renderCmp(fr) {
+  var box = document.getElementById('cmpbox'); box.innerHTML = '';
+  var n = SC.n, m = SC.m, R = fr._ref;
+  var rb = -1, j;
+  rb = 0; for (j = fr.bot.len - 1; j >= 0; j--) rb = rb * n + fr.bot.a[j];
+  var k1 = el('div', 'k'); k1.appendChild(el('div', 'lab', '按 n 进制位权读回的真值')); k1.appendChild(el('div', 'val', fmtv(rb))); box.appendChild(k1);
+  var k2 = el('div', 'k'); k2.appendChild(el('div', 'lab', '独立参考算出的真值（v = v×(m·n)+x 累加）'));
+  k2.appendChild(el('div', 'val', fr.target !== null ? fmtv(fr.target) : '—')); box.appendChild(k2);
+  var tgt = fr.target;
+  var vd = el('div', 'k');
+  vd.appendChild(el('div', 'lab', '两者比对'));
+  var valEl = el('div', 'val');
+  if (fr.cmp === null || fr.cmp === undefined) {
+    valEl.className = 'val'; valEl.innerHTML = '<span class="verdict na">— 移位进行中，放置完成后才比对</span>';
+  } else if (fr.cmp) {
+    valEl.innerHTML = '<span class="verdict ok">✓ 相等</span>';
+  } else {
+    valEl.innerHTML = '<span class="verdict no">✗ 不等！</span>';
+  }
+  vd.appendChild(valEl); box.appendChild(vd);
+  if (fr.phase === 'place' || fr.phase === 'segend') {
+    var segI = fr.seg;
+    var k3 = el('div', 'k'); k3.appendChild(el('div', 'lab', '目标 = 上一真值×(m·n) + x'));
+    k3.appendChild(el('div', 'val', fmtv(R.refV[segI]) + '×' + (m * n) + '+' + SC.dig[segI] + '=' + fmtv(R.refV[segI + 1])));
+    box.appendChild(k3);
+  }
+  var out = document.getElementById('outbox'); out.innerHTML = '';
+  if (fr.out !== null && fr.out !== undefined) {
+    var ob = el('div', fr.cmp ? 'okbox' : 'warnbox');
+    ob.innerHTML = '<b>程序输出</b>：<code>' + (fr.out === '(空)' ? '(什么都不印)' : fr.out.replace(/</g, '&lt;')) + '</code>　｜　<b>独立参考输出</b>：<code>' + R.outStr + '</code>'
+      + (fr.cmp ? ' ✅ 与本机 fill1_ref.exe 一致' : ' ❌ 不一致（本页数字来自实机，填错项才会变）');
+    out.appendChild(ob);
+  }
+}
+
+function renderInv(fr) {
+  var box = document.getElementById('inv');
+  var allC = true;
+  for (var i = 0; i < S.frames.length; i++) {
+    var f = S.frames[i];
+    if (f.cmp === false) { allC = false; break; }
+  }
+  var wrongList = [];
+  for (i = 0; i < 5; i++) if (SC.opt[i] !== ANSWER[i]) wrongList.push('①②③④⑤'.charAt(i) + '→' + SC.opt[i]);
+  box.innerHTML = '<div class="tt" style="font-size:14px;color:#a5e8dd;letter-spacing:.06em;margin-bottom:6px;font-weight:600">当前填法</div>'
+    + '<b>' + (wrongList.length ? '<span class="bad">错误项：' + wrongList.join('、') + '</span>' : '卷面参考答案 <b>D B D B C</b>') + '</b>'
+    + '　全程比对：' + (allC ? '<b>每一帧读回 = 独立参考真值 ✓</b>' : '<span class="bad">有帧对不上 ✗ —— 看右侧红叉</span>')
+    + '｜基数 = m·n = <b>' + (SC.n * SC.m) + '</b>，输出基数 n = <b>' + SC.n + '</b>。'
+    + (wrongList.length ? '<div class="bad" style="margin-top:4px">注意：错误填法的动画仍然逐行照搬卷面语义运行，红叉出现在"错的那个空"生效的第一帧 —— 这正是 300 组对拍抓错的机制。</div>' : '');
+}
+
+var CODEBASE = [
+  '#include <iostream>', '', 'constexpr int N = 100005;', 'long long b[N];', '',
+  'int main() {', '  long long n, m, d;', '  std::cin >> n >> m >> d;', '  int len = 1;',
+  '  for (int i = 0; i < d; i++) {', '    long long x;', '    std::cin >> x;',
+  '    for (int j = len; j >= 1; j--)', '      b[j] = @1@;',
+  '    b[0] = @2@;', '    len++;',
+  '    for (int j = 0; j < len; j++)', '      if (b[j] >= n) {',
+  '        b[j + 1] += @3@;', '        b[j] = @4@;',
+  '        if (j + 1 == len) len++;', '      }', '  }',
+  '  while (@5@) len--;',
+  '  for (int i = len - 1; i >= 0; i--)', '    std::cout << b[i] << \' \';',
+  '  return 0;', '}'
+];
+function renderCode(fr) {
+  var pre = document.getElementById('code'); pre.innerHTML = '';
+  for (var i = 0; i < CODEBASE.length; i++) {
+    var ln = i + 1, txt = CODEBASE[i];
+    var isWrong = false, bi = -1;
+    for (var q = 1; q <= 5; q++) {
+      if (txt.indexOf('@' + q + '@') >= 0) {
+        bi = q - 1;
+        txt = txt.replace('@' + q + '@', '<span class="bl' + (SC.opt[q - 1] !== ANSWER[q - 1] ? ' w' : '') + '">'
+          + '①②③④⑤'.charAt(q - 1) + ' ' + BLANKS[q - 1].opts[SC.opt[q - 1]] + '</span>');
+        if (SC.opt[q - 1] !== ANSWER[q - 1]) isWrong = true;
+      }
+    }
+    var cls = 'cl' + (ln === fr.line ? (isWrong ? ' hi w' : ' hi') : '');
+    var div = el('div', cls);
+    div.innerHTML = (ln < 10 ? '0' + ln : String(ln)) + ' ' + (txt || '&nbsp;');
+    pre.appendChild(div);
+    if (bi >= 0 && ln === fr.line) {}
+  }
+  document.getElementById('curline').innerHTML = '当前执行行：<b>第 ' + fr.line + ' 行</b>'
+    + (fr.phase ? '　<span class="chip">' + ({ init: '初始', read: '① 读入', shift: '② 倒序移位', place: '③ 放 x + len++', carry: '④ 逐格进位', segend: '段末校验', trim: '收尾·去前导零', out: '收尾·打印' })[fr.phase] + '</span>' : '');
+}
+
+function renderVars(fr) {
+  var box = document.getElementById('vars'); box.innerHTML = '';
+  var segTxt = fr.seg < SC.dig.length ? ('第 ' + (fr.seg + 1) + ' / ' + SC.dig.length + ' 位（x = ' + SC.dig[fr.seg] + '）') : '全部 ' + SC.dig.length + ' 位读完，进入收尾';
+  if (fr.seg < 0) segTxt = '还没读入任何位';
+  box.appendChild(el('span', 'chip', 'n = ' + SC.n));
+  box.appendChild(el('span', 'chip', 'm = ' + SC.m));
+  box.appendChild(el('span', 'chip', '基数 m·n = ' + SC.n * SC.m));
+  box.appendChild(el('span', 'chip', 'd = ' + SC.dig.length));
+  box.appendChild(el('span', 'chip acc', 'len = ' + fr.len));
+  box.appendChild(el('span', 'chip', segTxt));
+  if (fr.jcur !== undefined && fr.phase === 'shift') box.appendChild(el('span', 'chip acc', 'j = ' + fr.jcur + '（倒着走）'));
+  if (fr.phase === 'carry' && fr.mark) box.appendChild(el('span', 'chip', fr.mark));
+}
+
+function renderNote(fr) {
+  var note = document.getElementById('note');
+  note.innerHTML = fr.note;
+}
+
+function render() {
+  if (!S.frames.length) return;
+  if (S.t >= S.frames.length) S.t = S.frames.length - 1;
+  if (S.t < 0) S.t = 0;
+  var fr = S.frames[S.t];
+  fr._ref = fr._ref || null;
+  document.getElementById('prog').innerHTML = '<b>' + (S.t + 1) + '</b> / ' + S.frames.length + (S.cut ? ' <span class="o">(已截断)</span>' : '');
+  renderInv(fr);
+  renderArrays(fr);
+  renderCmp(fr);
+  renderCode(fr);
+  renderVars(fr);
+  renderNote(fr);
+  document.getElementById('prev').disabled = S.t === 0;
+  document.getElementById('next').disabled = S.t >= S.frames.length - 1;
+}
+
+/* ============ 重跑入口 ============ */
+function regen(msg) {
+  var res = genFrames(SC.n, SC.m, SC.dig, SC.opt);
+  S.frames = res.frames; S.cut = res.cut; S.t = 0;
+  var R = res.ref;
+  for (var i = 0; i < S.frames.length; i++) S.frames[i]._ref = R;
+  render();
+  if (msg) document.getElementById('loadmsg').innerHTML = msg;
+}
+
+function loadFromInputs() {
+  var n = +document.getElementById('inN').value;
+  var m = +document.getElementById('inM').value;
+  var d = +document.getElementById('inD').value;
+  var msg = document.getElementById('loadmsg');
+  if (!(n >= 2 && n <= 10) || !(m >= 2 && m <= 10)) { msg.innerHTML = '<span class="o">n、m 必须是 2..10（题面数据范围）</span>'; return; }
+  if (!(d >= 1 && d <= 6)) { msg.innerHTML = '<span class="o">演示用位数 d 必须 1..6（真题 d ≤ 18，画不下）</span>'; return; }
+  var toks = document.getElementById('inA').value.trim().split(/[\s,]+/).filter(function (s) { return s.length > 0; });
+  var vals = [], i;
+  for (i = 0; i < toks.length; i++) {
+    var v = Number(toks[i]);
+    if (!isFinite(v) || Math.floor(v) !== v) { msg.innerHTML = '<span class="o">数位必须都是整数：「' + toks[i] + '」不行</span>'; return; }
+    vals.push(v);
+  }
+  if (vals.length !== d) { msg.innerHTML = '<span class="o">要正好 ' + d + ' 个数（高位→低位），现在给了 ' + vals.length + ' 个</span>'; return; }
+  for (i = 0; i < vals.length; i++) {
+    if (vals[i] < 0 || vals[i] >= n * m) { msg.innerHTML = '<span class="o">每位必须满足 0 ≤ a &lt; m·n = ' + (n * m) + '，第 ' + (i + 1) + ' 位 = ' + vals[i] + ' 超了</span>'; return; }
+  }
+  SC.n = n; SC.m = m; SC.dig = vals;
+  regen('数据 <b>n=' + n + ' m=' + m + ' d=' + d + ' / ' + vals.join(' ') + '</b>（mn=' + (n * m) + ' 进制）→ 独立参考真值 = <b>'
+    + fmtv(refValues(n, m, vals).refV[d]) + '</b>，参考输出 <b>' + refValues(n, m, vals).outStr + '</b>。共 ' + S.frames.length + ' 帧。');
+}
+
+function loadPreset(idx) {
+  var p = PRESETS[idx];
+  document.getElementById('inN').value = p.n;
+  document.getElementById('inM').value = p.m;
+  document.getElementById('inD').value = p.dig.length;
+  document.getElementById('inA').value = p.dig.join(' ');
+  SC.n = p.n; SC.m = p.m; SC.dig = p.dig.slice();
+  regen('预设 <b>n=' + p.n + ' m=' + p.m + ' / ' + p.dig.join(' ') + '</b>（实机真值：输出 <b>' + p.out + '</b>，本页与之逐格一致）。共 ' + S.frames.length + ' 帧。');
+}
+
+/* ============ 五个空的选项面板 ============ */
+function renderBlankTabs() {
+  var tabs = document.getElementById('tabs'); tabs.innerHTML = '';
+  for (var i = 0; i < 5; i++) {
+    var bt = document.createElement('button');
+    var ok = SC.opt[i] === ANSWER[i];
+    bt.className = 'btab' + (ok ? ' on' : ' bad');
+    bt.textContent = '①②③④⑤'.charAt(i) + ' = ' + SC.opt[i] + (ok ? '（参考）' : '（错）');
+    bt.dataset.i = String(i);
+    bt.onclick = (function (k) { return function () { showBlank(k); }; })(i);
+    tabs.appendChild(bt);
+  }
+  showBlank(curBlank);
+}
+var curBlank = 0;
+function showBlank(k) {
+  curBlank = k;
+  var box = document.getElementById('optbox'); box.innerHTML = '';
+  var B = BLANKS[k];
+  var subDiv = el('div', 'sub');
+  subDiv.innerHTML = '<b>' + B.q + '</b>　卷面原文："' + B.q.charAt(0) + '处应填（ ）"，选项照抄 paper.md。点一个选项，动画立刻按改过的语义重跑。';
+  box.appendChild(subDiv);
+  var bar = el('div', 'bar'); bar.style.marginTop = '6px';
+  'ABCD'.split('').forEach(function (L) {
+    var bt = document.createElement('button');
+    var isAns = (L === B.ans), isSel = (SC.opt[k] === L);
+    bt.className = 'optbtn' + (isAns ? '' : ' bad') + (isSel ? ' on' : '');
+    bt.textContent = L + '. ' + B.opts[L] + (isAns ? ' ← 卷面答案' : '');
+    bt.onclick = function () {
+      SC.opt[k] = L;
+      regen();
+      renderBlankTabs();
+      document.getElementById('loadmsg').innerHTML = '①②③④⑤'.charAt(k) + ' 已切换为 <b>' + L + '</b>（' + B.opts[L] + '），动画已按新语义重跑，共 ' + S.frames.length + ' 帧。'
+        + (L !== B.ans ? '<span class="o">这一项在 300 组随机数据对拍里错 <b>' + B.wrong[L] + '</b> 组。</span>' : '<span style="color:var(--acc)">卷面参考答案，300/300 全对。</span>');
+    };
+    bar.appendChild(bt);
+  });
+  box.appendChild(bar);
+  var sel = SC.opt[k];
+  if (sel !== B.ans) {
+    var wb = el('div', 'warnbox');
+    wb.innerHTML = '<b>' + '①②③④⑤'.charAt(k) + ' 填 ' + sel + '（' + B.opts[sel] + '）：这一项在 300 组随机数据对拍里错了 '
+      + '<b>' + B.wrong[sel] + '</b> 组（RESULTS.md §5）。</b>为什么错：' + B.why[sel];
+    box.appendChild(wb);
+  } else {
+    var okb = el('div', 'okbox');
+    okb.innerHTML = '<b>' + '①②③④⑤'.charAt(k) + ' 填 ' + sel + '（' + B.opts[sel] + '）：卷面参考答案，300/300 全对（RESULTS.md §0 表 34—38 行 = D B D B C）。</b>';
+    box.appendChild(okb);
+  }
+}
+
+/* ============ 控件 ============ */
+document.getElementById('prev').onclick = function () { if (S.t > 0) { S.t--; render(); } };
+document.getElementById('next').onclick = function () { if (S.t < S.frames.length - 1) { S.t++; render(); } };
+document.getElementById('end').onclick = function () { S.t = S.frames.length - 1; render(); stop(); };
+document.getElementById('home').onclick = function () { S.t = 0; render(); stop(); };
+function stop() { if (timer) { clearInterval(timer); timer = null; document.getElementById('play').textContent = '自动播放'; } }
+function tick() {
+  if (S.t >= S.frames.length - 1) { stop(); return; }
+  S.t++; render();
+}
+function startTimer() {
+  timer = setInterval(tick, Math.round(700 / speed));
+  document.getElementById('play').textContent = '暂停';
+}
+document.getElementById('play').onclick = function () {
+  if (timer) { stop(); return; }
+  if (S.t >= S.frames.length - 1) S.t = 0;
+  startTimer();
+};
+Array.prototype.forEach.call(document.querySelectorAll('.spd'), function (bt) {
+  bt.onclick = function () {
+    speed = +bt.dataset.s;
+    Array.prototype.forEach.call(document.querySelectorAll('.spd'), function (o) { o.classList.remove('on'); });
+    bt.classList.add('on');
+    if (timer) { clearInterval(timer); timer = null; startTimer(); }
+  };
+});
+Array.prototype.forEach.call(document.querySelectorAll('.pre'), function (bt) {
+  bt.onclick = function () { loadPreset(+bt.dataset.i); };
+});
+document.getElementById('load').onclick = loadFromInputs;
+document.getElementById('demo5a').onclick = function () {
+  SC.opt[4] = 'A';
+  document.getElementById('inN').value = 4;
+  document.getElementById('inM').value = 4;
+  document.getElementById('inD').value = 1;
+  document.getElementById('inA').value = '0';
+  SC.n = 4; SC.m = 4; SC.dig = [0];
+  regen('<b>⑤ 演示</b>：n=4 m=4 d=1 / 0（即 A = 0）。正确答案 C 实机输出 <b>0</b>；⑤ 切成 A 后实机输出<b>空</b>（什么都不印）—— 这两行都是本机实测。');
+  renderBlankTabs();
+};
+document.addEventListener('keydown', function (e) {
+  if (e.target && e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') { e.preventDefault(); document.getElementById('next').click(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); document.getElementById('prev').click(); }
+  else if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); document.getElementById('play').click(); }
+});
+
+/* ============ 启动：默认 n=2 m=10 / 1 2 3，5 空 = D B D B C ============ */
+regen();
+document.getElementById('loadmsg').innerHTML = '默认数据 <b>n=2 m=10 d=3 / 1 2 3</b>：20 进制的 1×400+2×20+3 = <b>443</b>，实机输出 <b>1 1 0 1 1 1 0 1 1</b>（= 443 的二进制 110111011）。共 ' + S.frames.length + ' 帧。';
+renderBlankTabs();
+</script>
+</body>
+</html>

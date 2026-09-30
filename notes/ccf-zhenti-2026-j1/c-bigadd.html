@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>阅读程序(2) · 高精度加法逐帧图解（题 22–27）</title>
+<style>
+  :root{--bg:#0f1220;--card:#1a1f35;--ink:#e8ecff;--dim:#8b93b5;--acc:#5eead4;--bad:#f59e6b;--good:#5eead4;--line:#262c4a;}
+  *{box-sizing:border-box}
+  body{margin:0;padding:18px 20px 40px;background:var(--bg);color:var(--ink);font:15px/1.65 "Segoe UI",system-ui,sans-serif}
+  h1{font-size:20px;margin:0 0 3px}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:12px;max-width:1180px}
+  .sub code{font:13px Consolas,monospace;color:var(--ink);background:#22284a;padding:1px 4px;border-radius:4px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+  .card h2{font-size:14px;letter-spacing:.04em;color:var(--dim);margin:0 0 10px;font-weight:700}
+  button,select,input{background:#2b3358;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:6px 11px;font-size:14px;cursor:pointer;font-family:inherit}
+  button:hover:not(:disabled){background:#394373}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.on{background:#2f5a66;border-color:var(--acc);color:#fff}
+  button.warn.on{background:#5a3a1c;border-color:var(--bad)}
+  input[type=text]{background:#0d1020;font:14px Consolas,monospace;width:126px;cursor:text}
+  .bar-top{position:sticky;top:0;z-index:30;background:#131730;border-bottom:1px solid var(--line);padding:8px 0 9px;margin:0 -20px 12px;padding-left:20px;padding-right:20px}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center}
+  .ctl{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .prog{color:var(--acc);font:14px Consolas,monospace;margin-left:8px}
+  .speedlab{color:var(--dim);font-size:14px;margin-left:8px}
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) 434px;gap:13px;align-items:start}
+  @media (max-width:1240px){.grid{grid-template-columns:minmax(0,1fr)}}
+  .note{background:#151a30;border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:10px;padding:11px 13px;font-size:15px;min-height:66px;margin-bottom:12px}
+  .note b{color:var(--acc)}
+  .note i{color:var(--bad);font-style:normal}
+  .note code{font:14px Consolas,monospace;color:var(--ink);background:#22284a;padding:1px 5px;border-radius:4px}
+  .scroller{overflow-x:auto;padding-bottom:4px}
+  .vf{display:flex;flex-direction:column;gap:3px;width:max-content;max-width:100%}
+  .vrow{display:flex;align-items:center;gap:3px;width:max-content}
+  .vlab{width:78px;flex:none;font:14px Consolas,monospace;color:var(--dim);text-align:right;padding-right:6px}
+  .cell{min-width:27px;height:27px;line-height:25px;padding:0 5px;text-align:center;border-radius:6px;background:#232a4a;border:1px solid #333c66;font:14px Consolas,monospace;flex:none}
+  .cell.idx{background:transparent;border:1px dashed #2c3357;color:#6d77a3;height:23px;line-height:21px;font-size:13px}
+  .cell.unset{opacity:.32}
+  .cell.ra{background:#16323f;border-color:#2b6a7f;color:var(--acc)}
+  .cell.rb{background:#2a2033;border-color:#4a3760;color:#d3b0ef}
+  .cell.rc{background:#3a2f18;border-color:#6b5324;color:#ffd9b0}
+  .cell.rk{background:#182b3a;border-color:#2d5470;color:#9fd6f2}
+  .cell.cur{outline:2px solid var(--bad);box-shadow:0 0 0 2px rgba(245,158,107,.2)}
+  .cell.hot{background:#4a3a15;border-color:var(--bad);color:#fff;font-weight:700}
+  .cell.split{border-style:dashed}
+  .tag{font:13px Consolas,monospace;color:var(--dim)}
+  .ansbox{font:15px/1.7 Consolas,monospace;background:#12172c;border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin-top:9px;word-break:break-all}
+  .ansbox b{color:var(--acc)}
+  .ansbox .lead{color:var(--bad);font-weight:700;background:#3a2f18;border-radius:4px;padding:0 3px}
+  table{width:100%;border-collapse:collapse;font:14px Consolas,monospace}
+  th,td{padding:3px 7px;border-bottom:1px solid #222743;text-align:left;white-space:nowrap}
+  th{color:var(--dim);font-weight:600}
+  td.num{text-align:right}
+  .chips{display:flex;gap:5px;flex-wrap:wrap}
+  .ok{color:var(--acc);font-weight:700}
+  .no{color:var(--bad);font-weight:700}
+  .hint{color:var(--dim);font-size:14px}
+  .hint b{color:var(--acc)}
+  .hint code{font:13px Consolas,monospace;color:var(--ink);background:#22284a;padding:1px 4px;border-radius:4px}
+  .code{font:13px/1.5 Consolas,monospace;white-space:pre;overflow:hidden}
+  .cl{display:block;padding:1px 2px;border-radius:4px;color:#aab3d8}
+  .cl .lno{display:inline-block;width:20px;color:#4d5578;text-align:right;margin-right:6px}
+  .cl.on{background:#1d3b52;color:#fff;box-shadow:inset 3px 0 0 var(--acc)}
+  .cl.on .lno{color:var(--acc)}
+  .cl.mut{background:#3a2f18;color:#ffd9b0;box-shadow:inset 3px 0 0 var(--bad)}
+  .cl.mut .lno{color:var(--bad)}
+</style>
+</head>
+<body>
+<h1>阅读程序 (2) · 高精度加法：倒着存 · 多循环一格 · 多印一位（题 22–27）</h1>
+<div class="sub">2026 CCF CSP-J1 第一轮真题 · 阅读程序(2)（卷面答案 <b style="color:var(--acc)">22√ 23× 24× 25B 26A 27C</b>）。本页每一帧的输出都由 JS <b style="color:var(--acc)">逐行照搬卷面语义</b>算出，并与本机 <code>-static -O2 -std=c++14</code> 编译的 <code>ip2.exe / ip2_no_carry.exe / ip2_gt10.exe</code> 实测核对（证据：RESULTS.md §0、§3）。<br>本卷背景：题面说两个数位数不超过 100000，而题 1 已经证明 <code>long long</code>（8 字节）连 10<sup>18</sup>+1 都存不精确，所以这种数根本装不进任何整型变量 —— 必须像卷面这样把每一位单独存进数组，手写竖式加法。</div>
+
+<div class="bar-top">
+  <div class="tabs">
+    <span class="tag">输入：</span>
+    <input type="text" id="inA" value="123" maxlength="120" title="只允许数字，可含前导零">
+    <span class="tag">+</span>
+    <input type="text" id="inB" value="456" maxlength="120" title="只允许数字，可含前导零">
+    <button id="run">载入并回到开头</button>
+    <span class="tag">预设：</span>
+    <button class="preset" data-a="123" data-b="456">123 456</button>
+    <button class="preset" data-a="12345" data-b="678">12345 678</button>
+    <button class="preset" data-a="95" data-b="15">95 15</button>
+    <button class="preset" data-a="555" data-b="555">555 555</button>
+    <button class="preset" data-a="9999" data-b="1">9999 1</button>
+    <button class="preset" data-a="0" data-b="0">0 0</button>
+  </div>
+  <div class="tabs">
+    <span class="tag">版本：</span>
+    <button class="ver on" data-v="orig">卷面原样</button>
+    <button class="ver warn" data-v="no_carry">第 21 行去掉 + carry[i]（题 24）</button>
+    <button class="ver warn" data-v="gt10">第 22 行 &gt;=10 改成 &gt;10（题 26）</button>
+    <span class="tag" id="vlab">对应 ip2.exe</span>
+  </div>
+  <div class="ctl">
+    <button id="prev">◀ 上一步</button>
+    <button id="next">下一步 ▶</button>
+    <button id="play">自动播放</button>
+    <button id="last">跳到末尾</button>
+    <button id="first">回到开头</button>
+    <span class="prog" id="prog"></span>
+    <span class="speedlab">速度</span>
+    <select id="speed"><option value="900" selected>1x</option><option value="450">2x</option><option value="225">4x</option></select>
+    <span class="tag">键盘：← → 单步，空格 播放/暂停</span>
+  </div>
+</div>
+
+<div class="note" id="note"></div>
+
+<div class="grid">
+  <div id="stage">
+    <div class="card">
+      <h2>竖式 · <span style="color:var(--bad)">下标 i 从左往右增大，个位在最左边</span>（当前 i 那一列橙框高亮）</h2>
+      <div class="scroller" id="vf"></div>
+      <div class="hint" id="vf2" style="margin-top:7px"></div>
+      <div class="ansbox" id="out"></div>
+    </div>
+    <div class="card">
+      <h2>变量状态</h2>
+      <table id="vars"></table>
+    </div>
+    <div class="card">
+      <h2>三版本输出对照表（左三列 = 本页 JS 模拟；最右 = 与实机 exe 输出核对）</h2>
+      <table id="cmp"></table>
+    </div>
+    <div class="card">
+      <h2>题 27 的 fuzz 证据 · 题 24 / 题 26 的坑</h2>
+      <div id="fuzz" class="hint"></div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>卷面程序 34 行（行号就是卷面行号 · 蓝底＝当前执行行 · 橙底＝本版本改掉的那一行）</h2>
+      <div class="code" id="code"></div>
+    </div>
+    <div class="card">
+      <h2>全篇三个题眼</h2>
+      <div class="hint" style="line-height:1.85">
+        <b>① 倒着存</b>（第 12 行）<code>a[i]=input_str[a_len-i-1]-&#39;0&#39;</code>：字符串<i>最后一位（个位）</i>存进 <code>a[0]</code>，逐位加法才能对齐；<code>-&#39;0&#39;</code> 是把字符变成数字。<br>
+        <b>② 循环上界多一格</b>（第 20 行）<code>i &lt; max(a_len,b_len)+1</code>：给进位留位；数组是全局的，越界那格初值为 0。<br>
+        <b>③ 输出也固定多一位</b>（第 29 行）从 <code>max(a_len,b_len)</code> 那格往低印，<i>而那格通常是 0</i> → 输出带前导零。题 22、23、27 考的都是这一条。
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ================= 1. 卷面 34 行（下标 0 = 卷面第 1 行） ================= */
+var BASE_CODE = [
+  '#include <algorithm>',
+  '#include <iostream>',
+  '#include <string>',
+  'using namespace std;',
+  'int a[100007], b[100007], c[100007], carry[100007];',
+  'string input_str;',
+  'int a_len, b_len;',
+  'int main() {',
+  '  cin >> input_str;',
+  '  a_len = input_str.size();',
+  '  for (int i = 0; i < a_len; i++) {',
+  "    a[i] = input_str[a_len - i - 1] - '0';",
+  '  }',
+  '  cin >> input_str;',
+  '  b_len = input_str.size();',
+  '  for (int i = 0; i < b_len; i++) {',
+  "    b[i] = input_str[b_len - i - 1] - '0';",
+  '  }',
+  '  carry[0] = 0;',
+  '  for (int i = 0; i < max(a_len, b_len) + 1; i++) {',
+  '    c[i] = a[i] + b[i] + carry[i];',
+  '    if (c[i] >= 10) {',
+  '      carry[i + 1] = 1;',
+  '      c[i] -= 10;',
+  '    } else {',
+  '      carry[i + 1] = 0;',
+  '    }',
+  '  }',
+  '  for (int i = max(a_len, b_len); i >= 0; i--) {',
+  '    cout << c[i];',
+  '  }',
+  '  cout << endl;',
+  '  return 0;',
+  '}'
+];
+/* 版本差异只碰卷面第 21 / 22 行（数组下标 20 / 21），mut = 被改掉的那一行的卷面行号 */
+var V = {
+  orig:     {line21:'    c[i] = a[i] + b[i] + carry[i];', line22:'    if (c[i] >= 10) {', exe:'ip2.exe',          mut:0},
+  no_carry: {line21:'    c[i] = a[i] + b[i];',            line22:'    if (c[i] >= 10) {', exe:'ip2_no_carry.exe', mut:21},
+  gt10:     {line21:'    c[i] = a[i] + b[i] + carry[i];', line22:'    if (c[i] > 10) {',  exe:'ip2_gt10.exe',     mut:22}
+};
+/* 实机输出：本机 g++ -static -O2 -std=c++14 重编重跑（RESULTS.md §3） */
+var GROUND = {
+  orig:     {'123 456':'0579','12345 678':'013023','95 15':'110','555 555':'1110','9999 1':'10000','0 0':'00','1 2':'03','999 1':'1000','1 999999':'1000000'},
+  no_carry: {'123 456':'0579','12345 678':'012913','95 15':'000','555 555':'0000','9999 1':'09990','0 0':'00','1 2':'03','999 1':'0990','1 999999':'0999990'},
+  gt10:     {'123 456':'0579','12345 678':'0121023','95 15':'01010','555 555':'0101010','9999 1':'099910','0 0':'00','1 2':'03','999 1':'09910','1 999999':'09999910'}
+};
+
+/* ================= 2. 数组：模拟 C++ 全局数组 =================
+   卷面第 5 行 `int a[100007], ...` 是全局数组 → 自动全部初始化为 0。
+   这里用稀疏数组 + gv()：没写过的格子读到 0，完全等价于全局数组的零初始化，
+   包括"第 20 行多循环的那一格 a[N]/b[N] 越界读到 0"这个细节。 */
+var ABUF = 100007;
+function mkArr(){ return []; }
+function gv(A, i){ var v = A[i]; return (typeof v === 'number' && isFinite(v)) ? v : 0; }
+function sv(A, i, val){ A[i] = (typeof val === 'number' && isFinite(val)) ? val : 0; }
+function codeText(){ var L = BASE_CODE.slice(); L[20] = V[ver].line21; L[21] = V[ver].line22; return L; }
+function condOK(v, s){ return v === 'gt10' ? s > 10 : s >= 10; }
+/* 独立的小学生竖式加法，只用来核对"原样版去掉前导零后是不是真和" */
+function trueSum(x, y){
+  var i = x.length - 1, j = y.length - 1, cr = 0, o = '';
+  while (i >= 0 || j >= 0 || cr > 0){
+    var s = cr + (i >= 0 ? x.charCodeAt(i) - 48 : 0) + (j >= 0 ? y.charCodeAt(j) - 48 : 0);
+    o = String(s % 10) + o;
+    cr = s >= 10 ? 1 : 0;
+    i--; j--;
+  }
+  return o.length ? o : '0';
+}
+
+/* ================= 3. 模拟器：逐行照搬卷面 ================= */
+function simCore(sa, sb, vv, collect){
+  var a = mkArr(), b = mkArr(), c = mkArr(), carry = mkArr();
+  var F = [], out = '', a_len = sa.length, b_len = sb.length, i, s;
+  var L = Math.max(a_len, b_len) + 1;         /* 显示 / 快照到的下标：0 … max+1 */
+  var ver2 = vv || ver;
+  function snap(i0, lines, note, ex){
+    if (!collect) return;
+    var sn = {a:[], b:[], c:[], carry:[]};
+    for (var k = 0; k <= L; k++){ sn.a.push(gv(a,k)); sn.b.push(gv(b,k)); sn.c.push(gv(c,k)); sn.carry.push(gv(carry,k)); }
+    var f = {lines:lines, i:i0, note:note, s:sn, out:out};
+    if (ex){ if (ex.sum !== undefined) f.sum = ex.sum;
+             if (ex.pre !== undefined) f.pre = ex.pre;
+             if (ex.post !== undefined) f.post = ex.post; }
+    F.push(f);
+  }
+  function dec(A, idx, str){ /* 第 12/17 行：字符串倒数第 idx+1 个字符 - '0' */
+    sv(A, idx, str.charCodeAt(str.length - idx - 1) - 48);
+  }
+  snap(null, [8], '程序从 <code>main</code> 开始。卷面第 5 行的 <code>a / b / c / carry</code> 是<b>全局数组</b>（各 100007 格），'
+    + '<i>全局数组自动初始化为 0</i> —— 后面"越界读到 0"全靠这一条。输入还没读，四行全是 0。');
+
+  /* ---- 阶段一：读入并倒着存（第 9–19 行） ---- */
+  snap(null, [9], '第 9 行 <code>cin &gt;&gt; input_str;</code>：读入第一个数 <b>' + sa + '</b>。'
+    + '注意它存进的是 <code>string</code>，<i>不是整数</i> —— 10 万位放进不了任何整型变量（题 1 已证明 <code>long long</code> 连 10<sup>18</sup>+1 都存不下）。');
+  snap(null, [10], '第 10 行 <code>a_len = input_str.size();</code> → <b>a_len = ' + a_len + '</b>。');
+  for (i = 0; i < a_len; i++){
+    dec(a, i, sa);
+    snap(i, [11,12], '第 12 行 <code>a[' + i + '] = input_str[' + (a_len - i - 1) + '] - &#39;0&#39;;</code>：'
+      + '取字符串<i>倒数第 ' + (i + 1) + ' 个字符</i> <b>' + sa.charAt(a_len - i - 1) + '</b>，减去字符 <code>&#39;0&#39;</code> 的 ASCII 码 48，得到数字 <b>' + gv(a,i) + '</b> 存进 <code>a[' + i + ']</code>。'
+      + (i === 0 ? '<b>所以 a[0] 是个位</b> —— 这就叫"倒着存"，逐位加法才能对齐。' : ''));
+  }
+  snap(null, [14], '第 14 行再读一次，同一个 <code>input_str</code> 被<i>覆盖</i>为：<b>' + sb + '</b>。');
+  snap(null, [15], '第 15 行 <code>b_len = input_str.size();</code> → <b>b_len = ' + b_len + '</b>。（两个数<b>可以不等长</b>，也可以带前导零。）');
+  for (i = 0; i < b_len; i++){
+    dec(b, i, sb);
+    snap(i, [16,17], '第 17 行同样倒着存：<code>b[' + i + '] = input_str[' + (b_len - i - 1) + '] - &#39;0&#39; = <b>' + gv(b,i) + '</b></code>。'
+      + (i === 0 ? '<b>' + sb.charAt(b_len - 1) + '</b> 是 ' + sb + ' 的个位，落在 <code>b[0]</code>。' : '')
+      + (i >= a_len ? ' 这一列 <code>a[' + i + ']</code> 从没被写过 → 保持全局初值 <b>0</b>。' : ''));
+  }
+  snap(0, [19], '第 19 行 <code>carry[0] = 0;</code>：最低位没有"从更低位进来的进位"。');
+
+  /* ---- 阶段二：加法循环（第 20–28 行），上界 max(a_len,b_len)+1 ---- */
+  var N = Math.max(a_len, b_len);
+  for (i = 0; i < N + 1; i++){
+    snap(i, [20], '第 20 行 <code>for (i = 0; i &lt; max(a_len,b_len) + 1; i++)</code>：上界是 <b>' + (N + 1) + '</b>，'
+      + '<i>比最长的那个数多循环一格</i> —— 多出来的这一格是给最高位进位留的位。现在 <b>i = ' + i + '</b>：'
+      + (i >= a_len ? '<code>a[' + i + ']</code> 越界（a_len=' + a_len + '），全局数组那一格是 <b>0</b>' : '<code>a[' + i + '] = ' + gv(a,i) + '</code>') + '，'
+      + (i >= b_len ? '<code>b[' + i + ']</code> 越界（b_len=' + b_len + '），读到 <b>0</b>' : '<code>b[' + i + '] = ' + gv(b,i) + '</code>') + '。');
+    var ci = ver2 === 'no_carry' ? 0 : gv(carry, i);
+    s = gv(a,i) + gv(b,i) + ci;
+    sv(c, i, s);
+    snap(i, [21], '第 21 行' + (ver2 === 'no_carry' ? '<i>（题 24 的改法：这一行去掉 + carry[i]）</i>' : '')
+      + ' <code>c[' + i + '] = ' + gv(a,i) + ' + ' + gv(b,i) + (ver2 === 'no_carry' ? '' : ' + ' + gv(carry,i)) + ' = <b>' + s + '</b></code>。'
+      + '此刻这一格里装的是<i>还没处理进位的中间和</i> <b>' + s + '</b>' + (ver2 === 'no_carry' && gv(carry,i) !== 0 ? '（本该加上的 carry[' + i + ']=' + gv(carry,i) + ' 被丢掉了）' : '') + '。',
+      {sum:s, pre:s, post:s});
+    if (condOK(ver2, s)){
+      sv(carry, i + 1, 1);
+      sv(c, i, s - 10);
+      snap(i, [22,23,24], '第 22 行 <code>if (c[' + i + '] ' + (ver2 === 'gt10' ? '&gt;' : '&gt;=') + ' 10)</code>：' + s + ' ' + (ver2 === 'gt10' ? '&gt;' : '&gt;=') + ' 10 → <b>成立</b>。'
+        + '于是这一格被<i>拆成两半</i>（第 23、24 行）：本格留 <code>c[' + i + '] = ' + s + ' - 10 = <b>' + gv(c,i) + '</b></code>，'
+        + '把 <b>1</b> 交给右边高一格 <code>carry[' + (i+1) + '] = 1</code>。', {sum:s, pre:s, post:gv(c,i)});
+    } else {
+      sv(carry, i + 1, 0);
+      snap(i, [22,26], '第 22 行 <code>if (c[' + i + '] ' + (ver2 === 'gt10' ? '&gt;' : '&gt;=') + ' 10)</code>：' + s +
+        (ver2 === 'gt10' ? ' 不 &gt; 10' : ' 不 &gt;= 10') + ' → <b>不成立</b>，走 else 分支（第 26 行）<code>carry[' + (i+1) + '] = 0</code>，'
+        + '<code>c[' + i + ']</code> 原样保持 <b>' + s + '</b>。'
+        + (ver2 === 'gt10' && s === 10 ? '<i>题 26 的全部考点就在这一格：和恰好等于 10 时，&gt;=10 会进位、&gt;10 不会，于是 10 整个留在这一格里！</i>' : '')
+        + (ver2 === 'orig' && s < 10 && i === N ? '最高格不进位，这一格留 0 —— 一会儿它也会被印出来。' : ''),
+        {sum:s, pre:s, post:s});
+    }
+  }
+
+  /* ---- 阶段三：输出（第 29–32 行），从最高格往低位，固定多印一位 ---- */
+  for (i = N; i >= 0; i--){
+    var piece = String(gv(c,i));
+    out = out + piece;
+    snap(i, [29,30], '第 29 行 <code>for (i = max(a_len,b_len); i &gt;= 0; i--) cout &lt;&lt; c[i];</code> —— '
+      + '<b>输出从最高那一格 i = ' + i + ' 开始</b>。'
+      + (i === N
+        ? '第 30 行印 <code>c[' + i + ']</code> = <b>' + piece + '</b>。<i>这一格是 ' + piece + '（通常就是 0），但程序照样把它印出来</i> —— '
+          + '整个程序没有任何一行在"跳过前导零"。<b>这一帧就是题 22（0579）、题 23（反例）、题 27（选 C）的共同答案来源。</b>'
+        : '第 30 行印 <code>c[' + i + ']</code> = <b>' + piece + '</b>。'
+          + (piece.length > 1 ? '<i>注意：<code>cout &lt;&lt; c[i]</code> 印的是<b>整数</b>不是"一个数字"，' + piece + ' 占 ' + piece.length + ' 个字符！</i>' : '')));
+  }
+  var tail = '';
+  if (ver2 === 'orig'){
+    var ts = trueSum(sa, sb), stripped = out.replace(/^0+/, '');
+    if (stripped === '') stripped = '0';
+    tail = '真实的和是 <b>' + ts + '</b>；程序输出把前导零去掉后是 <b>' + stripped + '</b>，两者<i>相等</i> —— '
+      + '<i>程序算的数是对的，"错"只错在输出格式：第 29 行写死了要多印一位。</i>';
+  } else if (ver2 === 'gt10'){
+    tail = '<i>题 26 选 A 的那组就是这样：一格装着 10，印出来占两个字符，输出比正常加法长。</i>';
+  } else {
+    tail = '<i>题 24：不发生进位的输入，改这一行输出完全不变，所以"一定变小"是假的。</i>';
+  }
+  snap(null, [32], '第 32 行 <code>cout &lt;&lt; endl;</code> 换行。最终输出：<b>' + out + '</b>（' + out.length + ' 个字符）。' + tail);
+  return collect ? F : out;
+}
+function frames(sa, sb, vv){ return simCore(sa, sb, vv, true); }
+function pureRun(sa, sb, vv){ return simCore(sa, sb, vv, false); }
+function sanitize(s){
+  var t = (s === null || s === undefined) ? '' : String(s);
+  t = t.replace(/[^0-9]/g, '');
+  if (t.length > 120) t = t.slice(0, 120);
+  return t.length ? t : '0';
+}
+
+/* ================= 4. 渲染 ================= */
+var sa = '123', sb = '456', ver = 'orig', FR = [], cur = 0, timer = null;
+function esc(x){ return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function build(){ FR = frames(sa, sb, ver); if (!FR.length) FR = frames('0', '0', ver); if (cur > FR.length - 1) cur = FR.length - 1; if (cur < 0) cur = 0; }
+
+function renderCode(lines){
+  var L = codeText(), h = '', mut = V[ver].mut;
+  for (var i = 0; i < L.length; i++){
+    var no = i + 1, cls = 'cl';
+    if (no === mut) cls += ' mut';
+    else if (lines.indexOf(no) >= 0) cls += ' on';
+    h += '<span class="' + cls + '"><span class="lno">' + (no < 10 ? '0' + no : '' + no) + '</span>' + esc(L[i]) + '</span>';
+  }
+  document.getElementById('code').innerHTML = h;
+}
+function renderVf(f){
+  var N = Math.max(sa.length, sb.length);
+  var L = N + 1, s = f.s, i = f.i;
+  var rows = [
+    {lab:'下标 i',  key:'idx'},
+    {lab:'a[]',     key:'a',     cls:'ra', n:sa.length},
+    {lab:'b[]',     key:'b',     cls:'rb', n:sb.length},
+    {lab:'carry[]', key:'carry', cls:'rk', n:L + 1},
+    {lab:'c[]',     key:'c',     cls:'rc', n:L}
+  ];
+  var h = '<div class="vf">';
+  for (var r = 0; r < rows.length; r++){
+    h += '<div class="vrow"><span class="vlab">' + rows[r].lab + '</span>';
+    for (var k = 0; k <= L; k++){
+      var isCur = (i === k);
+      if (rows[r].key === 'idx'){ h += '<span class="cell idx' + (isCur ? ' cur' : '') + '">' + k + '</span>'; continue; }
+      var cls = 'cell ' + rows[r].cls + (k >= rows[r].n ? ' unset' : '') + (isCur ? ' cur' : '');
+      if (rows[r].key === 'c' && isCur && f.pre !== undefined && f.post !== undefined && f.pre !== f.post) cls += ' hot split';
+      else if (rows[r].key === 'c' && isCur && f.sum !== undefined && f.lines.indexOf(21) >= 0) cls += ' hot';
+      else if (rows[r].key === 'c' && isCur && f.lines.indexOf(30) >= 0) cls += ' hot';
+      h += '<span class="' + cls + '">' + s[rows[r].key][k] + '</span>';
+    }
+    h += '</div>';
+  }
+  h += '</div>';
+  document.getElementById('vf').innerHTML = h;
+  document.getElementById('vf2').innerHTML =
+    '<b>读法：个位在最左边</b>（下标 0 = 个位，i 越大位权越高），跟平时写竖式的左右顺序相反，看的时候别反。'
+    + '灰色 = 这一格程序从没写过，靠全局数组初值 0。下标 ' + N + ' 是"多循环 / 多印"的那一格，下标 ' + (N + 1) + ' 只用来放最高位传上去的 <code>carry</code>。';
+}
+function renderVars(f){
+  var i = f.i, s = f.s;
+  function cell(key){
+    if (i === null || i === undefined || !s[key]) return '—';
+    var v = s[key][i];
+    return (typeof v === 'number' && isFinite(v)) ? String(v) : '—';
+  }
+  var rows = [
+    ['a_len', String(sa.length)],
+    ['b_len', String(sb.length)],
+    ['max(a_len,b_len)', String(Math.max(sa.length, sb.length))],
+    ['循环上界 +1', String(Math.max(sa.length, sb.length) + 1)],
+    ['i', (i === null || i === undefined) ? '—' : String(i)],
+    ['a[i]', cell('a')],
+    ['b[i]', cell('b')],
+    ['carry[i]', cell('carry')],
+    ['c[i] 中间和（改动前）', (typeof f.sum === 'number' && isFinite(f.sum)) ? String(f.sum) : '—'],
+    ['c[i] 本帧的值（改动后）', (typeof f.post === 'number' && isFinite(f.post)) ? String(f.post) : '—'],
+    ['carry[i+1] 本帧写入', (i === null || i === undefined || !s.carry) ? '—' : String(s.carry[i + 1])],
+    ['当前输出串', f.out.length ? f.out : '(还没开始印)'],
+    ['输出串长度', String(f.out.length)]
+  ];
+  var h = '<tr><th>变量</th><th>值</th></tr>';
+  for (var r = 0; r < rows.length; r++) h += '<tr><td>' + rows[r][0] + '</td><td class="num">' + esc(rows[r][1]) + '</td></tr>';
+  document.getElementById('vars').innerHTML = h;
+}
+function renderOut(f){
+  var o = f.out, lead = '';
+  if (f.lines.indexOf(30) >= 0 && o.charAt(0) === '0'){ lead = '<span class="lead">' + esc(o.charAt(0)) + '</span>'; o = o.slice(1); }
+  document.getElementById('out').innerHTML = '答案条（第 30 行从最高格往低位一格一格往右拼）：<b>' + (lead + esc(o)) + '</b>'
+    + (f.out.length ? '' : ' <span class="tag">空</span>');
+}
+function renderCmp(){
+  var cases = ['123 456', '12345 678', '95 15', '555 555', '9999 1', '0 0', '1 2', '999 1', '1 999999'];
+  var vs = ['orig', 'no_carry', 'gt10'], bad = 0;
+  var h = '<tr><th>输入</th><th>卷面原样</th><th>去 carry（题 24）</th><th>&gt;10（题 26）</th><th>与实机核对</th></tr>';
+  for (var ci = 0; ci < cases.length; ci++){
+    var p = cases[ci], ss = p.split(' '), sim = [], gt = [], rowOK = true;
+    for (var k = 0; k < 3; k++){
+      sim.push(pureRun(ss[0], ss[1], vs[k]));
+      gt.push(GROUND[vs[k]][p]);
+      if (sim[k] !== gt[k]) rowOK = false;
+    }
+    if (!rowOK) bad++;
+    h += '<tr><td>' + p + '</td><td class="num">' + esc(sim[0]) + '</td><td class="num">' + esc(sim[1]) + '</td><td class="num">'
+       + esc(sim[2]) + '</td><td>' + (rowOK ? '<span class="ok">一致</span>' : '<span class="no">不一致</span>') + '</td></tr>';
+  }
+  h += '<tr><td colspan="5" class="tag">9 组 × 3 版本 = 27 次：' + (bad ? '<span class="no">' + bad + ' 组不一致</span>' : '<span class="ok">全部与实机 exe 输出一致</span>') + '</td></tr>';
+  document.getElementById('cmp').innerHTML = h;
+}
+function renderFuzz(){
+  var o = pureRun(sa, sb, ver);
+  document.getElementById('fuzz').innerHTML =
+    '<b>题 27（卷面答案 C）fuzz 实测原文</b>：随机造 n 位 + n 位、无前导零、和 &lt; 10<sup>n</sup> 的输入，命中 <b>219</b> 组，'
+    + '输出长度全部 = n+1 且首字符全部 = <code>0</code>，反例 <b>0</b> 个。<br>'
+    + '<b>为什么"和小于 10<sup>n</sup>"保证了这一点</b>：两数都是 n 位 ⇒ <code>a_len = b_len = n</code> ⇒ 第 20 行循环到 <code>i &lt; n+1</code>、'
+    + '第 29 行从 <code>i = n</code> 印到 0 ⇒ <b>固定印 n+1 格</b>（所以 B「长度一定为 n」、D「可能 n+2」和循环上界直接冲突）。'
+    + '最高格 <code>c[n]</code> 里 <code>a[n]</code>、<code>b[n]</code> 都是越界格（= 0），只剩 <code>carry[n]</code>：'
+    + '<code>carry[n] = 1</code> 当且仅当第 n−1 格（最高位相加）进位，而最高位一进位，和就 ≥ 10<sup>n</sup> —— 题面已经把这种情况排除，'
+    + '所以 <code>carry[n] = 0</code> ⇒ <code>c[n] = 0</code> ⇒ 第一个字符必为 <code>0</code>。故选 C。<br>'
+    + '<b>当前这组</b>（' + sa + ' + ' + sb + '，' + V[ver].exe + '）本页模拟：<b>' + esc(o) + '</b>，长度 ' + o.length + '。<br>'
+    + '<b>题 24（×）</b>：<code>123 456</code> 每一位的和都是 9、7、5，<i>一次进位都没发生</i>，<code>carry[i]</code> 全程 0 ⇒ '
+    + '去掉 <code>+ carry[i]</code> 后输出<i>一模一样</i>还是 <code>0579</code>，"一定比原来小"当场为假。'
+    + '换成有进位的组才会变（<code>12345 678</code> → 012913，<code>555 555</code> → 0000，<code>9999 1</code> → 09990）。<br>'
+    + '<b>题 26（A）</b>：<code>95 15</code> 的两格的和是 5+5=10 与 9+1=10，<code>&gt;10</code> 不成立 ⇒ 10 整个留在格子里；'
+    + '<code>cout &lt;&lt; c[i]</code> 印的是整数，<b>一格 10 占两个字符</b> ⇒ <code>0</code> + <code>10</code> + <code>10</code> = <b>01010</b>（5 个字符，原程序是 110）。'
+    + '读输出时必须问一句：<i>这一格可能装着的值，印出来占几个字符？</i>';
+}
+function render(){
+  if (!FR.length) return;
+  if (cur > FR.length - 1) cur = FR.length - 1;
+  if (cur < 0) cur = 0;
+  var f = FR[cur];
+  document.getElementById('note').innerHTML = f.note;
+  renderCode(f.lines);
+  renderVf(f); renderVars(f); renderOut(f);
+  document.getElementById('prog').textContent = '帧 ' + (cur + 1) + ' / ' + FR.length;
+  document.getElementById('prev').disabled = cur === 0;
+  document.getElementById('next').disabled = cur === FR.length - 1;
+}
+function go(d){ var t = Math.min(FR.length - 1, Math.max(0, cur + d)); if (t !== cur){ cur = t; render(); } }
+function stop(){ if (timer){ clearInterval(timer); timer = null; document.getElementById('play').textContent = '自动播放'; } }
+function startStop(btn){
+  if (timer){ stop(); return; }
+  if (cur >= FR.length - 1) cur = 0;
+  var iv = parseInt(document.getElementById('speed').value, 10);
+  if (!isFinite(iv) || iv < 50) iv = 900;
+  btn.textContent = '暂停';
+  timer = setInterval(function(){ if (cur >= FR.length - 1){ stop(); return; } go(1); }, iv);
+  render();
+}
+function reload(toStart){
+  sa = sanitize(document.getElementById('inA').value);
+  sb = sanitize(document.getElementById('inB').value);
+  document.getElementById('inA').value = sa;
+  document.getElementById('inB').value = sb;
+  stop();
+  build();
+  if (toStart) cur = 0;
+  render(); renderCmp(); renderFuzz();
+}
+document.getElementById('prev').onclick  = function(){ stop(); go(-1); };
+document.getElementById('next').onclick  = function(){ stop(); go(1); };
+document.getElementById('first').onclick = function(){ stop(); cur = 0; render(); };
+document.getElementById('last').onclick  = function(){ stop(); cur = FR.length - 1; render(); };
+document.getElementById('play').onclick  = function(){ startStop(this); };
+document.getElementById('run').onclick   = function(){ reload(true); };
+document.getElementById('speed').onchange = function(){ if (timer){ stop(); startStop(document.getElementById('play')); } };
+var presets = document.querySelectorAll('.preset');
+for (var pi = 0; pi < presets.length; pi++){
+  presets[pi].onclick = function(){
+    document.getElementById('inA').value = this.getAttribute('data-a');
+    document.getElementById('inB').value = this.getAttribute('data-b');
+    reload(true);
+  };
+}
+var vers = document.querySelectorAll('.ver');
+for (var vi = 0; vi < vers.length; vi++){
+  vers[vi].onclick = function(){
+    for (var k = 0; k < vers.length; k++) vers[k].classList.remove('on');
+    this.classList.add('on');
+    ver = this.getAttribute('data-v');
+    document.getElementById('vlab').textContent = '对应 ' + V[ver].exe;
+    var frac = FR.length ? cur / (FR.length - 1) : 0;
+    stop();
+    build();
+    cur = Math.min(FR.length - 1, Math.max(0, Math.round(frac * (FR.length - 1))));
+    render(); renderCmp(); renderFuzz();
+  };
+}
+document.addEventListener('keydown', function(e){
+  var t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
+  if (e.key === 'ArrowRight'){ e.preventDefault(); stop(); go(1); }
+  else if (e.key === 'ArrowLeft'){ e.preventDefault(); stop(); go(-1); }
+  else if (e.key === ' ' || e.key === 'Spacebar'){ e.preventDefault(); startStop(document.getElementById('play')); }
+});
+reload(true);
+</script>
+</body>
+</html>

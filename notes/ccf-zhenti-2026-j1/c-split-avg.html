@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>完善程序(2) · 平衡分割逐帧图解（题 39–43）</title>
+<style>
+  :root{--bg:#0f1220;--card:#1a1f35;--ink:#e8ecff;--dim:#8b93b5;--acc:#5eead4;--bad:#f59e6b;--good:#5eead4;--line:#262c4a;}
+  *{box-sizing:border-box}
+  body{margin:0;padding:18px 20px 40px;background:var(--bg);color:var(--ink);font:15px/1.65 "Segoe UI",system-ui,sans-serif}
+  h1{font-size:20px;margin:0 0 3px}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:12px;max-width:1220px;overflow-wrap:break-word}
+  .sub b{color:var(--ink)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:13px;max-width:100%;overflow-wrap:break-word}
+  .card h2{font-size:14px;letter-spacing:.05em;color:var(--dim);margin:0 0 9px;font-weight:600}
+  button{background:#2b3358;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:6px 11px;font-size:14px;cursor:pointer;margin-right:6px;margin-bottom:6px}
+  button:hover:not(:disabled){background:#394373}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.on{background:#16323f;border-color:var(--acc);color:var(--acc);font-weight:600}
+  button.onref{background:#3a2340;border-color:#9d6bff;color:#c4a6ff;font-weight:600}
+  button.warndon{background:#3d2a1c;border-color:var(--bad);color:var(--bad);font-weight:600}
+  input[type=text]{background:#0d1020;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:6px 10px;font:14px Consolas,monospace}
+  #inpN{width:56px}#inpS{width:120px}
+  .top{display:flex;align-items:center;gap:2px;flex-wrap:wrap;margin-bottom:6px}
+  .prog{color:var(--acc);font-size:14px;font-family:Consolas,monospace;margin-left:auto}
+  .kbd{color:var(--dim);font-size:14px;margin-bottom:12px}
+  .row{display:flex;gap:13px;flex-wrap:wrap}
+  .row>div{flex:1;min-width:400px}
+  .mono{font-family:Consolas,monospace}
+  .note{color:var(--dim);font-size:14px;overflow-wrap:break-word}
+  .note b{color:var(--ink)}
+  .note em{color:var(--acc);font-style:normal;font-weight:600}
+  .warn{color:var(--bad);font-weight:600}
+  .fake{display:inline-block;background:#3d2a1c;border:1px solid var(--bad);color:var(--bad);border-radius:999px;font-size:14px;padding:0 8px;margin-left:4px}
+  .oktag{display:inline-block;background:#16323f;border:1px solid #2b6a7f;color:var(--acc);border-radius:999px;font-size:14px;padding:0 8px;margin-left:4px}
+  #gapcard{border-color:#6c3f7a;background:#1d1832}
+  #gapcard h2{color:#c4a6ff}
+  /* 串 + 切分线 */
+  .strip{display:flex;align-items:stretch;flex-wrap:wrap;padding-top:4px}
+  .cell{width:56px;border-radius:9px;border:1px solid #333c66;background:#131730;text-align:center;padding:5px 2px;position:relative;z-index:1}
+  .cell .ix{font:14px Consolas,monospace;color:var(--dim)}
+  .cell .ch{font:20px Consolas,monospace;font-weight:700}
+  .cell .vv{font:14px Consolas,monospace;color:var(--acc)}
+  .cell.inseg{background:#242c52;border-color:#4c5a9c}
+  .cell.cur{background:#3d2b58;border-color:#9d6bff;box-shadow:0 0 0 2px #9d6bff55}
+  .cell.zero{background:#241d10;border-color:#5a4a22;border-style:dashed}
+  .cell.dup{border-color:var(--bad);box-shadow:0 0 0 2px #f59e6b44}
+  .knife{width:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:16px Consolas,monospace;color:#3b4368}
+  .knife.on{color:var(--bad);font-weight:700}
+  .knife.hi{color:#fff;background:#5a3a1c;border-radius:6px}
+  .seglab{font:14px Consolas,monospace;color:var(--dim);margin-top:6px}
+  /* 柱状图 */
+  #chart{position:relative;height:214px;background:#0d1020;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .bar{position:absolute;border-radius:4px 4px 0 0;background:#2f3a6b;border:1px solid #47538b}
+  .bar.hi{background:#16323f;border-color:var(--acc)}
+  .bar.lo{background:#3d2b58;border-color:#9d6bff}
+  .bar.now{background:#3a2f5e;border-color:#c4a6ff}
+  .bar .av{position:absolute;left:-2px;right:-2px;top:-19px;text-align:center;font:14px Consolas,monospace;color:var(--ink)}
+  .bar .mk{position:absolute;left:0;right:0;top:-38px;text-align:center;font:14px Consolas,monospace;font-weight:700}
+  .bar .bt{position:absolute;bottom:-19px;left:-6px;right:-6px;text-align:center;font:14px Consolas,monospace;color:var(--dim)}
+  .zero{position:absolute;left:0;right:0;border-top:1px dashed #3b4368;font:14px Consolas,monospace;color:#4d5578}
+  .range{position:absolute;width:0;border-left:2px solid var(--bad)}
+  .range .ah{position:absolute;left:-5px;font-size:14px;color:var(--bad);line-height:1}
+  .range .rl{position:absolute;font:14px Consolas,monospace;color:var(--bad);white-space:nowrap;transform:translateX(8px)}
+  /* 代码面板 */
+  .cl{display:flex;gap:9px;padding:1px 5px;border-radius:6px}
+  .cl .ln{width:20px;text-align:right;color:#5b6488;font:14px Consolas,monospace;flex:none}
+  .cl code{font:14px Consolas,monospace;white-space:pre-wrap;color:#cdd6f4}
+  .cl.hl{background:#242c52}
+  .cl.hl .ln{color:var(--acc)}
+  .cl.hl code{color:var(--ink);font-weight:600}
+  .cl.gapline code{color:#6f77a0;font-style:italic}
+  .bl{background:#3d2a1c;border:1px solid #7a5324;border-radius:4px;color:var(--bad);font-weight:700;padding:0 3px}
+  /* 递归树 */
+  #tree{max-height:460px;overflow:auto;border:1px solid var(--line);border-radius:9px;padding:8px;background:#0d1020}
+  .tn{margin-left:15px;border-left:1px dashed #333c66;padding-left:9px}
+  .tn.root{margin-left:0;border-left:none;padding-left:0}
+  .tedge{font:14px Consolas,monospace;color:#4d5578}
+  .tedge.on{color:var(--acc)}
+  .tnd{display:inline-block;margin:2px 0;padding:2px 7px;border-radius:7px;background:#1a2040;border:1px solid #2f3a6b;font:14px Consolas,monospace;color:#8b93b5}
+  .tnd.done{color:#cdd6f4;background:#16323f;border-color:#2b6a7f}
+  .tnd.path{color:var(--ink);background:#242c52;border-color:#4c5a9c}
+  .tnd.cur{color:#fff;background:#3d2b58;border-color:#9d6bff;box-shadow:0 0 0 2px #9d6bff55;font-weight:700}
+  .tnd.leaf{background:#132b26;border-color:#2f6b5a}
+  .tnd.ban{background:#3d1c22;border-color:var(--bad);color:var(--bad);font-weight:700}
+  .tnd.cut{background:#1a1a26;border-color:#4a3a5a;color:#8b7aa8;font-style:italic}
+  /* 表 */
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:3px 6px;border-bottom:1px solid #222743;text-align:left;font:14px Consolas,monospace;overflow-wrap:break-word}
+  th{color:var(--dim);font-family:"Segoe UI",sans-serif}
+  tr.best td{background:#16323f;color:var(--acc);font-weight:600}
+  tr.forbid td{background:#3d1c22;color:var(--bad)}
+  tr.fut td{color:#4d5578}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+  .k{background:#131730;border:1px solid var(--line);border-radius:9px;padding:7px 10px;overflow-wrap:break-word}
+  .k .lab{font-size:14px;color:var(--dim)}
+  .k .val{font:15px Consolas,monospace;margin-top:2px}
+  .k.badk .val{color:var(--bad)} .k.goodk .val{color:var(--good)} .k.ansv .val{color:#c4a6ff}
+  pre.flow{background:#0d1020;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:14px Consolas,monospace;color:#cdd6f4;margin:8px 0 0;white-space:pre-wrap;overflow-wrap:break-word}
+  .blkb{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:11px;background:#131730}
+  .blkb h3{font-size:15px;margin:0 0 7px}
+  .blkb h3 span.q{color:var(--dim);font-weight:400;font-size:14px}
+  .cand{display:block;margin:4px 0 0;padding:6px 8px;border-radius:7px;background:#0d1020;border:1px solid #222743;font-size:14px}
+  .cand .ex{font-family:Consolas,monospace;color:var(--ink)}
+  .cand.ref .ex{color:var(--acc);font-weight:700}
+  .cand .why{color:var(--dim)}
+  #optnote{margin-top:4px}
+</style>
+</head>
+<body>
+<h1>完善程序 (2) · 平衡分割：一把刀一把刀地试，极差一层一层地收（题 39–43）</h1>
+<div class="sub">2026 CCF CSP-J1 第一轮真题 · 完善程序(2)（卷面答案 <b>39B 40D 41C 42A 43D</b>）。
+<b>原卷第 9 页缺失，39—43 题的卷面选项未存照</b>：本页讲的不是"卷面 A/B/C/D 哪个对"，而是"这五个空<b>该填什么表达式、为什么</b>"；
+答案字母来自整理者给出的参考答案表，本页四选一里的错误候选<b>是整理者按卷面惯例自己造的</b>，仅用于验证"唯一能跑对的表达式"。
+所有数值由本机 <code>-static -O2 -std=c++14</code> 编译的 <code>src/fill2_tmpl.cpp</code>、<code>src/fill2_ref.cpp</code>、<code>src/fill2_trace.cpp</code> 实测核对（证据：<code>verify/RESULTS.md §0/§6</code>，讲解正文：<code>README.md</code> 第 (2) 篇）。</div>
+
+<div class="card" id="gapcard">
+  <h2>⚠ 先把缺口说清楚：卷面在这里断了</h2>
+  <div class="note">卷面照片到<b>原卷第 8 页、这段代码第 35 行</b>为止，<b>原卷第 9 页缺失</b>：第 36 行以后（收尾的 <code>return 0;</code> 和 <code>}</code>）
+  和 <b>39—43 题的四个选项全部没印出来</b>。所以本页有三件事必须分开看：</div>
+  <div class="note" style="margin-top:5px">1. <b>卷面有的</b>：题干 + 代码第 1—35 行（含 5 个空 <span class="mono">①②③④⑤</span>）—— 一个字没改，见下方代码面板。</div>
+  <div class="note">2. <b>整理者给的参考答案</b>：39<b>B</b> 40<b>D</b> 41<b>C</b> 42<b>A</b> 43<b>D</b>，以及简析里写明的五个表达式 —— 本页默认就按这套填。</div>
+  <div class="note">3. <b>整理者自己造的候选</b>：为了检验"这个表达式是不是唯一能跑对的"，其余三个候选是按卷面惯例编出来的，
+  <span class="fake">※ 本候选为整理者所造，非卷面原文</span>　每个这类候选旁边都挂了这个标签，300 组随机对拍的错误数来自 <span class="mono">RESULTS.md §6</span>。</div>
+</div>
+
+<div class="top">
+  <button id="prev">上一步</button>
+  <button id="next">下一步</button>
+  <button id="play">自动播放</button>
+  <button id="last">跳到末尾</button>
+  <button id="first">回到开头</button>
+  <button class="spd on" data-s="1">1x</button>
+  <button class="spd" data-s="2">2x</button>
+  <button class="spd" data-s="4">4x</button>
+  <span class="prog" id="prog"></span>
+</div>
+<div class="kbd">键盘：<b>←</b> 上一步 · <b>→</b> 下一步 · <b>空格</b> 播放 / 暂停　｜　帧序完全照 <span class="mono">fill2_trace.exe</span> 的真实输出顺序生成，换输入或改空都会重跑同一套递归。</div>
+
+<div class="card">
+  <h2>数据（演示上限 n ≤ 8，再大帧数会爆；真题 n ≤ 20）</h2>
+  <div>
+    n = <input type="text" id="inpN" value="4" maxlength="2">
+    十六进制串 = <input type="text" id="inpS" value="016A" maxlength="8" title="只允许 0-9 / A-F">
+    <button id="load">载入并回到开头</button>
+    <button id="fix3">③ 截断演示：016A + ③ 选 B，跳到 [2,4] 那一帧</button>
+    <button id="refall">5 空全按参考答案填（39B 40D 41C 42A 43D）</button>
+  </div>
+  <div style="margin-top:6px">
+    <span class="note">预设（每一组的输出都是本机 <span class="mono">fill2.exe</span> 实机跑出来的）：</span>
+    <button class="pre" data-n="4" data-s="016A">016A → 5.666667</button>
+    <button class="pre" data-n="5" data-s="11111">11111 → 0.000000</button>
+    <button class="pre" data-n="5" data-s="0A0A0">0A0A0 → 1.666667</button>
+    <button class="pre" data-n="2" data-s="1F">1F → 14.000000</button>
+    <button class="pre" data-n="3" data-s="0F0">0F0 → 7.500000</button>
+    <button class="pre" data-n="6" data-s="13579B">13579B → 6.000000</button>
+    <button class="pre" data-n="4" data-s="9999">9999 → 0.000000</button>
+  </div>
+  <div class="note" id="inote" style="margin-top:6px"></div>
+</div>
+
+<div class="card">
+  <h2>5 个空：点 A/B/C/D，选完立刻用改后的语义重跑动画</h2>
+  <div id="optbar"></div>
+  <div class="note" id="optnote"></div>
+</div>
+
+<div class="row">
+  <div class="card">
+    <h2>① 串 + 切分线（下标从 1 起，卷面是 <span class="mono">cin &gt;&gt; s + 1</span>）</h2>
+    <div class="strip" id="strip"></div>
+    <div class="seglab" id="striplab"></div>
+    <h2 style="margin-top:14px">② 每段平均值的柱子：最高 = mxb，最矮 = mnb</h2>
+    <div id="chart"></div>
+    <div class="note" id="rangelab" style="margin-top:22px"></div>
+  </div>
+  <div class="card">
+    <h2>③ 本帧在做什么</h2>
+    <div class="grid" id="facts"></div>
+    <pre class="flow" id="flow"></pre>
+    <div class="note" id="fnote" style="margin-top:9px"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="card">
+    <h2>④ 递归树：节点 = 一次 <span class="mono">split(l, cnt, mnb, mxb)</span>，边 = "本段 [l,r] 平均 = …"</h2>
+    <div id="tree"></div>
+    <div class="note" style="margin-top:8px">深紫 = 本帧所在节点；蓝框 = 当前这条递归路径上的祖先；青框 = 已经走完的；灰 = 还没走到的。
+    <span class="warn">红色节点</span>就是 <span class="mono">cnt == 0</span> 那一刀没切的叶子 —— 题面禁止，直接 <span class="mono">return</span>。</div>
+  </div>
+  <div class="card">
+    <h2>⑤ 卷面代码（行号 = 卷面行号；当前执行行高亮，5 个空用橙底标出）</h2>
+    <div id="code"></div>
+    <div class="note" id="codelab" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>⑥ 最优切法小结：按题面定义独立枚举所有切法（和 <span class="mono">fill2_ref.exe</span> 同一套定义）</h2>
+  <div class="note" id="sumhead"></div>
+  <div id="sumtbl" style="margin-top:8px"></div>
+  <div class="note" style="margin-top:9px"><b class="warn">最大的坑就在这张表的第一行：</b>如果允许 <span class="mono">k = 0</span>（整串一段不切），
+  那一段的平均值既是最值也是最小值，极差 <span class="mono">= 0</span>，程序会心满意足地输出 <span class="mono">0.000000</span> —— 而题面写的是
+  <span class="mono">1 ≤ k &lt; n</span>，<b>至少要切一刀</b>。卷面第 17 行那句 <span class="mono">if (cnt == 0) return;</span> 就是在执行这条规定，
+  它成立的前提是 ④ 里传 <span class="mono">cnt + (r &lt; n)</span> 而不是 <span class="mono">cnt + 1</span>。</div>
+</div>
+
+<div class="card">
+  <h2>⑦ 逐空推导（和 README 第 (2) 篇讲评正文一致）</h2>
+  <div id="blanks"></div>
+</div>
+
+<div class="card">
+  <h2>⑧ 这一题带走的三句话</h2>
+  <div class="note"><b>1. 求 min 的初值给 +∞、求 max 的初值给 −∞。</b>卷面第 12 行的 <span class="mono">double ans = 1e100;</span> 和 ⑤ 里的
+  <span class="mono">1e100 / -1e100</span> 不是"一个很大的数"这么随便 —— <span class="mono">1e100</span> 是<b>当作正无穷用的大 double</b>（第一次取 min 就一定会被真实值替换掉），
+  <span class="mono">-1e100</span> 是<b>当作负无穷用的大 double</b>（第一次取 max 一定会被替换）。反过来，如果初值给反了，min 永远是那个负的、max 永远是那个正的，极差就成了垃圾值。</div>
+  <div class="note" style="margin-top:6px"><b>2. <span class="mono">int / int</span> 会截断，要 <span class="mono">* 1.0</span>。</b>见上面 ③ 的截断演示：同一个 17/3，写 <span class="mono">sum * 1.0 / (r - l + 1)</span> 得 5.666667，写 <span class="mono">sum / (r - l + 1)</span> 得 <b>5</b>。</div>
+  <div class="note" style="margin-top:6px"><b>3. 计数变量数的是什么，出口就判什么。</b>本题 <span class="mono">cnt</span> 数的是<b>切刀数 k</b>（不是段数），
+  所以 <span class="mono">cnt == 0</span> 恰好等于"一刀没切"。要是把 ④ 填成 <span class="mono">cnt + 1</span>，<span class="mono">cnt</span> 就变成段数，
+  "不切"那一种分法的 <span class="mono">cnt = 1</span> 顺利通过拦截混进答案 —— 实测 ④C 在 300 组里错 285 组，⑤B（<span class="mono">cnt</span> 从 1 起步）错 285 组，错的都是这一个原因。</div>
+</div>
+
+<script>
+/* ---------- 卷面代码（paper.md「完善程序（2 平衡分割）」逐行照抄，行号 = 卷面行号） ---------- */
+const CODE = [
+  [1,'#include <algorithm>'],[2,'#include <iomanip>'],[3,'#include <iostream>'],[4,''],
+  [5,'using namespace std;'],[6,''],[7,'constexpr int N = 25;'],[8,''],
+  [9,'int n, a[N];'],[10,'char s[N];'],[11,''],[12,'double ans = 1e100;'],[13,''],
+  [14,'int value(char c) { return ①; }'],
+  [15,'void split(int l, int cnt, double mnb, double mxb) {'],
+  [16,'  if (l > n) {'],[17,'    if (cnt == 0) return;'],[18,'    ans = min(ans, mxb - mnb);'],
+  [19,'    return;'],[20,'  }'],[21,'  int sum = 0;'],[22,'  for (②) {'],[23,'    sum += a[r];'],
+  [24,'    double nwb = ③;'],[25,'    split(④);'],[26,'  }'],[27,'}'],[28,''],
+  [29,'int main() {'],[30,'  cin >> n >> s + 1;'],[31,'  for (int i = 1; i <= n; ++i)'],
+  [32,'    a[i] = value(s[i]);'],[33,'  split(⑤);'],[34,'  cout << fixed << setprecision(6) << ans;'],[35,'']
+];
+const GAPMSG = '……原卷第 9 页缺失，第 36 行以后未存照……';
+const TAILMSG = '（按 C++ 语法必然存在的最小补全，不属于卷面内容）：  return 0;  }';
+
+/* ---------- 5 个空：候选表达式 / 参考答案 / 整理者造的错候选在 300 组随机对拍里错几组 ---------- */
+const QNO = {1:'39',2:'40',3:'41',4:'42',5:'43'};
+const REF = {1:'B',2:'D',3:'C',4:'A',5:'D'};
+const EXPR = {
+  1:{A:"c - '0'", B:"c - (c < 'A' ? '0' : 'A' - 10)", C:"c - 'A' + 10", D:"c"},
+  2:{A:"int r = 1; r <= n; ++r", B:"int r = l; r < n; ++r", C:"int r = l; r <= n - 1; ++r", D:"int r = l; r <= n; ++r"},
+  3:{A:"sum", B:"sum / (r - l + 1)", C:"sum * 1.0 / (r - l + 1)", D:"sum * 1.0 / (r - l)"},
+  4:{A:"r + 1, cnt + (r < n), min(mnb, nwb), max(mxb, nwb)",
+     B:"r, cnt + (r < n), min(mnb, nwb), max(mxb, nwb)",
+     C:"r + 1, cnt + 1, min(mnb, nwb), max(mxb, nwb)",
+     D:"r + 1, cnt + (r < n), nwb, mxb"},
+  5:{A:"1, 0, 0, 0", B:"1, 1, 1e100, -1e100", C:"0, 0, 1e100, -1e100", D:"1, 0, 1e100, -1e100"}
+};
+/* RESULTS.md §6：300 组随机数据（n ∈ [2,20]）对拍，错误候选错了几组 */
+const WRONG300 = {1:{A:266,C:266,D:266},2:{A:300,B:300,C:300},3:{A:275,B:251,D:293},4:{B:300,C:285,D:300},5:{A:300,B:285,C:296}};
+/* 本机 fill2.exe：只改这一空、其余按参考答案，输入 4 / 016A 的实测输出 */
+const ON016A = {
+  1:{A:'8.000000',B:'5.666667',C:'8.000000',D:'8.000000'},
+  2:{A:'崩（无输出，退出码 127）',B:'1e100（ans 从未更新）',C:'1e100（ans 从未更新）',D:'5.666667'},
+  3:{A:'3.000000',B:'5.000000',C:'5.666667',D:'0.000000'},
+  4:{A:'5.666667',B:'崩（无输出，退出码 127）',C:'0.000000',D:'−1e100'},
+  5:{A:'5.666667（本串上碰巧相同）',B:'0.000000',C:'4.250000',D:'5.666667'}
+};
+const WHY = {
+  1:{A:"数字部分是对的，字母从 'A' − '0' = 17 起，整串数值全错。",
+     B:"是数字就减 '0'，是字母就减 ('A' − 10)，于是 'A' → 10。ASCII 里 '0'=48、'A'=65，两段各自连续但中间有洞，跨段转换必须判一次。",
+     C:"反过来以 'A' 为基准，数字就变成负数：'0' − 'A' + 10 = −17。",
+     D:"直接把 ASCII 原值当数值用（'0' 当成 48、'A' 当成 65）。"},
+  2:{A:"每层都从下标 1 重新扫到 n，l 之前的数也被 sum += a[r] 算进来；实机上下一段起点 r+1 会回到已扫过的位置，无限递归直接崩。",
+     B:"右端点够不到 n：最后一段永远贴不到串尾，l > n 这个出口一次都进不去，ans 一直是 1e100。",
+     C:"r <= n - 1 和 r < n 完全等价（n−1 就是 < n），错得和 B 一模一样 —— 完善程序里「两个选项其实是一个意思」很常见，看到两个像的可以先都排除。",
+     D:"本段从 l 起，右端点 r 可以一直取到 n（最后一段可以贴到串尾）。"},
+  3:{A:"这根本不是平均值，是本段的和。",
+     B:"整除截断：sum 和段长都是 int，17/3 算成 5。实测 300 组只错 251 组、不是全错 —— 很多数据刚好整除，这种「只在部分数据上错」的空最阴。",
+     C:"平均值 = sum / 段长，闭区间 [l,r] 的段长是 r - l + 1；* 1.0 把整数除法变成浮点除法。",
+     D:"段长少算一位（r - l），而且 r == l 时除数是 0。"},
+  4:{A:"四个实参一一对上：下一段从 r+1 起；本段没到串尾（r < n）才算放了一把刀，所以 cnt + (r < n)；极值要用本段平均值刷新，所以 min / max。",
+     B:"下一段起点写成 r：本段的 a[r] 被下一段重复计入，段与段重叠，和题面「第 p_i+1 个到第 p_{i+1} 个」的定义不符；实机无限递归（无输出、退出码 127）。",
+     C:"cnt + 1 让 cnt 从「刀数」变成「段数」：最后一段 r == n 本该不计数，加 1 之后它也计了，于是「一刀不切」那种分法的 cnt = 1，通过了第 17 行 if (cnt == 0) 的拦截混进答案。",
+     D:"第三、四个实参写成 nwb, mxb：最小值被直接覆盖成本段平均值（不是取 min），最大值压根不更新，极差算出来是垃圾值。"},
+  5:{A:"min / max 的初值都成了 0：以后 min(mnb, nwb) 永远是 0、max(mxb, nwb) 永远是 0，极差跟着错。本串 016A 的最优分法里最小平均值刚好就是 0，所以这一空在 016A 上碰巧还是 5.666667，它是在别的数据上才露馅（300 组全错）。",
+     B:"cnt 从 1 起步 = 凭空多一把刀，把题面禁止的「不切」放进了候选，于是极差 0 那种分法混了进来（016A 上答 0.000000）。",
+     C:"l 从 0 起：a[0] 没被 value() 赋过值（全局数组默认是 0），凭空多算一位，等于往序列前面塞了一个 0。",
+     D:"串是 cin >> s + 1 读进来的，下标从 1 开始，所以第一段从 1 起；还没放过刀所以 cnt = 0；mnb 初值要极大（当作 +∞）、mxb 初值要极小（当作 −∞）。"}
+};
+
+/* ---------- 状态 ---------- */
+let n = 4, str = '016A', a = [0];          /* a[0..n]，a[0] 恒为 0（全局数组默认值） */
+let opt = {1:'B',2:'D',3:'C',4:'A',5:'D'};
+let frames = [], nodes = [], blown = false, t = 0, timer = null, speed = 1, lineEls = {}, nodeEls = [];
+
+/* ---------- 小工具 ---------- */
+const INF = 1e100;
+/* C++ 的 min/max 就是 (b<a)?b:a 与 (a<b)?b:a，照抄才能和实机的 nan/inf 行为一致 */
+function cmin(x,y){ return y < x ? y : x; }
+function cmax(x,y){ return x < y ? y : x; }
+function isBad(x){ return typeof x !== 'number' || !isFinite(x); }
+/* 印数：模仿 cout 默认 6 位有效；1e100 / -1e100 单独印成 1e100 / −1e100；非有限值不许印成那几个禁词 */
+function cppNum(x){
+  if(typeof x !== 'number') return '—';
+  if(isNaN(x)) return '未定义（0 ÷ 0 那一类）';
+  if(!isFinite(x)) return x > 0 ? '+∞（除数为 0）' : '−∞（除数为 0）';
+  if(Math.abs(x) >= 1e40) return x < 0 ? '−1e100' : '1e100';
+  const r = parseFloat(x.toPrecision(6));
+  return (Object.is(r, -0) ? '0' : String(r));
+}
+function fx6(x){                       /* fixed << setprecision(6) */
+  if(typeof x !== 'number') return '—';
+  if(isNaN(x)) return '未定义';
+  if(!isFinite(x)) return x > 0 ? '+∞' : '−∞';
+  if(Math.abs(x) >= 1e40) return (x < 0 ? '−' : '') + '1e100（整整 101 位整数 + .000000，程序从没算出过任何极差）';
+  return x.toFixed(6);
+}
+function el(tag, cls, txt){ const e = document.createElement(tag); if(cls) e.className = cls; if(txt != null) e.textContent = txt; return e; }
+
+/* ---------- 5 个空各自的语义函数 ---------- */
+function valueOf(ch){
+  const c = ch.charCodeAt(0), o = opt[1];
+  if(o === 'A') return c - 48;                 /* c - '0' */
+  if(o === 'C') return c - 65 + 10;            /* c - 'A' + 10 */
+  if(o === 'D') return c;                       /* 就是 ASCII 原值 */
+  return c - (c < 65 ? 48 : 55);                /* 参考答案 B */
+}
+function rRange(l){
+  const o = opt[2], xs = [];
+  if(o === 'A'){ for(let r = 1; r <= n; r++) xs.push(r); return xs; }
+  if(o === 'B' || o === 'C'){ for(let r = l; r <= n - 1; r++) xs.push(r); return xs; }
+  for(let r = l; r <= n; r++) xs.push(r);       /* 参考答案 D */
+  return xs;
+}
+function avgOf(sum, l, r){
+  const len = r - l + 1, o = opt[3];
+  if(o === 'A') return sum;
+  if(o === 'B') return Math.trunc(sum / len);                 /* int / int 截断（C++ 向 0 取整） */
+  if(o === 'D') return (sum * 1.0) / (r - l);                 /* 段长少算一位 */
+  return (sum * 1.0) / len;                                    /* 参考答案 C */
+}
+function avgTrue(sum, l, r){ return (sum * 1.0) / (r - l + 1); }       /* 题面定义的真正平均值 */
+function avgTrunc(sum, l, r){ const len = r - l + 1; return len > 0 ? Math.trunc(sum / len) : NaN; }
+function callArgs(l, r, cnt, mnb, mxb, nwb){
+  const o = opt[4];
+  const cuts = (o === 'C') ? cnt + 1 : cnt + (r < n ? 1 : 0);
+  let nl = (o === 'B') ? r : r + 1;
+  let nmin, nmax;
+  if(o === 'D'){ nmin = nwb; nmax = mxb; }                    /* min 被覆盖、max 不更新 */
+  else { nmin = cmin(mnb, nwb); nmax = cmax(mxb, nwb); }
+  return {nl:nl, cuts:cuts, nmin:nmin, nmax:nmax};
+}
+function initArgs(){
+  const o = opt[5];
+  if(o === 'A') return {l:1, cnt:0, mnb:0, mxb:0};
+  if(o === 'B') return {l:1, cnt:1, mnb:INF, mxb:-INF};
+  if(o === 'C') return {l:0, cnt:0, mnb:INF, mxb:-INF};
+  return {l:1, cnt:0, mnb:INF, mxb:-INF};                      /* 参考答案 D */
+}
+
+/* ---------- 逐帧模拟：结构与 fill2_trace.cpp 完全一致 ---------- */
+const MAXNODE = 600, MAXDEPTH = 40;
+function simulate(){
+  frames = []; nodes = []; blown = false;
+  let ans = INF;
+  fr({kind:'init', depth:0, lines:[30,31,32], path:[]});
+  walk(initArgs().l, initArgs().cnt, initArgs().mnb, initArgs().mxb, 0, null, [], null);
+  fr({kind:'final', depth:0, lines:[33,34], path:[], ans:ans, blown:blown});
+  fr({kind:'summary', depth:0, lines:[34], path:[]});
+  function fr(o){ o.i = frames.length; frames.push(o); return o; }
+  function walk(l, cnt, mnb, mxb, depth, edge, path, parentId){
+    if(nodes.length >= MAXNODE || depth > MAXDEPTH){ blown = true; return -1; }
+    const node = {id:nodes.length, l:l, cnt:cnt, mnb:mnb, mxb:mxb, depth:depth, edge:edge, kids:[], path:path.slice(), leaf:null, parent:parentId};
+    nodes.push(node);
+    fr({kind:'enter', node:node.id, depth:depth, lines:[15], path:path.slice(), l:l, cnt:cnt, mnb:mnb, mxb:mxb, parentId:parentId});
+    if(l > n){
+      if(cnt === 0){
+        node.leaf = {type:'ban'};
+        fr({kind:'ban', node:node.id, depth:depth, lines:[17], path:path.slice(), l:l, cnt:cnt, mnb:mnb, mxb:mxb});
+        return node.id;
+      }
+      const ratio = mxb - mnb, before = ans;
+      ans = cmin(ans, ratio);
+      node.leaf = {type:'done', ratio:ratio, newAns:ans};
+      fr({kind:'leaf', node:node.id, depth:depth, lines:[16,18], path:path.slice(), l:l, cnt:cnt, mnb:mnb, mxb:mxb, ratio:ratio, before:before, newAns:ans});
+      return node.id;
+    }
+    let sum = 0;
+    const rs = rRange(l);
+    for(let k = 0; k < rs.length; k++){
+      const r = rs[k];
+      sum += (a[r] === undefined ? 0 : a[r]);
+      const avg = avgOf(sum, l, r);
+      const ca = callArgs(l, r, cnt, mnb, mxb, avg);
+      const seg = {l:l, r:r, sum:sum, len:r - l + 1, avg:avg, next:ca};
+      fr({kind:'seg', node:node.id, depth:depth, lines:[22,23,24], path:path.slice(), seg:seg, mnb:mnb, mxb:mxb, cnt:cnt});
+      const np = path.concat([seg]);
+      if(np.length > MAXDEPTH){ blown = true; break; }
+      const cid = walk(ca.nl, ca.cuts, ca.nmin, ca.nmax, depth + 1, seg, np, node.id);
+      if(cid >= 0) node.kids.push(cid);
+      if(blown) break;
+    }
+    return node.id;
+  }
+}
+
+/* ---------- 按题面定义独立枚举（表 + 交叉核对，等价于 fill2_ref.cpp） ---------- */
+function allSplits(){
+  const rows = [], m = n - 1;
+  for(let mask = 0; mask < (1 << m); mask++){
+    const cuts = [];
+    for(let p = 1; p <= m; p++) if((mask >> (p - 1)) & 1) cuts.push(p);
+    const segs = []; let prev = 0;
+    const ps = cuts.concat([n]);
+    for(let q = 0; q < ps.length; q++){ const l = prev + 1, r = ps[q]; let s2 = 0; for(let i = l; i <= r; i++) s2 += a[i]; segs.push({l:l, r:r, sum:s2, len:r - l + 1, avg:s2 / (r - l + 1)}); prev = r; }
+    const vs = segs.map(s => s.avg);
+    rows.push({k:cuts.length, cuts:cuts, segs:segs, ratio:Math.max.apply(null, vs) - Math.min.apply(null, vs)});
+  }
+  return rows;
+}
+function bestByEnum(){
+  const rows = allSplits().filter(r => r.k >= 1);
+  let b = rows[0];
+  for(const r of rows) if(r.ratio < b.ratio) b = r;
+  return b;
+}
+
+/* ---------- 递归树 / 代码面板：每次模拟建一次 DOM ---------- */
+function buildTree(){
+  const host = document.getElementById('tree');
+  host.textContent = '';
+  nodeEls = [];
+  const byId = {};
+  nodes.forEach(nd => { byId[nd.id] = el('div', 'tn' + (nd.parent === null ? ' root' : '')); nodeEls[nd.id] = byId[nd.id]; });
+  nodes.forEach(nd => {
+    const box = byId[nd.id];
+    if(nd.edge){
+      const lab = '本段 [' + nd.edge.l + ',' + nd.edge.r + '] 平均 = ' + cppNum(nd.edge.avg);
+      box.appendChild(el('div', 'tedge', lab));
+    }
+    let txt = 'split(l=' + nd.l + ', cnt=' + nd.cnt + ', mnb=' + cppNum(nd.mnb) + ', mxb=' + cppNum(nd.mxb) + ')';
+    let cls = 'tnd';
+    if(nd.leaf && nd.leaf.type === 'ban') cls += ' ban', txt = 'split(l=' + nd.l + ', cnt=0, mnb=' + cppNum(nd.mnb) + ', mxb=' + cppNum(nd.mxb) + ') → 一刀没切，题面禁止，return';
+    else if(nd.leaf) cls += ' leaf', txt += ' → 极差 = ' + cppNum(nd.leaf.ratio) + '，ans 更新为 ' + cppNum(nd.leaf.newAns);
+    const body = el('div', cls, txt);
+    box.appendChild(body);
+    nodeEls[nd.id] = {box:box, body:body};
+    const kids = el('div', '');
+    nd.kids.forEach(cid => kids.appendChild(byId[cid]));
+    box.appendChild(kids);
+  });
+  if(nodes.length) host.appendChild(nodeEls[0].box);
+  if(blown) host.appendChild(el('div', 'tnd cut', '……节点数超过 ' + MAXNODE + '，本页截断：这个候选在实机上是无限递归（无输出、退出码 127）……'));
+}
+function buildCode(){
+  const host = document.getElementById('code');
+  host.textContent = ''; lineEls = {};
+  CODE.forEach(row => {
+    const ln = row[0], src = row[1];
+    const line = el('div', 'cl');
+    line.appendChild(el('span', 'ln', String(ln).padStart(2, '0')));
+    const code = el('code');
+    const bi = src.indexOf('①');
+    if(bi >= 0){
+      code.appendChild(document.createTextNode(src.slice(0, bi)));
+      code.appendChild(el('span', 'bl', src.slice(bi, bi + 1)));
+      code.appendChild(document.createTextNode(src.slice(bi + 1)));
+    } else code.textContent = src;
+    line.appendChild(code);
+    host.appendChild(line);
+    lineEls[ln] = line;
+  });
+  const g = el('div', 'cl gapline');
+  g.appendChild(el('span', 'ln', '——'));
+  g.appendChild(el('code', null, GAPMSG));
+  host.appendChild(g);
+  const tail = el('div', 'cl gapline');
+  tail.appendChild(el('span', 'ln', '——'));
+  tail.appendChild(el('code', null, TAILMSG));
+  host.appendChild(tail);
+}
+
+/* ---------- 渲染 ---------- */
+function render(){
+  if(t < 0) t = 0;
+  if(t > frames.length - 1) t = frames.length - 1;
+  const f = frames[t];
+  Object.keys(lineEls).forEach(k => lineEls[k].classList.remove('hl'));
+  (f.lines || []).forEach(ln => { if(lineEls[ln]) lineEls[ln].classList.add('hl'); });
+  nodes.forEach(nd => {
+    const ref = nodeEls[nd.id]; if(!ref) return;
+    ref.body.classList.remove('cur', 'path', 'done');
+    ref.box.firstElementChild && ref.box.firstElementChild.classList.remove('on');
+    if(nd.edge && f.node === nd.id) ref.box.firstElementChild.classList.add('on');
+    if(f.node === nd.id) ref.body.classList.add('cur');
+    else if(frames[t].i > nd.enterI && (f.node === nd.id || isAnc(nd.id, f.node))) ref.body.classList.add('path');
+    else if(nd.enterI < f.i) ref.body.classList.add('done');
+  });
+  drawStrip(f);
+  drawChart(f);
+  drawFacts(f);
+  document.getElementById('prog').textContent = '第 ' + (t + 1) + ' / ' + frames.length + ' 帧';
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t >= frames.length - 1;
+}
+function isAnc(id, ancId){
+  let cur = nodes[ancId];
+  while(cur){ if(cur.id === id) return true; cur = cur.parent === null ? null : nodes[cur.parent]; }
+  return false;
+}
+/* 段 [l,r] 覆盖哪些下标 */
+function covers(l, r){ const xs = []; for(let i = l; i <= r; i++) xs.push(i); return xs; }
+function drawStrip(f){
+  const host = document.getElementById('strip');
+  host.textContent = '';
+  const lo = (opt[5] === 'C' ? 0 : 1);
+  /* 本帧"已经定下来的段" = f.path；再叠加本帧自己正在枚举的段 f.seg */
+  const segs = f.path.slice();
+  if(f.kind === 'seg') segs.push(f.seg);
+  if(f.kind === 'enter' || f.kind === 'leaf' || f.kind === 'ban'){
+    /* 叶子/入口帧：path 已经是全部段 */
+  }
+  const cover = {};
+  segs.forEach((s, idx) => covers(s.l, s.r).forEach(i => { cover[i] = cover[i] || []; cover[i].push(idx); }));
+  const curSet = (f.kind === 'seg') ? covers(f.seg.l, f.seg.r) : [];
+  const cuts = {};
+  segs.forEach(s => { if(s.l > lo) cuts[s.l - 1] = true; });
+  for(let i = lo; i <= n; i++){
+    const cell = el('div', 'cell');
+    if(i === 0) cell.classList.add('zero');
+    const c = (i >= 1 ? str[i - 1] : '·');
+    cell.appendChild(el('div', 'ix', 'a[' + i + ']'));
+    cell.appendChild(el('div', 'ch', c));
+    cell.appendChild(el('div', 'vv', String(a[i] === undefined ? 0 : a[i])));
+    if(cover[i]) cell.classList.add('inseg');
+    if(cover[i] && cover[i].length > 1) cell.classList.add('dup');
+    if(curSet.indexOf(i) >= 0) cell.classList.add('cur');
+    host.appendChild(cell);
+    if(i < n){
+      const kn = el('div', 'knife', cuts[i] ? '✂' : '│');
+      if(cuts[i]) kn.classList.add('on');
+      if(f.kind === 'seg' && f.seg.r === i && f.seg.next.cuts !== f.cnt) kn.classList.add('hi');
+      host.appendChild(kn);
+    }
+  }
+  let lab;
+  if(f.kind === 'seg') lab = '当前正在枚举的段：[' + f.seg.l + ',' + f.seg.r + ']（紫底罩住），它右边的 ✂ 表示这里放了一把刀。';
+  else if(f.kind === 'leaf') lab = '全部 ' + f.path.length + ' 段已定，' + (f.path.length - 1) + ' 把刀 → 极差 = ' + cppNum(f.ratio);
+  else if(f.kind === 'ban') lab = '全部就一段、一把刀都没放（k = 0）→ 题面要求 1 ≤ k，禁止，直接 return。';
+  else if(f.kind === 'enter') lab = '上一段已经定到 a[' + Math.min(n, f.l - 1) + ']，下一段从下标 ' + f.l + ' 开始。';
+  else if(f.kind === 'init') lab = '先把串逐位转成数值：a[1] 是串的第 1 个字符 ' + str[0] + ' → ' + a[1] + '（下标从 1 起，因为卷面是 cin >> s + 1）。';
+  else lab = '递归走完，切分线全部撤掉，回到答案。';
+  if(opt[5] === 'C') lab += '　※ ⑤ 选了 C：最左边虚线格 a[0] 从没被 value() 赋过值，程序却从它开始切。';
+  document.getElementById('striplab').textContent = lab;
+}
+function drawChart(f){
+  const host = document.getElementById('chart');
+  host.textContent = '';
+  const segs = f.path.slice();
+  if(f.kind === 'seg') segs.push(f.seg);
+  let mnb = (f.kind === 'seg') ? cmin(f.mnb, f.seg.avg) : f.mnb;
+  let mxb = (f.kind === 'seg') ? cmax(f.mxb, f.seg.avg) : f.mxb;
+  if(f.kind === 'enter' || f.kind === 'leaf' || f.kind === 'ban'){ mnb = f.mnb; mxb = f.mxb; }
+  if(f.kind === 'init'){ mnb = undefined; mxb = undefined; }
+  const vals = segs.map(s => s.avg).filter(v => typeof v === 'number' && isFinite(v));
+  const H = 170, pad = 26;
+  let hi = Math.max.apply(null, vals.concat([0])), lo = Math.min.apply(null, vals.concat([0]));
+  if(!(hi > lo)) hi = lo + 1;
+  const y = v => pad + (hi - v) / (hi - lo) * H;
+  const zline = el('div', 'zero'); zline.style.top = y(0) + 'px'; zline.appendChild(el('span', null, ' 0'));
+  host.appendChild(zline);
+  const N = Math.max(segs.length, 1);
+  segs.forEach((s, i) => {
+    const w = 100 / N;
+    const bar = el('div', 'bar');
+    const v = (typeof s.avg === 'number' && isFinite(s.avg)) ? s.avg : 0;
+    const isMax = vals.length && s.avg === mxb, isMin = vals.length && s.avg === mnb;
+    if(isMax) bar.classList.add('hi'); if(isMin) bar.classList.add('lo');
+    if(f.kind === 'seg' && i === segs.length - 1) bar.classList.add('now');
+    bar.style.left = 'calc(' + (i * w) + '% + 10px)';
+    bar.style.width = 'calc(' + w + '% - 22px)';
+    const yy = y(v), zy = y(0);
+    bar.style.top = Math.min(yy, zy) + 'px';
+    bar.style.height = Math.max(2, Math.abs(zy - yy)) + 'px';
+    bar.appendChild(el('div', 'av', cppNum(s.avg)));
+    if(isMax) bar.appendChild(el('div', 'mk', 'mxb'));
+    else if(isMin) bar.appendChild(el('div', 'mk', 'mnb'));
+    bar.appendChild(el('div', 'bt', '[' + s.l + ',' + s.r + ']'));
+    host.appendChild(bar);
+  });
+  if(segs.length === 0){
+    const hint = el('div', 'bt');
+    hint.style.cssText = 'position:absolute;left:0;right:0;top:80px;text-align:center;color:#4d5578;font:14px Consolas,monospace';
+    hint.textContent = '还没有任何段 —— 一帧之后第一段就被枚举出来了';
+    host.appendChild(hint);
+  }
+  const lab = document.getElementById('rangelab');
+  if(typeof mnb === 'number' && typeof mxb === 'number' && isFinite(mnb) && isFinite(mxb) && segs.length){
+    const line = el('div', 'range');
+    line.style.left = 'calc(100% - 14px)';
+    line.style.top = y(mxb) + 'px';
+    line.style.height = Math.max(2, y(mnb) - y(mxb)) + 'px';
+    line.appendChild(el('div', 'ah', '▲')); line.lastChild.style.top = '-8px';
+    line.appendChild(el('div', 'ah', '▼')); line.lastChild.style.bottom = '-8px';
+    const rl = el('div', 'rl', '极差 = mxb − mnb = ' + cppNum(mxb - mnb));
+    rl.style.top = (y(mxb) + (y(mnb) - y(mxb)) / 2 - 8) + 'px';
+    rl.style.left = '-96px';
+    line.appendChild(rl);
+    host.appendChild(line);
+    lab.textContent = '最高的柱子是 mxb = ' + cppNum(mxb) + '，最矮的是 mnb = ' + cppNum(mnb) + '，右边那条带箭头的竖线就是第 18 行要的 mxb - mnb。';
+  } else {
+    lab.textContent = segs.length ? '本帧的 mnb / mxb 不是有限值（这是选错候选才会出现的场面），柱子按 0 画。' : '还没有段，也就没有极差可画。';
+  }
+}
+function kfact(lab, val, cls){
+  const k = el('div', 'k' + (cls ? ' ' + cls : ''));
+  k.appendChild(el('div', 'lab', lab));
+  k.appendChild(el('div', 'val', val));
+  return k;
+}
+function drawFacts(f){
+  const facts = document.getElementById('facts');
+  facts.textContent = '';
+  const ans = (function(){ let v = INF; for(let i = 0; i <= t; i++){ const g = frames[i]; if(g.kind === 'leaf') v = g.newAns; } return v; })();
+  facts.appendChild(kfact('ans（到本帧为止）', fx6(ans), 'ansv'));
+  if(f.kind === 'init'){
+    facts.appendChild(kfact('n / 串', n + ' / ' + str));
+    facts.appendChild(kfact('a[1..' + n + ']', a.slice(1, n + 1).join(' '), 'goodk'));
+  }
+  if(f.kind === 'enter'){
+    facts.appendChild(kfact('本次调用的 4 个实参', 'l=' + f.l + ' cnt=' + f.cnt, 'goodk'));
+    facts.appendChild(kfact('mnb（当作 +∞ 起步）', cppNum(f.mnb)));
+    facts.appendChild(kfact('mxb（当作 −∞ 起步）', cppNum(f.mxb)));
+  }
+  if(f.kind === 'seg'){
+    const s = f.seg;
+    facts.appendChild(kfact('本段 [l, r]', '[' + s.l + ',' + s.r + ']　段长 ' + s.len, 'goodk'));
+    facts.appendChild(kfact('sum（第 23 行累加）', String(s.sum)));
+    facts.appendChild(kfact('③ 现在选的写法算出的 nwb', cppNum(s.avg), isBad(s.avg) ? 'badk' : 'goodk'));
+    facts.appendChild(kfact('题面真正的平均值 sum×1.0/段长', cppNum(avgTrue(s.sum, s.l, s.r))));
+    facts.appendChild(kfact('若按整除截断 sum/段长', cppNum(avgTrunc(s.sum, s.l, s.r)), '截断' in {} ? '' : ''));
+    facts.appendChild(kfact('④ 传下去的下一段起点 / cnt', 'l=' + s.next.nl + '  cnt=' + s.next.cuts, s.next.nl !== s.r + 1 ? 'badk' : ''));
+  }
+  if(f.kind === 'leaf'){
+    facts.appendChild(kfact('叶子：l > n，全部段切完', '共 ' + f.path.length + ' 段、' + (f.path.length - 1) + ' 把刀'));
+    facts.appendChild(kfact('极差 = mxb − mnb', cppNum(f.ratio), 'badk'));
+    facts.appendChild(kfact('min(ans, 极差) → ans', cppNum(f.newAns), 'ansv'));
+  }
+  if(f.kind === 'ban'){
+    facts.appendChild(kfact('cnt == 0 的叶子', '一刀没切', 'badk'));
+    facts.appendChild(kfact('第 17 行的动作', 'return;（不参与答案）', 'badk'));
+  }
+  if(f.kind === 'final'){
+    facts.appendChild(kfact('第 34 行输出', f.blown ? '（实机：无任何输出）' : fx6(f.ans), f.blown ? 'badk' : 'ansv'));
+  }
+  if(f.kind === 'summary'){
+    const b = bestByEnum();
+    facts.appendChild(kfact('独立枚举的最优（k ≥ 1）', b ? fx6(b.ratio) : '—', 'ansv'));
+    facts.appendChild(kfact('切法总数', '2^' + (n - 1) + ' − 1 = ' + ((1 << (n - 1)) - 1)));
+  }
+  /* 与 fill2_trace.exe 一致的那一行文字 */
+  const flow = document.getElementById('flow');
+  let txt = '', note = '';
+  if(f.kind === 'init'){
+    txt = 'a[1..' + n + '] =' + a.slice(1, n + 1).map(x => ' ' + x).join('');
+    note = '<b>第 30—32 行</b>：读入 n 和串，逐位 <span class="mono">a[i] = value(s[i])</span>。'
+      + '<em>下标从 1 开始</em>（<span class="mono">cin &gt;&gt; s + 1</span>），所以 ⑤ 的第一个实参必须是 <span class="mono">1</span>。';
+  } else if(f.kind === 'enter'){
+    txt = indent(f.depth) + '进入 split(l=' + f.l + ', cnt=' + f.cnt + ', mnb=' + cppNum(f.mnb) + ', mxb=' + cppNum(f.mxb) + ')';
+    note = f.parentId === null
+      ? '<b>第 33 行</b> <span class="mono">split(⑤)</span> 打的第一枪。⑤ 现在选 <b>' + opt[5] + '</b>：<span class="mono">' + EXPR[5][opt[5]] + '</span>。'
+        + '其中 <span class="mono">1e100</span> / <span class="mono">-1e100</span> 是<b>当作正无穷 / 负无穷用的大 double</b>：求 min 的初值给 +∞、求 max 的初值给 −∞，第一次比较就一定会被真实平均值顶掉。'
+      : '<b>第 25 行</b> <span class="mono">split(④)</span> 递归下去（④ 现在选 <b>' + opt[4] + '</b>：<span class="mono">' + EXPR[4][opt[4]] + '</span>）。四个实参分别是下一段起点、刀数、目前的 min、目前的 max。';
+  } else if(f.kind === 'seg'){
+    const s = f.seg;
+    txt = indent(f.depth) + '  本段 [' + s.l + ',' + s.r + '] sum=' + s.sum + ' 段长=' + s.len + ' 平均=' + cppNum(s.avg);
+    const tru = avgTrue(s.sum, s.l, s.r), trn = avgTrunc(s.sum, s.l, s.r);
+    note = '<b>第 22—24 行</b>：② 现在选 <b>' + opt[2] + '</b>（' + s.len + ' 个数的和 = ' + s.sum + '），③ 现在选 <b>' + opt[3] + '</b> 得 nwb = <em>' + cppNum(s.avg) + '</em>。';
+    if(cppNum(tru) !== cppNum(trn)){
+      note += '<br><span class="warn">整除截断当场演示：</span>同一批数，<span class="mono">sum * 1.0 / (r - l + 1)</span> = <b>' + s.sum + '/' + s.len + ' = ' + cppNum(tru) + '</b>；'
+        + '没有 <span class="mono">* 1.0</span> 的 <span class="mono">sum / (r - l + 1)</span> = <b>' + cppNum(trn) + '</b>（向 0 取整，小数部分直接扔掉）。'
+        + '两个值不一样 ⇒ 极差会跟着错，这正是 ③B 在 300 组里错 251 组、而不是全错的原因（很多数据刚好整除）。';
+    } else {
+      note += '<br>这一段刚好整除：' + s.sum + '/' + s.len + ' = ' + cppNum(tru) + '，所以这一帧<span class="mono">* 1.0</span> 加不加看不出差别 —— 这就是 ③B 只错 251/300 的那种"部分才错"。';
+    }
+  } else if(f.kind === 'leaf'){
+    txt = indent(f.depth) + '  收尾：极差 = ' + cppNum(f.ratio) + '，ans = min(ans, 极差) = ' + cppNum(f.newAns);
+    note = '<b>第 16、18 行</b>：<span class="mono">l &gt; n</span> 说明全部数都分完了，本帧把 <span class="mono">mxb - mnb</span> 交给 <span class="mono">ans = min(ans, …)</span>。'
+      + (f.newAns === f.ratio ? '<em>ans 被刷新了</em>。' : '极差没比现在的 ans 小，<em>ans 不变</em>（还是 ' + cppNum(f.newAns) + '）。');
+  } else if(f.kind === 'ban'){
+    txt = indent(f.depth) + '  cnt==0 -> 一刀没切，题面禁止，return';
+    note = '<b class="warn">第 17 行，全篇最要紧的一帧。</b>整串一段到底时 <span class="mono">cnt</span> 还是 0，因为 ④ 传的是 <span class="mono">cnt + (r &lt; n)</span>：'
+      + '本段贴到串尾（r == n）就<b>不算</b>放刀。于是 <span class="mono">cnt == 0</span> 正好等价于题面禁止的 <span class="mono">k = 0</span>，这一支被拦掉。'
+      + '<br>要是 ④ 填 <span class="mono">cnt + 1</span>（选项 C），这里的 <span class="mono">cnt</span> 就成段数了，拦截失效，"不切"混进候选，答案会变成 0.000000。';
+  } else if(f.kind === 'final'){
+    txt = f.blown ? '（本页在第 ' + nodes.length + ' 个节点截断：这个候选无限递归）' : '答案 = ' + fx6(f.ans);
+    note = f.blown
+      ? '<b class="warn">实机对照：</b>本机 <span class="mono">fill2.exe</span> 跑这一组输入时<b>没有任何输出、退出码 127</b> —— 栈被无限递归打爆了。本页不能崩，所以在 ' + MAXNODE + ' 个节点处截断。'
+      : '<b>第 34 行</b>：<span class="mono">cout &lt;&lt; fixed &lt;&lt; setprecision(6) &lt;&lt; ans;</span>，保留 6 位小数。'
+        + (Math.abs(f.ans) >= 1e40 ? '<br><span class="warn">ans 还是那个当作 +∞ 用的 1e100</span>：说明整台机器<b>从没进过第 18 行</b>，一个极差都没算出来 —— ② 选 B/C 就是这个下场（最后一段够不到串尾）。' : '')
+        + '<br>下一页就是按题面定义独立枚举出来的对照表，两边必须一致。';
+  } else {
+    txt = '最优切法对照表 ↓（第 ⑥ 块）';
+    note = '把第 ⑥ 块的表当成"手推验算"：它不走递归，直接按 <span class="mono">1 ≤ k &lt; n</span> 枚举所有切分位置集合，取极差最小值。两个来源对上，才说明动画和题面说的是同一件事。';
+  }
+  flow.textContent = txt;
+  document.getElementById('fnote').innerHTML = note;
+}
+function indent(d){ return new Array(d * 2 + 1).join(' '); }
+
+/* ---------- 预设表 ---------- */
+const PRE = [
+  {n:4, s:'016A'}, {n:5, s:'11111'}, {n:5, s:'0A0A0'}, {n:2, s:'1F'},
+  {n:3, s:'0F0'}, {n:6, s:'13579B'}, {n:4, s:'9999'}
+];
+const KNOWN = {'016A':'5.666667','11111':'0.000000','0A0A0':'1.666667','1F':'14.000000','0F0':'7.500000','13579B':'6.000000','9999':'0.000000'};
+
+/* ---------- 5 空选项条 ---------- */
+function buildOpts(){
+  const host = document.getElementById('optbar');
+  host.textContent = '';
+  for(let b = 1; b <= 5; b++){
+    const g = el('div', '');
+    g.style.cssText = 'display:inline-block;margin-right:14px';
+    g.appendChild(el('span', 'mono', QNO[b] + '　①②③④⑤'.charAt(b - 1) + '　'));
+    ['A','B','C','D'].forEach(L => {
+      const btn = el('button', null, L);
+      btn.dataset.b = b; btn.dataset.l = L;
+      btn.title = EXPR[b][L];
+      if(opt[b] === L) btn.classList.add(opt[b] === REF[b] ? L === REF[b] ? 'onref' : 'on' : 'warndon', 'on');
+      btn.onclick = () => { opt[b] = L; rebuild(true); };
+      g.appendChild(btn);
+    });
+    host.appendChild(g);
+  }
+  const lab = el('div', 'note');
+  lab.style.marginTop = '4px';
+  const parts = [];
+  for(let b = 1; b <= 5; b++){
+    const L = opt[b], isRef = (L === REF[b]);
+    const w = WRONG300[b][L];
+    parts.push('<b>①②③④⑤'.charAt(b - 1) + ' 选 ' + L + '</b>：<span class="mono">' + EXPR[b][L] + '</span> '
+      + (isRef ? '<span class="oktag">参考答案 ' + QNO[b] + L + '（表达式来自整理者简析）</span>'
+               : '<span class="fake">※ 非卷面原文（整理者所造）</span> <span class="warn">300 组随机对拍错 ' + w + ' 组</span>'
+                 + '　<span class="note">本机 fill2.exe 在 016A 上：' + ON016A[b][L] + '</span>'));
+  }
+  lab.innerHTML = parts.join('　｜　');
+  document.getElementById('optnote').innerHTML = '<b>当前填法：</b>' + lab.innerHTML
+    + '<br>四个候选全都<b>不是卷面原文</b>（卷面 39—43 题的选项在原卷缺失的第 9 页上）。参考项的表达式来自整理者简析，'
+    + '错候选是整理者按卷面惯例编的，用途是证明"这个表达式是唯一能跑对的"。';
+  document.getElementById('optnote').innerHTML = document.getElementById('optnote').innerHTML;
+  /* 上面两行等价于把拼装结果写进去，这里直接重建节点，避免二次转义 */
+  const host2 = document.getElementById('optnote');
+  host2.textContent = '';
+  host2.appendChild(el('div', null, ''));
+  host2.innerHTML = '<div>' + parts.join('<br>') + '</div>'
+    + '<div style="margin-top:6px">四个候选都<b>不是卷面原文</b>（卷面 39—43 的选项印在原卷缺失的第 9 页）。'
+    + '参考项的表达式来自整理者简析；其余三个是整理者按卷面惯例编出来的，用来证明"只有这一个表达式能跑对"。</div>';
+}
+
+/* ---------- 最优切法表 ---------- */
+function buildSummary(){
+  const rows = allSplits();
+  const byK = {};
+  rows.forEach(r => { (byK[r.k] = byK[r.k] || []).push(r); });
+  const best = bestByEnum();
+  document.getElementById('sumhead').innerHTML =
+    '串 <b>' + str + '</b>（a[] = ' + a.slice(1, n + 1).join(' ') + '）：切分位置有 ' + (n - 1) + ' 个，'
+    + '所以一共 <b>2^' + (n - 1) + ' = ' + (1 << (n - 1)) + '</b> 种切法，其中"一刀不切"那一种题面禁止，'
+    + '真正合法的 <b>' + ((1 << (n - 1)) - 1) + '</b> 种。真题 n ≤ 20 时是 2^19 − 1 种，照样枚举得动。'
+    + (best ? ' 按定义取最小 = <em>' + fx6(best.ratio) + '</em>。' : '');
+  const tbl = el('table');
+  const thead = el('thead');
+  const hr = el('tr');
+  ['切法（刀数 k）', '各段（数值）', '各段平均值', '极差'].forEach(x => hr.appendChild(el('th', null, x)));
+  thead.appendChild(hr); tbl.appendChild(thead);
+  const tb = el('tbody');
+  const ks = Object.keys(byK).map(Number).sort((x, y) => x - y);
+  ks.forEach(k => {
+    byK[k].sort((x, y) => x.ratio - y.ratio).forEach(r => {
+      const tr = el('tr');
+      const isForbid = (k === 0);
+      const isBest = best && r === best;
+      if(isForbid) tr.className = 'forbid';
+      else if(isBest) tr.className = 'best';
+      tr.appendChild(el('td', null, isForbid ? '不切（k=0，题面禁止）' : '切 ' + k + ' 刀'));
+      tr.appendChild(el('td', null, r.segs.map(s => '[' + segVals(s) + ']').join(' ')));
+      tr.appendChild(el('td', null, r.segs.map(s => frac(s)).join(', ')));
+      tr.appendChild(el('td', null, cppNum(r.ratio) + (isForbid ? ' ← 若允许就会错答 0' : (isBest ? ' ← 最优' : ''))));
+      tb.appendChild(tr);
+    });
+  });
+  tbl.appendChild(tb);
+  const host = document.getElementById('sumtbl');
+  host.textContent = '';
+  host.appendChild(tbl);
+}
+function segVals(s){ const xs = []; for(let i = s.l; i <= s.r; i++) xs.push(a[i]); return xs.join(','); }
+function frac(s){
+  const d = cppNum(s.avg);
+  if(String(s.avg) === String(Math.trunc(s.avg)) || s.sum % s.len === 0) return d;
+  return d + '（' + s.sum + '/' + s.len + '）';
+}
+
+/* ---------- 逐空推导卡片 ---------- */
+function buildBlanks(){
+  const host = document.getElementById('blanks');
+  host.textContent = '';
+  for(let b = 1; b <= 5; b++){
+    const box = el('div', 'blkb');
+    box.appendChild(el('h3', null, '').appendChild(document.createTextNode('')).parentNode);
+    const h = el('h3');
+    h.appendChild(document.createTextNode('①②③④⑤'.charAt(b - 1) + ' 空（题 ' + QNO[b] + '）＝ ' + REF[b] + '　'));
+    h.appendChild(el('span', 'oktag', '表达式来自整理者简析，答案字母来自参考答案表'));
+    box.appendChild(h);
+    ['A','B','C','D'].forEach(L => {
+      const isRef = (L === REF[b]);
+      const c = el('div', 'cand' + (isRef ? ' ref' : ''));
+      c.appendChild(el('div', 'ex', L + '.  ' + EXPR[b][L] + (isRef ? '　← 参考答案' : '')));
+      const tag = isRef ? '' : '※ 非卷面原文（整理者所造），300 组随机对拍错 ' + WRONG300[b][L] + ' 组；本机 fill2.exe 只改这一空、跑 016A 得 ' + ON016A[b][L] + '。';
+      c.appendChild(el('div', 'why', WHY[b][L] + (tag ? '　' + tag : '')));
+      box.appendChild(c);
+    });
+    host.appendChild(box);
+  }
+}
+
+/* ---------- 载入 / 重跑 ---------- */
+function rebuild(reset){
+  a = [0];
+  for(let i = 1; i <= n; i++) a[i] = valueOf(str[i - 1]);
+  simulate();
+  buildTree();
+  buildSummary();
+  buildOpts();
+  if(reset) t = 0;
+  render();
+}
+function loadFrom(nv, sv){
+  n = nv; str = sv;
+  rebuild(true);
+  const known = KNOWN[str] && opt[1] === 'B' && opt[2] === 'D' && opt[3] === 'C' && opt[4] === 'A' && opt[5] === 'D';
+  document.getElementById('inote').innerHTML = '当前：<b>n=' + n + '</b>、串 <b>' + str + '</b> → a[] = ' + a.slice(1, n + 1).join(' ')
+    + '；本次共 <b>' + frames.length + '</b> 帧（递归节点 ' + nodes.length + ' 个）。'
+    + (known ? '全按参考答案填时本页答 <em>' + fx6(frames[frames.length - 2].ans) + '</em>，与本机 <span class="mono">fill2.exe</span> 的实测输出 <b>' + KNOWN[str] + '</b> 一致。' : '');
+}
+function parseInput(){
+  const nv = parseInt(document.getElementById('inpN').value.trim(), 10);
+  const sv = document.getElementById('inpS').value.trim().toUpperCase();
+  const bad = document.getElementById('inote');
+  if(!(nv >= 2 && nv <= 8)){ bad.innerHTML = '<span class="warn">n 要求在 2 ~ 8（演示上限，再大帧数会爆；真题 n ≤ 20）。</span>'; return false; }
+  if(!/^[0-9A-F]+$/.test(sv)){ bad.innerHTML = '<span class="warn">串只允许 0-9 / A-F（卷面说了：字符只可能是这些）。</span>'; return false; }
+  if(sv.length < nv){ bad.innerHTML = '<span class="warn">串太短：n=' + nv + ' 需要至少 ' + nv + ' 个字符，现在 ' + sv.length + ' 个。</span>'; return false; }
+  return true;
+}
+document.getElementById('load').onclick = () => { if(!parseInput()) return; loadFrom(parseInt(document.getElementById('inpN').value.trim(), 10), document.getElementById('inpS').value.trim().toUpperCase().slice(0, parseInt(document.getElementById('inpN').value.trim(), 10))); };
+document.querySelectorAll('.pre').forEach(b => {
+  b.onclick = () => { document.getElementById('inpN').value = b.dataset.n; document.getElementById('inpS').value = b.dataset.s; loadFrom(+b.dataset.n, b.dataset.s); };
+});
+document.getElementById('refall').onclick = () => { opt = {1:'B',2:'D',3:'C',4:'A',5:'D'}; rebuild(true); };
+document.getElementById('fix3').onclick = () => {
+  document.getElementById('inpN').value = 4; document.getElementById('inpS').value = '016A';
+  opt = {1:'B',2:'D',3:'B',4:'A',5:'D'};
+  loadFrom(4, '016A');
+  let k = -1;
+  for(let i = 0; i < frames.length; i++) if(frames[i].kind === 'seg' && frames[i].seg.l === 2 && frames[i].seg.r === 4){ k = i; break; }
+  if(k >= 0) t = k;
+  render();
+};
+document.getElementById('next').onclick = () => { if(t < frames.length - 1){ t++; render(); } };
+document.getElementById('prev').onclick = () => { if(t > 0){ t--; render(); } };
+document.getElementById('last').onclick = () => { stop(); t = frames.length - 1; render(); };
+document.getElementById('first').onclick = () => { stop(); t = 0; render(); };
+document.querySelectorAll('.spd').forEach(b => {
+  b.onclick = () => {
+    speed = +b.dataset.s;
+    document.querySelectorAll('.spd').forEach(x => x.classList.toggle('on', x === b));
+    if(timer){ stop(); start(); }
+  };
+});
+function stop(){ if(timer){ clearInterval(timer); timer = null; } document.getElementById('play').textContent = '自动播放'; }
+function start(){
+  document.getElementById('play').textContent = '暂停';
+  timer = setInterval(() => {
+    if(t >= frames.length - 1){ stop(); return; }
+    t++; render();
+  }, 1300 / speed);
+}
+document.getElementById('play').onclick = () => { if(timer) stop(); else start(); };
+document.addEventListener('keydown', e => {
+  if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+  if(e.key === 'ArrowRight'){ e.preventDefault(); if(t < frames.length - 1){ t++; render(); } }
+  else if(e.key === 'ArrowLeft'){ e.preventDefault(); if(t > 0){ t--; render(); } }
+  else if(e.key === ' '){ e.preventDefault(); if(timer) stop(); else start(); }
+});
+
+buildCode();
+loadFrom(4, '016A');
+</script>
+</body>
+</html>

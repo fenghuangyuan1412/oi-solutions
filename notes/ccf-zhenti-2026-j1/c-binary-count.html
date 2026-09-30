@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CCF CSP-J1 2026 阅读程序(1) · 二进制位统计逐帧演示</title>
+<style>
+  :root{--bg:#0f1220;--card:#1a1f35;--ink:#e8ecff;--dim:#8b93b5;--acc:#5eead4;--bad:#f59e6b;--line:#262c4a;}
+  *{box-sizing:border-box}
+  body{margin:0;padding:18px 22px;background:var(--bg);color:var(--ink);font:15px/1.65 "Segoe UI",system-ui,sans-serif}
+  h1{font-size:20px;margin:0 0 3px}
+  .sub{color:var(--dim);font-size:13.5px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+  .card h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:0 0 9px}
+  button,input[type=number]{background:#2b3358;color:var(--ink);border:1px solid #3d4778;border-radius:8px;padding:7px 12px;font-size:14px;cursor:pointer;font-family:inherit}
+  button:hover:not(:disabled){background:#394373}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.key{background:#1f4d4a;border-color:#2f7d6b}
+  button.onx{background:#123c34;border-color:var(--acc);color:var(--acc);font-weight:700}
+  button.tgl-on{background:#4a2415;border-color:var(--bad);color:var(--bad);font-weight:700}
+  button.pre{padding:5px 10px;font-size:13.5px}
+  input[type=number]{width:120px}
+  .top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  .rowline{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  .prog{color:var(--acc);font:14px Consolas,monospace;margin-left:auto;white-space:nowrap}
+  .narr{background:#12172c;border:1px solid #3d4778;border-left:4px solid var(--acc);border-radius:10px;padding:11px 14px;font-size:16px;line-height:1.7;margin-bottom:12px;min-height:62px}
+  .narr.trap{border-left-color:var(--bad);background:#1d1723}
+  .narr.concl{border-left-color:#9d6bff;background:#191430}
+  .narr b{color:var(--acc)}
+  .narr .tag{display:inline-block;background:#5a3418;color:#ffd9b8;border:1px solid var(--bad);border-radius:6px;padding:0 8px;font-size:12.5px;margin-right:8px;vertical-align:2px}
+  .narr .tag.good{background:#123c34;color:var(--acc);border-color:var(--acc)}
+  .split{display:grid;grid-template-columns:minmax(340px,44%) 1fr;gap:12px;align-items:start}
+  @media (max-width:1100px){.split{grid-template-columns:1fr}}
+  pre.src{margin:0;font:13.5px/1.6 Consolas,"Courier New",monospace;max-height:520px;overflow:auto}
+  .ln{display:flex;gap:10px;padding:1px 6px;border-radius:5px;white-space:pre}
+  .ln .no{width:24px;text-align:right;color:#5a628a;flex:none}
+  .ln .tx{color:#c7cdec}
+  .ln.on{background:#223059;box-shadow:inset 3px 0 0 var(--acc)}
+  .ln.on .tx{color:#ffffff;font-weight:700}
+  pre.focus .ln{opacity:.3}
+  pre.focus .ln.on{opacity:1}
+  .ln.on.stuck{background:#4a2415;box-shadow:inset 3px 0 0 var(--bad)}
+  .ln.del .tx{color:#6b5240;text-decoration:line-through}
+  .ln.del .badge{color:var(--bad)}
+  .ln.modline .tx{color:var(--bad);font-weight:700}
+  .badge{font-size:11.5px;color:#5a628a;margin-left:auto;align-self:center;white-space:nowrap}
+  table{width:100%;border-collapse:collapse;font:14px Consolas,monospace}
+  th,td{padding:4px 7px;border-bottom:1px solid #222743;text-align:left}
+  th{color:var(--dim);font-weight:normal;font-size:12.5px}
+  td.v{color:var(--acc);font-weight:700}
+  td.bump{background:#24406a;color:#fff;font-weight:700}
+  tr.hit td{background:#3d1f13;color:var(--bad);font-weight:700}
+  tr.ok td{background:#123c34;color:var(--acc)}
+  .strip{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px}
+  .striplab{color:var(--dim);font-size:13px;margin:6px 0 4px}
+  .cell{min-width:30px;padding:3px 4px;border-radius:6px;background:#232a4a;border:1px solid #333c66;text-align:center;font:15px Consolas,monospace;color:var(--ink)}
+  .cell .lb{display:block;font-size:9.5px;color:#6f78a0;line-height:1.2}
+  .cell.cur{outline:2px solid #9d6bff;background:#2b2350;font-weight:700}
+  .cell.dead{background:#141828;border-color:#20264a;color:#4a5273;text-decoration:line-through}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--dim);margin-top:2px}
+  .dot{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+  .out{font:15px/1.6 Consolas,monospace;background:#0b0e1b;border:1px solid #2f3760;border-radius:8px;padding:8px 11px;min-height:44px;white-space:pre-wrap}
+  .out .l{color:var(--acc)}
+  .out .none{color:var(--dim)}
+  .out .deadtxt{color:var(--bad);font-weight:700}
+  .row{display:flex;gap:12px;flex-wrap:wrap}.row>div{flex:1;min-width:290px}
+  .hint{color:var(--dim);font-size:13.5px}
+  ul.conc{margin:0;padding-left:20px;font-size:14.5px;color:#c7cdec}
+  ul.conc li{margin-bottom:5px}
+  code{background:#12172c;border:1px solid var(--line);border-radius:4px;padding:0 5px;font:13.5px Consolas,monospace;color:#c7cdec}
+  .raw{font:13.5px/1.7 Consolas,monospace;background:#0b0e1b;border:1px solid #2f3760;border-radius:8px;padding:8px 11px;white-space:pre-wrap;color:var(--acc);overflow-wrap:anywhere}
+  .switchlab{font-size:13px;color:var(--dim)}
+</style>
+</head>
+<body>
+<h1>二进制位统计：把 <span style="color:var(--acc)">n % 2</span> 和 <span style="color:var(--acc)">n / 2</span> 一轮一轮摊开看</h1>
+<div class="sub">2026 CCF CSP-J1 第一轮真题·阅读程序(1)（卷面答案 16√ 17× 18√ 19A 20C 21C），所有输出由本机 <code>-static -O2 -std=c++14</code> 编译运行的 <code>verify/src/ip1.cpp</code> 实测核对。<br>
+本页帧序列由 JS <b>逐行模拟卷面那 18 行程序</b>生成（第 7/8/9/11/12/14/16 行一行不差），公式只用于末尾交叉验证——所以演示绝不会和代码矛盾。下方两个开关分别对应题 17 和题 19。</div>
+
+<div class="top">
+  <label class="hint" for="nin">n（0..2³¹−1）</label>
+  <input type="number" id="nin" min="0" max="2147483647" step="1" value="6">
+  <button id="load" class="key">载入 / 重新生成</button>
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到末尾</button>
+  <button id="home">回到开头</button>
+  <span class="hint">速度</span>
+  <button id="sp1" class="pre onx">1x</button>
+  <button id="sp2" class="pre">2x</button>
+  <button id="sp4" class="pre">4x</button>
+  <span class="prog" id="prog"></span>
+</div>
+<div class="rowline">
+  <span class="hint">预设：</span>
+  <button class="pre" data-n="0">0</button>
+  <button class="pre" data-n="1">1</button>
+  <button class="pre" data-n="3">3（题16）</button>
+  <button class="pre" data-n="6">6（题20）</button>
+  <button class="pre" data-n="7">7</button>
+  <button class="pre" data-n="8">8</button>
+  <button class="pre" data-n="100">100</button>
+  <button class="pre" data-n="1023">1023</button>
+</div>
+<div class="rowline">
+  <span class="switchlab">题 17 开关：</span>
+  <button id="del11">删掉卷面第 11 行的 ++x;（关）</button>
+  <span class="switchlab">题 19 开关：</span>
+  <button id="ge0">把第 7 行 while (n &gt; 0) 改成 while (n &gt;= 0)（关）</button>
+</div>
+
+<div class="narr" id="narr"></div>
+
+<div class="split">
+  <div class="card">
+    <h2>① 代码面板（卷面 18 行原样，行号 == 卷面行号）</h2>
+    <pre class="src focus" id="src"></pre>
+    <div class="hint" style="margin-top:8px">青色高亮 = 当前执行的行；<span style="color:var(--bad)">橙色</span> = 出问题/被改动的行；第 11 行被划掉 = 题 17 已删除。</div>
+  </div>
+
+  <div>
+    <div class="card">
+      <h2>② 二进制条（左=最高位，右=最低位）</h2>
+      <div class="strip" id="strip"></div>
+      <div class="striplab" id="striplab"></div>
+      <div class="legend">
+        <span><span class="dot" style="background:#232a4a;border:1px solid #333c66"></span>还没轮到</span>
+        <span><span class="dot" style="background:#2b2350;outline:1px solid #9d6bff"></span>正被 n % 2 检查</span>
+        <span><span class="dot" style="background:#141828;border:1px solid #20264a"></span>已被 / 2 削掉</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>③ 变量状态表（逐帧更新）</h2>
+      <table id="vars"></table>
+    </div>
+
+    <div class="card">
+      <h2>④ 输出面板（与第 16 行 cout 逐字一致）</h2>
+      <div class="out" id="out"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>⑤ 这段程序到底在数什么（页面语义说明）</h2>
+  <ul class="conc">
+    <li><b>n % 2</b> 取的是 n 的<b>二进制最后一位</b>（偶数→0，奇数→1）；<b>n = n / 2</b> 是整数除法，效果是<b>把二进制最后一位削掉</b>（右移一位）。循环每转一轮 <code>x</code> 必 +1（第 9 行或第 11 行有一行会执行），只有奇数轮 <code>y</code> 才 +1（第 12 行）。</li>
+    <li>于是 <b>x = 1 + n 的二进制位数，y = 1 + n 的二进制里 1 的个数</b>（n = 0 时循环一次都不转，x = y = 1）。</li>
+  </ul>
+  <table style="margin-top:8px">
+    <tr><th>输入 n</th><th>n 的二进制</th><th>位数</th><th>1 的个数</th><th>输出 x y（实测 ip1.exe）</th></tr>
+    <tr><td>0</td><td>（不循环）</td><td>0</td><td>0</td><td class="v">1 1</td></tr>
+    <tr><td>3</td><td>11</td><td>2</td><td>2</td><td class="v">3 3 ← 题 16</td></tr>
+    <tr><td>6</td><td>110</td><td>3</td><td>2</td><td class="v">4 3 ← 题 20</td></tr>
+    <tr><td>8</td><td>1000</td><td>4</td><td>1</td><td class="v">5 2</td></tr>
+    <tr><td>1023</td><td>1111111111</td><td>10</td><td>10</td><td class="v">11 11</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>⑥ 等价性核对（RESULTS.md §2.3 机器实测原文）</h2>
+  <div class="raw">等价性核对 0..16777215：不一致 0 个
+题18  0..16777215 中 x&lt;y 的反例 0 个
+题21  0..2^31-1 中 y==2 共 31 次</div>
+  <ul class="conc" style="margin-top:9px">
+    <li><b>题 18（√）</b>：x = 1 + 位数，y = 1 + 1 的个数。每一位最多贡献一个 1，所以「1 的个数」永远不会超过「位数」，即 <b>x ≥ y 恒成立</b>。等号当且仅当每一位全是 1（n = 2ᵏ−1，如 1、3、7、1023）。实测在 0..2²⁴ 上用卷面原循环逐个查 <code>x&lt;y</code>，反例 <b>0</b> 个。</li>
+    <li><b>题 21（C，31）</b>：第二个数 y = 2 即「1 的个数恰为 1」——二进制里只有一个 1 的数就是 2 的整数次幂 2⁰, 2¹, …, 2ᵏ。范围上限 2³¹−1，所以 k 最大 30（2³⁰ ≤ 2³¹−1 &lt; 2³¹），k = 0..30 共 <b>31</b> 个。实测对 0..2³¹−1 全范围统计：<code>y==2 共 31 次</code>。</li>
+    <li>方法：先在 0..2²⁴ 上把「x = 位数+1、y = popcount+1」这个<b>等价式</b>和卷面循环逐个对拍（不一致 0 个），确认翻译没错，才敢用等价式跑 21 亿的全范围（原循环 21 亿 × 31 层本机跑不完）。</li>
+  </ul>
+</div>
+
+<div class="card" id="card17" style="display:none">
+  <h2>⑦ 题 17 开关已打开：删掉第 11 行 ++x; 后的实测输出（RESULTS.md §2.2，ip1_del11.exe）</h2>
+  <table>
+    <tr><th>输入 n</th><th>删后输出</th><th>两数相等？</th></tr>
+    <tr class="ok"><td>0</td><td>1 1</td><td>是</td></tr>
+    <tr class="hit"><td>1</td><td>1 2</td><td>否 ← 反例（本页默认演示的就是它）</td></tr>
+    <tr class="ok"><td>2</td><td>2 2</td><td>是</td></tr>
+    <tr class="hit"><td>3</td><td>1 3</td><td>否</td></tr>
+    <tr class="hit"><td>6</td><td>2 3</td><td>否</td></tr>
+    <tr class="hit"><td>7</td><td>1 4</td><td>否</td></tr>
+    <tr class="hit"><td>8</td><td>4 2</td><td>否</td></tr>
+    <tr class="hit"><td>100</td><td>5 4</td><td>否</td></tr>
+  </table>
+  <p class="hint">删掉后 x 只在<b>偶数轮</b> +1、y 仍在奇数轮 +1，两数之差恰好等于奇数轮的轮数。只要有一个反例，「一定相等」就是假的 → 卷面答案 <b>×</b>。判断题看到「一定」，你的任务是<b>找一个反例</b>。</p>
+</div>
+
+<div class="card" id="card19" style="display:none">
+  <h2>⑧ 题 19 开关已打开：while (n &gt;= 0) 的实测证据（RESULTS.md §2.4，ip1_ge0.exe）</h2>
+  <div class="raw" style="color:var(--bad)">n=0     -&gt; （3 秒无任何输出）[退出码 124]
+n=3     -&gt; （3 秒无任何输出）[退出码 124]</div>
+  <p class="hint">退出码 <b>124</b> 是 <code>timeout</code> 杀掉进程的返回值——程序不是算得慢，是<b>根本不结束</b>。原因：n 一路 /2 变成 0 以后 <code>0 &gt;= 0</code> 仍为真，而 <code>0 % 2 == 0</code>、<code>0 / 2</code> 还是 0，条件里的量一步都没有朝「让条件变假」的方向动 → 死循环，卷面答案 <b>A</b>。本页 JS 用 60 帧步数上限判定「卡住了」，<b>浏览器本身绝不会真的死循环</b>。</p>
+</div>
+
+<script>
+// ==== SIM-START ====
+// 下面是 verify/src/ip1.cpp 那 18 行的逐行模拟（纯逻辑，不碰 DOM），帧序列完全由它生成。
+var CODE = [
+  "#include <iostream>",
+  "using namespace std;",
+  "int main() {",
+  "  int n;",
+  "  cin >> n;",
+  "  int x = 1, y = 1;",
+  "  while (n > 0) {",
+  "    if (n % 2 == 0) {",
+  "      ++x;",
+  "    } else {",
+  "      ++x;",
+  "      ++y;",
+  "    }",
+  "    n = n / 2;",
+  "  }",
+  "  cout << x << ' ' << y << endl;",
+  "  return 0;",
+  "}"
+];
+var MAXN = 2147483647;   // 2^31 - 1
+var FRAME_CAP = 60;      // 题 19 防呆：模拟最多推进这么多帧就判「卡住了」，绝不拖死浏览器
+
+var N = 6, DEL11 = false, GE0 = false;
+var frames = [], t = 0, timer = null, speed = 1;
+
+function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+// 与卷面第 7—15 行逐句对应的模拟：每执行一步 push 一帧。
+function buildFrames() {
+  var fr = [];
+  var n0 = N;
+  var n = n0, x = 1, y = 1;
+  var bits = (n0 === 0) ? "0" : n0.toString(2);
+  var L = (n0 === 0) ? 0 : bits.length;
+  var pop = 0;
+  for (var i = 0; i < bits.length; i++) if (bits.charAt(i) === "1") pop++;
+  var done = 0;        // 已经执行过几次 n = n / 2（右端被削掉的位数）
+  var bitv = null;     // 本轮 n % 2
+  var rounds = 0, evenR = 0, oddR = 0;
+  var stuck = false;
+
+  function snap(o) {
+    o.n = n; o.x = x; o.y = y; o.bit = bitv; o.done = done;
+    if (o.kind === undefined) o.kind = "norm";
+    fr.push(o);
+  }
+
+  snap({ line: 5, examining: false,
+    narr: "第 5 行 <b>cin &gt;&gt; n;</b> 读入 n = " + n0 + "。它的二进制是 <b>" + bits +
+          "</b>（从左到右：最高位到最低位）。程序后面做的事，全是对这一排位逐个检查。" });
+  snap({ line: 6, examining: false,
+    narr: "第 6 行 <b>int x = 1, y = 1;</b> 两个计数器都从 <b>1</b> 起步，不是 0——这正是题 20 里选项 B（4 2）的坑。" });
+
+  while (true) {
+    var cond = GE0 ? (n >= 0) : (n > 0);
+    snap({ line: 7, examining: false,
+      narr: cond
+        ? "第 7 行 <b>" + (GE0 ? "while (n >= 0)" : "while (n > 0)") + "</b>：现在 n = " + n +
+          "，条件为<b>真</b>" + (GE0 && n === 0 ? "（注意：<b>0 &gt;= 0 也是真</b>，这就是改动的致命处）" : "") +
+          "，再进循环转一轮。"
+        : "第 7 行 <b>while (n &gt; 0)</b>：现在 n = " + n + "，条件为<b>假</b> → 退出循环，直接去第 16 行输出。" });
+    if (!cond) break;
+
+    var r = n % 2;                 // 第 8 行
+    bitv = r;
+    snap({ line: 8, examining: true,
+      narr: "第 8 行 <b>if (n % 2 == 0)</b>：" + n + " % 2 = <b>" + r +
+          "</b>，取的就是当前 n 的<b>二进制最后一位</b>（紫色格子）。这是" + (r === 0 ? "偶数" : "奇数") + "轮。" });
+
+    if (r === 0) {
+      x++;                          // 第 9 行
+      evenR++;
+      snap({ line: 9, examining: true, changed: "x",
+        narr: "第 9 行 <b>++x;</b> 走 if 分支：偶数轮 x 也照加 → x = " + x + "。" });
+    } else {
+      oddR++;
+      if (DEL11) {
+        snap({ line: 10, examining: true,
+          narr: "<span class=\"tag\">题 17</span>第 11 行 <code>++x;</code> 已被删掉！奇数轮走 else 分支，x 停在 " + x + " 不动。" });
+      } else {
+        x++;                        // 第 11 行
+        snap({ line: 11, examining: true, changed: "x",
+          narr: "第 11 行 <b>++x;</b> 走 else 分支：奇数轮 x 也照加 → x = " + x + "。（无论奇偶轮，x 每轮都 +1！）" });
+      }
+      y++;                          // 第 12 行
+      snap({ line: 12, examining: true, changed: "y",
+        narr: "第 12 行 <b>++y;</b> 只有奇数轮才执行——末位是 1，数到一个 1 → y = " + y + "。" });
+    }
+
+    n = Math.floor(n / 2);          // 第 14 行
+    done++; rounds++;
+    snap({ line: 14, examining: false, changed: "n",
+      narr: "第 14 行 <b>n = n / 2;</b> 整数除法把二进制最后一位削掉 → n 变成 " + n + "。" +
+        (GE0 && n === 0 ? " 而 <b>0 / 2 还是 0</b>——n 再也不会变了！" : "") });
+
+    if (GE0 && fr.length >= FRAME_CAP) {
+      stuck = true;
+      snap({ line: 7, examining: false, kind: "trap", stuck: true,
+        narr: "<span class=\"tag\">题 19</span><b>演示在这里停住——程序并没有「算完」，它根本出不来。</b>" +
+          "n 一路 /2 到 0 后，<b>0 % 2 == 0</b> 让每轮只加 x，<b>0 / 2 还是 0</b>，下一轮条件依旧为真……" +
+          "本页 JS 到 " + FRAME_CAP + " 帧就强制刹车（防止你的浏览器被拖死），真实程序会一直转到天荒地老。" +
+          "实测证据见下方「题 19」卡片：timeout 3 秒杀掉进程，退出码 124。" });
+      break;
+    }
+  }
+
+  if (!stuck) {
+    snap({ line: 16, examining: false, out: x + " " + y,
+      narr: "第 16 行 <b>cout &lt;&lt; x &lt;&lt; ' ' &lt;&lt; y &lt;&lt; endl;</b> → 输出 <b>" + x + " " + y + "</b>。" });
+    var f1 = (n0 === 0 ? 1 : L + 1), f2 = pop + 1;
+    var msg;
+    if (DEL11) {
+      msg = "<b>结论（题 17 开关开着）：</b>删掉第 11 行后 x 只在偶数轮 +1：x = 1 + 偶数轮数(" + evenR + ") = " + x +
+        "，y = 1 + 奇数轮数(" + oddR + ") = " + y + "。两者相差 " + Math.abs(x - y) +
+        (x === y ? "（这一组恰好相等）" : "，<b>不相等——这就是反例</b>，「一定相等」为假 → 题 17 选 ×。");
+    } else {
+      msg = "<b>结论：</b>x = " + x + "、y = " + y + "。一句话：<b>x = 位数 + 1，y = 1 的个数 + 1</b>" +
+        (n0 === 0 ? "（n = 0 不循环，x = y = 1）" :
+          "：循环转了 " + L + " 轮（位数），其中 " + pop + " 轮是奇数（1 的个数）。") +
+        " 公式交叉核对：位数+1 = " + f1 + "、popcount+1 = " + f2 + "，与上面逐帧模拟" +
+        (x === f1 && y === f2 ? "完全一致 ✓" : "不一致，以逐帧模拟为准") + "。";
+    }
+    snap({ line: 16, examining: false, kind: "concl", concl: true, out: x + " " + y, narr: msg });
+  }
+  return fr;
+}
+// ==== SIM-END ====
+
+function $(id) { return document.getElementById(id); }
+
+function renderSrc(f) {
+  var pre = $("src"); pre.innerHTML = "";
+  for (var i = 0; i < CODE.length; i++) {
+    var no = i + 1, tx = CODE[i];
+    var cls = "ln";
+    if (no === 7 && GE0) { tx = "  while (n >= 0) {"; cls += " modline"; }
+    if (no === 11 && DEL11) { cls += " del"; }
+    if (no === f.line) cls += " on";
+    if (f.stuck && no === 7) cls += " stuck";
+    var row = document.createElement("div"); row.className = cls;
+    var d1 = document.createElement("span"); d1.className = "no"; d1.textContent = ("0" + no).slice(-2);
+    var d2 = document.createElement("span"); d2.className = "tx"; d2.textContent = tx;
+    row.appendChild(d1); row.appendChild(d2);
+    if (no === 7 && GE0) { var b = document.createElement("span"); b.className = "badge"; b.textContent = "题19 已改"; row.appendChild(b); }
+    if (no === 11 && DEL11) { var b2 = document.createElement("span"); b2.className = "badge"; b2.textContent = "题17 已删"; row.appendChild(b2); }
+    pre.appendChild(row);
+  }
+}
+
+function renderStrip(f) {
+  var bits = (N === 0) ? "0" : N.toString(2);
+  var L = bits.length;
+  var strip = $("strip"); strip.innerHTML = "";
+  for (var i = 0; i < L; i++) {
+    var cell = document.createElement("div");
+    var cls = "cell";
+    var curIdx = L - 1 - f.done;
+    if (f.examining && i === curIdx) cls += " cur";
+    else if (i >= L - f.done) cls += " dead";
+    cell.className = cls;
+    cell.appendChild(document.createTextNode(bits.charAt(i)));
+    var lb = document.createElement("span"); lb.className = "lb";
+    lb.textContent = "2^" + (L - 1 - i);
+    cell.appendChild(lb);
+    strip.appendChild(cell);
+  }
+  $("striplab").innerHTML = "输入 n = " + N + "（二进制 " + bits + "）　|　当前 n = " + f.n +
+    "（二进制 " + f.n.toString(2) + "）　|　已削掉 " + f.done + " 位";
+}
+
+function renderVars(f) {
+  var tb = $("vars");
+  var rows = [
+    ["变量", "当前值", "说明"],
+    ["n", String(f.n), f.changed === "n" ? "刚执行完 n = n / 2" : "循环条件 / 取末位都在看它"],
+    ["x", String(f.x), f.changed === "x" ? "刚 +1" : (DEL11 ? "每轮偶数时 +1（初始 1）" : "每一轮都 +1（初始 1）")],
+    ["y", String(f.y), f.changed === "y" ? "刚 +1" : "只有奇数轮 +1（初始 1）"],
+    ["本轮 n%2", f.bit === null || f.bit === undefined ? "—" : (f.bit === 1 ? "1（奇数轮）" : "0（偶数轮）"), "第 8 行 if 的判断依据"]
+  ];
+  var html = "";
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    html += "<tr>";
+    for (var j = 0; j < 3; j++) {
+      if (i === 0) html += "<th>" + r[j] + "</th>";
+      else {
+        var cls = "";
+        if (j === 1 && (r[0] === "x" || r[0] === "y" || r[0] === "n")) cls = r[2].indexOf("刚") === 0 ? " class=\"bump\"" : " class=\"v\"";
+        html += "<td" + cls + ">" + esc(r[j]) + "</td>";
+      }
+    }
+    html += "</tr>";
+  }
+  tb.innerHTML = html;
+}
+
+function renderOut(f) {
+  var o = $("out");
+  if (f.stuck) {
+    o.innerHTML = "<span class=\"deadtxt\">（一直没有输出——程序永远走不到第 16 行）</span>\n这就是题 19 的「陷入死循环」。";
+  } else if (typeof f.out === "string") {
+    o.innerHTML = "<span class=\"l\">" + esc(f.out) + "</span>" + (f.concl ? "　← 终帧" : "");
+  } else {
+    o.innerHTML = "<span class=\"none\">（程序还没走到第 16 行，暂无输出）</span>";
+  }
+}
+
+function render() {
+  if (frames.length === 0) return;
+  if (t < 0) t = 0;
+  if (t > frames.length - 1) t = frames.length - 1;
+  var f = frames[t];
+  renderSrc(f);
+  renderStrip(f);
+  renderVars(f);
+  renderOut(f);
+  var nn = $("narr");
+  nn.className = "narr" + (f.kind === "trap" ? " trap" : (f.kind === "concl" ? " concl" : ""));
+  nn.innerHTML = f.narr;
+  $("prog").textContent = "第 " + (t + 1) + " / " + frames.length + " 帧　(n = " + N + ")" +
+    (DEL11 ? "　[题17:第11行已删]" : "") + (GE0 ? "　[题19:改为 n >= 0]" : "");
+  $("prev").disabled = (t === 0);
+  $("next").disabled = (t >= frames.length - 1);
+}
+
+function stopPlay() {
+  if (timer) { clearInterval(timer); timer = null; $("play").textContent = "▶ 自动播放"; }
+}
+function startPlay(btn) {
+  if (timer) return;
+  btn.textContent = "⏸ 暂停";
+  tick();
+  timer = setInterval(tick, Math.round(700 / speed));
+}
+function tick() {
+  if (t >= frames.length - 1) { stopPlay(); return; }
+  t++; render();
+}
+
+function rebuild(n) {
+  stopPlay();
+  if (typeof n === "number" && Number.isFinite(n)) {
+    n = Math.round(n);
+    if (n < 0) n = 0;
+    if (n > MAXN) n = MAXN;
+    N = n;
+  }
+  frames = buildFrames();
+  t = 0;
+  $("card17").style.display = DEL11 ? "" : "none";
+  $("card19").style.display = GE0 ? "" : "none";
+  render();
+}
+
+$("load").onclick = function () {
+  var v = parseInt($("nin").value, 10);
+  if (!Number.isFinite(v)) v = 6;
+  if (v > MAXN) { $("nin").value = String(MAXN); v = MAXN; }
+  if (v < 0) { $("nin").value = "0"; v = 0; }
+  $("nin").value = String(v);
+  rebuild(v);
+};
+var pres = document.querySelectorAll("button.pre[data-n]");
+for (var i = 0; i < pres.length; i++) {
+  (function (b) {
+    b.onclick = function () { $("nin").value = b.getAttribute("data-n"); rebuild(parseInt(b.getAttribute("data-n"), 10)); };
+  })(pres[i]);
+}
+$("prev").onclick = function () { stopPlay(); if (t > 0) { t--; render(); } };
+$("next").onclick = function () { stopPlay(); if (t < frames.length - 1) { t++; render(); } };
+$("jump").onclick = function () { stopPlay(); t = frames.length - 1; render(); };
+$("home").onclick = function () { stopPlay(); t = 0; render(); };
+$("play").onclick = function (e) {
+  if (timer) { stopPlay(); return; }
+  if (t >= frames.length - 1) { t = 0; render(); }
+  startPlay(e.currentTarget);
+};
+var spIds = { sp1: 1, sp2: 2, sp4: 4 };
+["sp1", "sp2", "sp4"].forEach(function (id) {
+  $(id).onclick = function () {
+    speed = spIds[id];
+    ["sp1", "sp2", "sp4"].forEach(function (k) { $(k).className = "pre" + (k === id ? " onx" : ""); });
+    if (timer) { clearInterval(timer); timer = setInterval(tick, Math.round(700 / speed)); }
+  };
+});
+$("del11").onclick = function () {
+  DEL11 = !DEL11;
+  this.textContent = "删掉卷面第 11 行的 ++x;（" + (DEL11 ? "开" : "关") + "）";
+  this.className = DEL11 ? "tgl-on" : "";
+  if (DEL11) { $("nin").value = "1"; rebuild(1); }   // 反例 n=1 -> 1 2
+  else rebuild(N);
+};
+$("ge0").onclick = function () {
+  GE0 = !GE0;
+  this.textContent = "把第 7 行 while (n > 0) 改成 while (n >= 0)（" + (GE0 ? "开" : "关") + "）";
+  this.className = GE0 ? "tgl-on" : "";
+  rebuild(N);
+};
+document.addEventListener("keydown", function (e) {
+  if (e.key === "ArrowRight") { e.preventDefault(); stopPlay(); if (t < frames.length - 1) { t++; render(); } }
+  else if (e.key === "ArrowLeft") { e.preventDefault(); stopPlay(); if (t > 0) { t--; render(); } }
+  else if (e.key === " ") { e.preventDefault(); $("play").click(); }
+});
+
+rebuild(6);
+</script>
+</body>
+</html>
