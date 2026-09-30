@@ -11,9 +11,9 @@
 
 | 主题 | 题数 | 目录 |
 | --- | --- | --- |
-| 基础 | 9 | [solutions/basic](solutions/basic) |
-| 动态规划 | 4 | [solutions/dp](solutions/dp) |
-| 数据结构 | 3 | [solutions/ds](solutions/ds) |
+| 基础 | 10 | [solutions/basic](solutions/basic) |
+| 动态规划 | 5 | [solutions/dp](solutions/dp) |
+| 数据结构 | 8 | [solutions/ds](solutions/ds) |
 | 图论 | 0 | [solutions/graph](solutions/graph) |
 | 搜索 | 0 | [solutions/search](solutions/search) |
 | 贪心 | 4 | [solutions/greedy](solutions/greedy) |
@@ -21,7 +21,7 @@
 | 字符串 | 0 | [solutions/string](solutions/string) |
 | 计算几何 | 0 | [solutions/geometry](solutions/geometry) |
 
-共 20 题（按"有 README.md 的目录"统计）。另有 6 个目录只有 `problem.txt` + `solution.cpp`，题解还没写完，暂不入索引：`solutions/basic/p3156-student-id`、`solutions/dp/p1499-patrol`、`solutions/ds/p1996-josephus`、`solutions/ds/p2234-turnover`、`solutions/ds/p3613-locker`，以及与 `solutions/basic/p1540-machine-translation`（完整版）重复的半成品 `solutions/ds/p1540-machine-translation`。
+共 27 题（按"有 README.md 的目录"统计），全部来自训练单与洛谷/NOIP 真题，暂无半成品目录。
 
 ### 题目列表
 
@@ -34,14 +34,21 @@
 | [P1563](https://www.luogu.com.cn/problem/P1563) | [NOIP 2016 提高组] 玩具谜题 | 基础 / 模拟·环形 | 朝向取"当前所在小人"；一次平移代替逐格走；负数取模 `((x%n)+n)%n` | —— |
 | [P2241](https://www.luogu.com.cn/problem/P2241) | 统计方形（数据加强版） | 基础 / 枚举·计数 | 按尺寸 $h\times w$ 分类，个数 $=(n-h+1)(m-w+1)$；$n$、$m$ 也要 `long long` | —— |
 | [P2670](https://www.luogu.com.cn/problem/P2670) | [NOIP 2015 普及组] 扫雷游戏 | 基础 / 网格模拟 | 8 个方向写成偏移数组；雷格原样输出 `*`；行内无分隔符 | —— |
+| [P3156](https://www.luogu.com.cn/problem/P3156) | 【深基15.例1】询问学号 | 基础 / 数组·随机访问 | 问"第几个"就是问下标，值域 $10^9$ 也不需要查找结构；$2\times10^6$ 的数组必须开全局 | [html](solutions/basic/p3156-student-id/visualization.html) |
 | [P9750](https://www.luogu.com.cn/problem/P9750) | [CSP-J 2023] 一元二次方程 | 基础 / 数学·输出格式 | **骗分练习 ⑤**：特殊性质 ⇒ $\Delta$ 必为完全平方 ⇒ 只写有理分支稳过 6 个测试点；满分要根式化简 + 5 条格式逐字 | —— |
 | [U397952](https://www.luogu.com.cn/problem/U397952) | [L1-006 AC数](solutions/basic/u397952-ac-count/README.md) | 基础 / 计数·前缀和 | 按右端点分类：遇 C 就加"左边 A 的个数"，O(n²) → O(n) | —— |
 | [P1005](https://www.luogu.com.cn/problem/P1005) | [NOIP 2007 提高组] 矩阵取数游戏 | 动态规划 / 区间·高精度 | **骗分练习 ②**：60% 档承诺答案 $\le10^{16}$ ⇒ `long long` 白送 60 分；行与行完全独立 | —— |
+| [P1499](https://www.luogu.com.cn/problem/P1499) | [CTSC2000] 公路巡逻 | 动态规划 / 时间轴·差分桶 | 两个整秒时刻定住一段直线 ⇒ 相遇判据三分支（$b=X$ 算、$a=T$ 不算），每辆车的限制是一个半区间，半区间能差分，转移从 $O(m)$ 降到 $O(1)$ | —— |
 | [P14360](https://www.luogu.com.cn/problem/P14360) | [CSP-J 2025] 多边形 | 动态规划 / 背包计数 | 极值锚定 + 补集转化，m≥3 由判据自动蕴含 | [html](solutions/dp/p14360-polygon/visualization.html) |
 | [P3017](https://www.luogu.com.cn/problem/P3017) | [USACO11MAR] Brownie Slicing G / 布朗尼切片 | 动态规划 / 二分答案·贪心 | 二分"最小块≥X"→带内贪心数块+带间DP选带；合格性对扩行单调使 DP 塌回贪心，O(R²C)→O(RC) | [html](solutions/dp/p3017-brownie/visualization.html) |
 | [P7074](https://www.luogu.com.cn/problem/P7074) | [CSP-J 2020] 方格取数 | 动态规划 / 前缀最优 | **骗分练习 ④**：每列单向 ⇒ DFS 20 分 / $O(n^2m)$ 70 分 / $O(nm)$ 100 分三级阶梯，三版互拍 | —— |
+| [P1160](https://www.luogu.com.cn/problem/P1160) | 队列安排 | 数据结构 / 双向链表 | 编号本身就是节点号 ⇒ 定位 $O(1)$，0 号哨兵把链接成环免特判；**重复删除必须用 `gone[]` 挡住（样例查不出来）** | —— |
 | [P1241](https://www.luogu.com.cn/problem/P1241) | 括号序列 | 数据结构 / 栈 | 右括号类型不符时右括号作废，栈顶左括号**不弹出** | [html](solutions/ds/p1241-bracket-sequence/visualization.html) |
+| [P1540](https://www.luogu.com.cn/problem/P1540) | [NOIP 2010 提高组] 机器翻译（队列版） | 数据结构 / 队列·FIFO缓存 | 与上面"基础 / 模拟"那行是**同一道题的两份实现**：这版只用 `queue` + `bool in[]`，命中时什么都不做（FIFO 不是 LRU） | —— |
+| [P1996](https://www.luogu.com.cn/problem/P1996) | 约瑟夫问题 | 数据结构 / 队列·模拟 | 每轮只搬 $m-1$ 个人到队尾，报 $m$ 的那个留在队头出圈；$m=1$ 是最快的自检用例 | —— |
 | [P2058](https://www.luogu.com.cn/problem/P2058) | [NOIP 2016 普及组] 海港 | 数据结构 / 队列·滑窗 | 窗口左开右闭 $(t_i-86400,\,t_i]$，过期判定必须写 `<=` | [html](solutions/ds/p2058-harbour/visualization.html) |
+| [P2234](https://www.luogu.com.cn/problem/P2234) | [HNOI2002] 营业额统计 | 数据结构 / 有序集合·前驱后继 | "离我最近的历史数据"只可能在前驱或后继里；`it!=end()` 管后继、`it!=begin()` 管前驱，两个判断缺一不可 | —— |
+| [P3613](https://www.luogu.com.cn/problem/P3613) | 【深基15.例2】寄包柜 | 数据结构 / 稀疏存储·键编码 | $a_i$ 未知就是提示：别开二维表，只存被点名的 $(i,j)$；乘数要**严格**大于格子号上界（取 100001） | —— |
 | [P4387](https://www.luogu.com.cn/problem/P4387) | 【深基15.习9】验证栈序列 | 数据结构 / 栈·模拟 | 入栈序列是任意排列；一次压入后要连续弹出，判据是"全部弹出"而非"栈空" | [html](solutions/ds/p4387-validate-stack-sequences/visualization.html) |
 | [P1095](https://www.luogu.com.cn/problem/P1095) | [NOIP 2005 提高组] 守望者的逃离 | 贪心 / 枚举·DP | **骗分练习 ③**：三条规则漏一条就掉一半分（反面教材实测只对该 21%~25%）；无魔法上限 ⇒ 枚举闪光次数 $k$ | —— |
 | [P14357](https://www.luogu.com.cn/problem/P14357) | [CSP-J 2025] 拼数 | 贪心 / 计数排序 | 位数用满 + 降序交换论证 | [html](solutions/greedy/p14357-number/visualization.html) |

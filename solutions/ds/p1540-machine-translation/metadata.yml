@@ -1,0 +1,24 @@
+id: P1540
+title: "[NOIP 2010 提高组] 机器翻译"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1540
+alias: 洛谷训练单 320175
+topics: [ds/queue, ds/fifo-cache]
+difficulty: 普及-
+tags: [队列, FIFO缓存, 标记数组, 模拟]
+complexity:
+  time: O(N)
+  space: O(M + 1001)
+status: 本地 g++ -static -O2 -std=c++14 编译运行，样例输出 5 正确；M=100,N=1000 满数据 12 ms；另用两个"错误版本"实测反证坑点（LRU 版样例输出 4、先 pop 再清标记版输出 4）；未在洛谷提交
+visualization: false
+samples:
+  - in: |
+      3 7
+      1 2 1 5 4 4 1
+    out: |
+      5
+notes: |
+  与 solutions/basic/p1540-machine-translation/ 是同题的两份不同实现（那版用 set 判存在 + 数组 shift 淘汰），
+  本版只用 queue + bool in[]，按用户要求两份都保留、仅在根索引里区分。
+  三个实测过的坑：读入顺序是 M N（写反则样例只读 3 个词、输出 2）；命中时不得重排队列（FIFO 不是 LRU，改成就输出 4）；
+  清标记必须在 pop 之前（写反输出 4）。单词值域含 0 和 1000，in[] 至少开 1001。

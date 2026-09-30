@@ -1,0 +1,32 @@
+id: P1160
+title: "队列安排"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1160
+alias: 洛谷训练单 320175
+topics: [ds/linked-list, ds/array-simulated-list]
+difficulty: 普及-
+tags: [双向链表, 数组模拟, 哨兵, 重复删除]
+complexity:
+  time: O(N + M)
+  space: O(N)
+status: 本地 g++ -static -O2 -std=c++14 编译运行，样例输出 2 4 1 正确；node verify.js：JS 双实现（数组双向链表 vs vector 直接插删）随机对拍 3000 组 0 不一致、7 个定向边界全 OK，另用编译好的 C++ 程序与暴力交叉 300 组（含 5 组 n=m<=1000）0 不一致；N=M=1e5 随机满数据 126 ms（另一轮 141 ms），同一份数据 vector 暴力 1748 ms、输出人数一致（36873）；未在洛谷提交
+visualization: false
+samples:
+  - in: |
+      4
+      1 0
+      2 1
+      1 0
+      2
+      3
+      3
+    out: |
+      2 4 1
+notes: |
+  交付精简：不做 HTML 动画，README 用"链条板书表格"代替。
+  三个坑都做了错误版本实测：
+  1) 漏 gone[] 判重 → 官方样例照样输出 2 4 1（连着删同一人是幂等的，查不出来）；
+     自造 `4 / 1 0 / 2 1 / 1 0 / M=4：3,2,3,4` 正确 1，错版 4 1。
+  2) 插入时先覆盖 L[k] 再取左邻居 → 样例输出 4 1（应 2 4 1）。
+  3) 输出按编号 1..N 顺序而非沿 R[] 遍历 → 样例输出 1 2 4（应 2 4 1），人数对、顺序全错。
+  哨兵 0 把链接成环，插到队头左边和删队头都不用特判；数组必须开全局（1e5 int 放局部有爆栈风险）。

@@ -1,0 +1,25 @@
+id: P3156
+title: "【深基15.例1】询问学号"
+source: luogu
+url: https://www.luogu.com.cn/problem/P3156
+alias: 洛谷训练单 320175
+topics: [basic/array, basic/random-access]
+difficulty: 入门
+tags: [数组, 随机访问, 模拟]
+complexity:
+  time: O(n + m)
+  space: O(n)
+status: 本地 g++ -static -O2 -std=c++14 编译运行，样例输出 1/8/5 正确；与"从头数第 i 个人"暴力随机对拍 200000 组 0 不一致；未在洛谷提交
+visualization: true
+samples:
+  - in: |
+      10 3
+      1 9 2 60 8 17 11 4 5 14
+      1 5 9
+    out: |
+      1
+      8
+      5
+notes: |
+  数组必须开全局（2e6 个 int 放局部会爆栈），且长度要多开一格；
+  本题只按"第几个"查询，学号值域 1e9 与选什么数据结构无关，用 map 反而 MLE。

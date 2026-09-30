@@ -1,0 +1,21 @@
+id: P1996
+title: 约瑟夫问题
+source: luogu
+url: https://www.luogu.com.cn/problem/P1996
+alias: 洛谷训练单 320175
+topics: [ds/queue, basic/simulation]
+difficulty: 普及−
+tags: [队列, 模拟, 约瑟夫环]
+complexity:
+  time: O(nm)
+  space: O(n)
+status: 本地 g++ -static -O2 -std=c++14 编译运行，样例输出 3 6 9 2 7 1 8 5 10 4 正确；与"数组+vis 标记"暴力随机对拍 200000 组 0 不一致；未在洛谷提交
+visualization: false
+samples:
+  - in: |
+      10 3
+    out: |
+      3 6 9 2 7 1 8 5 10 4
+notes: |
+  每轮只搬 m-1 个人到队尾（报 m 的那个必须留在队头），且要做满 n 轮输出全部出圈顺序；
+  m=1 时一次都不搬，输出 1..n，是最快的自检用例。

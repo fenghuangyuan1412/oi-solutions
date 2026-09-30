@@ -1,0 +1,31 @@
+id: P2234
+title: "[HNOI2002] 营业额统计"
+source: luogu
+url: https://www.luogu.com.cn/problem/P2234
+alias: 洛谷训练单 320175
+topics: [ds/ordered-set, ds/predecessor-successor]
+difficulty: 普及/提高-
+tags: [set, lower_bound, 前驱后继, 迭代器边界]
+complexity:
+  time: O(n log n)
+  space: O(n)
+status: 本地 g++ -static -O2 -std=c++14 编译运行，样例输出 12 正确；node verify.js：JS 双实现随机对拍 200000 组 0 不一致、C++ 程序与暴力交叉 300 组 0 不一致、12 个定向边界全 OK；n=32767 且 |a_i|<=1e6 的满数据 20~23 ms（同数据 O(n^2) 暴力 382~390 ms，答案一致）；未在洛谷提交
+visualization: false
+samples:
+  - in: |
+      6
+      5
+      1
+      2
+      5
+      4
+      6
+    out: |
+      12
+notes: |
+  三个坑都做了"错误版本"实测，且样例只能查出其中两个：
+  1) 去掉 it != s.begin() 判断 → 样例输出 4（应 12），prev(begin()) 不崩溃但读脏值；
+  2) 先 insert 再 lower_bound → 样例输出 5，正好退化成 a1；
+  3) 第一天写成 abs(a1) → 样例照旧 12（全正），只有 n=1,a=[-8] 才暴露（输出 8，应 -8）。
+  重复值不需要 multiset：set 去重后 lower_bound 命中相等元素，差仍是 0。
+  暴力 O(n^2) 在本机 382~390 ms，别说成"必 TLE"，应说"没有余量且被 18 倍碾压"。

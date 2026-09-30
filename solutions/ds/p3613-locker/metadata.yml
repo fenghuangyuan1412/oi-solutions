@@ -1,0 +1,28 @@
+id: P3613
+title: "【深基15.例2】寄包柜"
+source: luogu
+url: https://www.luogu.com.cn/problem/P3613
+alias: 洛谷训练单 320175
+topics: [ds/hash-map, ds/sparse-storage]
+difficulty: 普及-
+tags: [稀疏存储, 键编码, map]
+complexity:
+  time: O(q log q)
+  space: O(q)
+status: 本地 g++ -static -O2 -std=c++14 编译运行，样例输出 118014 / 1 逐字正确；n=q=1e5 随机压测 186 ms（一半存一半查，格子号取到 1e5）；未在洛谷提交
+visualization: false
+samples:
+  - in: |
+      5 4
+      1 3 10000 118014
+      1 1 1 1
+      2 3 10000
+      2 1 1
+    out: |
+      118014
+      1
+notes: |
+  两个必须点出来的坑：k=0 是"清空"而不是"存入 0"（用 erase，表才不会虚胖）；
+  查询未命中要输出 0，题面只保证"查询的柜子有存过东西"，不保证那个格子有东西。
+  键编码的乘数必须严格大于格子号上界：j<=1e5 就取 B=100001，取 1e5 会让 (i,1e5) 与 (i+1,0) 撞键。
+  i*B 要先转 long long（1e5*1e5=1e10 爆 int）。n 读进来不用是正常的，a_i 未知正是本题要稀疏存的提示。

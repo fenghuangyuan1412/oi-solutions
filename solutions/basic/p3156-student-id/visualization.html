@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P3156 询问学号 · 下标直取 vs 从头数人头</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:18px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 14px; font-size:14px; cursor:pointer; margin-right:8px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  input[type=text] { background:#0d1020; color:var(--ink); border:1px solid #3d4778;
+                     border-radius:8px; padding:8px 10px; font:14px/1.4 Consolas,monospace; width:420px; }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .prog { color:var(--acc); font-size:14px; margin-left:auto; font-weight:700; }
+  .cells { display:flex; flex-wrap:wrap; gap:6px; }
+  .cell { width:52px; display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .cell .idx { font-size:11px; color:var(--dim); font-family:Consolas,monospace; }
+  .cell .box { width:52px; height:44px; display:flex; align-items:center; justify-content:center;
+              border-radius:8px; background:#232a4a; border:1px solid #333c66;
+              font:15px Consolas,monospace; transition:background .2s, transform .2s; }
+  .cell .tip { font-size:10px; height:14px; color:var(--dim); }
+  .cell.store .box { outline:2px solid var(--acc); outline-offset:1px; transform:translateY(-3px); }
+  .cell.query .box { border-color:var(--acc); background:#173a4a; color:var(--acc); font-weight:700; }
+  .cell.counted .box { background:#3a2f14; border-color:#6b5a2a; }
+  .cell.hit .box { outline:2px solid var(--warn); outline-offset:1px; background:#4a1c1c; color:var(--warn); }
+  .cell.empty .box { color:#3f4666; }
+  .rowlab { font-size:13px; color:var(--dim); margin:2px 0 8px; }
+  .rowlab b { color:var(--ink); }
+  .cols { display:flex; gap:14px; flex-wrap:wrap; }
+  .cols > div { flex:1; min-width:300px; }
+  pre.code { margin:0; font:13.5px/1.75 Consolas,monospace; }
+  pre.code .ln { display:block; padding:0 8px; border-left:3px solid transparent; white-space:pre; }
+  pre.code .ln.on { background:#173a4a; border-left-color:var(--acc); color:var(--acc); }
+  pre.code .c { color:#6b7396; }
+  table.vars { border-collapse:collapse; width:100%; font:13px Consolas,monospace; }
+  table.vars td { border:1px solid #2b3358; padding:5px 8px; }
+  table.vars td.k { color:var(--dim); }
+  table.vars td.v { color:var(--acc); font-weight:700; }
+  .note { font-size:14px; min-height:96px; }
+  .note b { color:var(--acc); }
+  .note .bad { color:var(--warn); }
+  .note .good { color:var(--ok); }
+  .out { font:18px/1.6 Consolas,monospace; word-break:break-all; }
+  .out .new { color:var(--acc); background:#173a4a; border-radius:6px; padding:1px 7px; }
+  .stat { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+  .chip { background:#232a4a; border:1px solid #333c66; border-radius:20px; padding:3px 12px; font-size:13px; color:var(--dim); }
+  .chip b { color:var(--ink); font-family:Consolas,monospace; }
+  .chip.warn b { color:var(--warn); }
+  .chip.acc b { color:var(--acc); }
+</style>
+</head>
+<body>
+<h1>P3156 【深基15.例1】询问学号</h1>
+<div class="sub">"第 $i$ 个进入教室的同学" —— 输入顺序天然就是下标。左边是一次内存访问的下标直取，右边是每次从头数人头的笨办法。</div>
+
+<div class="topbar">
+  <input type="text" id="src" value="10 3  1 9 2 60 8 17 11 4 5 14  1 5 9" spellcheck="false">
+  <button id="load">载入</button>
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到结尾</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="card">
+  <h2>① 数据结构：数组 a[1..n]（格子上的数字是下标 = 进教室的顺序）</h2>
+  <div class="rowlab">上排＝<b>正解视角</b>：第几号格子就站着第几个进来的同学。下排＝<b>笨办法视角</b>：每次询问都要从 1 号格开始一格一格数人头。</div>
+  <div class="cells" id="fastRow"></div>
+  <div class="rowlab" style="margin-top:12px">笨办法的数数过程（黄色＝已经数过的格子，红色＝数到第 $i$ 个、终于命中）</div>
+  <div class="cells" id="slowRow"></div>
+  <div class="stat" id="stat"></div>
+</div>
+
+<div class="cols">
+  <div class="card">
+    <h2>② 代码行高亮</h2>
+    <pre class="code" id="code"></pre>
+  </div>
+  <div class="cols" style="max-width:340px">
+    <div class="card">
+      <h2>③ 变量状态</h2>
+      <table class="vars" id="vars"></table>
+    </div>
+  </div>
+</div>
+
+<div class="cols">
+  <div class="card" style="flex:1.6"><h2>④ 讲解：为什么这么做</h2><div class="note" id="note"></div></div>
+  <div class="card"><h2>⑤ 输出（每行一个答案）</h2><div class="out" id="out"></div></div>
+</div>
+
+<script>
+let N = 0, M = 0, IDS = [], QS = [], steps = [], t = 0, timer = null;
+
+// 讲解代码（同时展示正解与笨办法，便于逐行对照）
+const CODE = [
+  'const int MAXN = 2000005;',
+  'int a[MAXN];                  // 全局，8MB',
+  'int n, m, i;',
+  'cin >> n >> m;',
+  'for (int i = 1; i <= n; ++i) cin >> a[i];',
+  'for (int q = 1; q <= m; ++q) {',
+  '    cin >> i;                 // 问第 i 个人',
+  '    int cnt = 0;              // —— 笨办法 ——',
+  '    for (int j = 1; j <= n; ++j)',
+  '        if (++cnt == i) { use(a[j]); break; }',
+  '    cout << a[i] << \'\\n\';   // —— 正解 ——',
+  '}',
+];
+// 每个步骤对应高亮的行号（1 起）
+const LINE = { init:[3], store:[5], ask:[6,7], slow:[8,9,10], fast:[11], answer:[11], done:[11] };
+
+function build() {
+  steps = [{ kind:'init', note:'' }];
+  for (let i = 1; i <= N; i++) steps.push({ kind:'store', i, arr:IDS.slice(0, i) });
+  let slowTotal = 0, fastTotal = 0;
+  const answered = [];
+  for (let q = 1; q <= M; q++) {
+    const i = QS[q - 1];
+    steps.push({ kind:'ask', q, i, slowTotal, fastTotal, out:[...answered] });
+    for (let j = 1; j <= i; j++) {
+      steps.push({ kind:'slow', q, i, j, hit:j === i, slowTotal:slowTotal + j, fastTotal, out:[...answered] });
+    }
+    slowTotal += i;
+    steps.push({ kind:'fast', q, i, slowTotal, fastTotal:fastTotal + 1, out:[...answered] });
+    fastTotal += 1;
+    answered.push(IDS[i - 1]);
+    steps.push({ kind:'answer', q, i, slowTotal, fastTotal, out:[...answered], last:i });
+  }
+  steps.push({ kind:'done', slowTotal, fastTotal, out:[...answered] });
+}
+
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+
+function cellRow(box, arr, clsOf, tipOf, upto) {
+  box.innerHTML = '';
+  for (let i = 1; i <= N; i++) {
+    const c = el('div', 'cell');
+    c.appendChild(el('div', 'idx', 'a[' + i + ']'));
+    const b = el('div', 'box', i <= upto ? arr[i - 1] : '?');
+    if (i > upto) c.classList.add('empty');
+    c.appendChild(b);
+    c.appendChild(el('div', 'tip', tipOf ? tipOf(i) : ''));
+    const cl = clsOf(i, upto);
+    if (cl) c.classList.add(cl);
+    box.appendChild(c);
+  }
+}
+
+function render() {
+  const st = steps[t];
+
+  // ① 两排格子：arr 用当前已经存进去的长度
+  const filled = st.kind === 'init' || st.kind === 'read' ? 0 : (st.kind === 'store' ? st.i : N);
+  cellRow(document.getElementById('fastRow'), IDS, (i, upto) => {
+    if (st.kind === 'store' && i === st.i) return 'store';
+    if ((st.kind === 'fast' || st.kind === 'answer') && i === st.i) return 'query';
+    return '';
+  }, i => (st.kind === 'fast' && i === st.i) ? '直取' : '', filled);
+
+  cellRow(document.getElementById('slowRow'), IDS, (i) => {
+    if (st.kind !== 'slow') return '';
+    if (st.hit && i === st.j) return 'hit';
+    if (i <= st.j) return 'counted';
+    return '';
+  }, i => (st.kind === 'slow' && i === st.j) ? '数到 ' + st.j : '', filled);
+
+  // ② 代码行高亮
+  const cp = document.getElementById('code');
+  cp.innerHTML = '';
+  const on = new Set(LINE[st.kind] || []);
+  CODE.forEach((ln, k) => {
+    cp.appendChild(el('span', 'ln' + (on.has(k + 1) ? ' on' : ''), String(k + 1).padStart(2, ' ') + '  ' + ln));
+  });
+
+  // ③ 变量表
+  const v = [];
+  v.push(['n（人数）', N]);
+  v.push(['m（询问数）', M]);
+  if (st.kind === 'store') v.push(['i（正在存）', st.i], ['a[i]', IDS[st.i - 1]]);
+  if (st.kind === 'ask' || st.kind === 'slow' || st.kind === 'fast' || st.kind === 'answer') {
+    v.push(['q（第几个询问）', st.q], ['i（问第几个人）', st.i]);
+  }
+  if (st.kind === 'slow') v.push(['cnt = j（已数格子）', st.j], ['a[j]', IDS[st.j - 1]]);
+  if (st.kind === 'fast' || st.kind === 'answer') v.push(['a[i]（答案）', IDS[st.i - 1]]);
+  if (st.slowTotal != null) v.push(['笨办法累计比较', st.slowTotal + (st.kind === 'slow' ? st.j - 1 : 0)]);
+  if (st.fastTotal != null) v.push(['正解累计访问', st.fastTotal]);
+  const vt = document.getElementById('vars');
+  vt.innerHTML = '';
+  v.forEach(([k, val]) => { const tr = document.createElement('tr');
+    tr.appendChild(el('td', 'k', k)); tr.appendChild(el('td', 'v', String(val))); vt.appendChild(tr); });
+
+  // ④ 讲解
+  const note = document.getElementById('note');
+  let html = '';
+  if (st.kind === 'init') html =
+    `输入：<b>${N} ${M}</b>，接着 ${N} 个学号，最后 ${M} 个询问。先把 ${N} 个空格子排成一排，格子顶上写的 <b>1..n 就是"第几个进教室"</b>。` +
+    `<br>学号值域到 $10^9$，用 <b>int</b> 存（$2^{31}-1 \\approx 2.1\\times10^9$，装得下）。`;
+  else if (st.kind === 'store') html =
+    `第 ${st.i} 个进教室的同学，学号 <b>${IDS[st.i - 1]}</b>，我们让<b>他自己站到第 ${st.i} 号格子</b>：写入 <code>a[${st.i}] = ${IDS[st.i - 1]}</code>。` +
+    `<br>这一步没有任何判断、没有任何查找 —— 存的时候就把"顺序"翻译成了"下标"。这是全场唯一一次 $O(n)$ 的劳动。`;
+  else if (st.kind === 'ask') html =
+    `第 ${st.q} 次询问：老师问"<b>第 ${st.i} 个</b>进来的同学学号是多少？"` +
+    `<br>下面同时跑两种做法，看它们各花多少次访问。`;
+  else if (st.kind === 'slow') html =
+    (st.hit
+      ? `笨办法数到第 <b>${st.j}</b> 格，人数正好等于 ${st.i} ⇒ 命中，答案是 <b>${IDS[st.j - 1]}</b>。这一次询问它走了 <span class="bad">${st.i} 格</span>。`
+      : `笨办法从 1 号格开始一格一格走：已经走了 <b>${st.j}</b> 格，计数 <code>cnt = ${st.j}</code>，还没到 ${st.i}，继续。`) +
+    `<br>笨办法不知道"第 ${st.i} 个人"住在哪一格，只能靠<b>数人头</b>确认名次 —— 存的时候没记住顺序，问的时候就得重新推。`;
+  else if (st.kind === 'fast') html =
+    `正解：直接看 <code>a[${st.i}]</code> ⇒ <b class="good">${IDS[st.i - 1]}</b>，<b>1 次</b>内存访问，跟 $n$ 多大完全无关。` +
+    `<br>依据就是存的那一步：${st.i} 号格里放的正是第 ${st.i} 个进来的同学，"询问的下标"和"写入的下标"是同一个东西。`;
+  else if (st.kind === 'answer') html =
+    `输出第 ${st.q} 行答案 <b>${IDS[st.i - 1]}</b>（题面要求"用换行隔开"，所以一行一个，不是空格）。` +
+    `<br>目前累计：笨办法 <span class="bad">${st.slowTotal}</span> 次比较 vs 正解 <b class="good">${st.fastTotal}</b> 次访问。`;
+  else html =
+    `${M} 次询问结束：笨办法共 <span class="bad">${st.slowTotal}</span> 次比较，正解共 <b class="good">${st.fastTotal}</b> 次访问（每次询问就是 1 次）。` +
+    `<br>按题面上界 $n=2\\times10^6,\\ m=10^5$：笨办法最坏 $nm = 2\\times10^{11}$ 次操作，实测本机把 $m$ 砍到 $10^5$ 的千分之一（$m=1000$）就要 0.56s，$m=10^5$ 外推约 <span class="bad">55s</span> ⇒ 1s 时限必 TLE；正解是 $O(n+m)$，$2.1\\times10^6$ 次操作，实测 0.33s 含全部读写。` +
+    `<br>所以本题真正要记住的不是代码，而是这句话：<b class="good">顺序即下标，随机访问不花钱。</b>`;
+  note.innerHTML = html;
+
+  // ⑤ 输出区
+  const ob = document.getElementById('out');
+  const arr = st.out || [];
+  ob.innerHTML = '';
+  if (!arr.length) ob.innerHTML = '<span style="color:var(--dim);font-size:14px">（还没有答案）</span>';
+  arr.forEach((x, k) => {
+    const line = el('div');
+    const isLast = k === arr.length - 1 && (st.kind === 'answer' || st.kind === 'done' || st.kind === 'fast');
+    line.appendChild(el('span', isLast ? 'new' : '', String(x)));
+    ob.appendChild(line);
+  });
+
+  const ch = document.getElementById('stat');
+  ch.innerHTML = '';
+  const chips = [
+    ['本题规模', 'n=' + N + ', m=' + M, ''],
+    ['询问', st.q ? (st.q + ' / ' + M) : '—', ''],
+    ['格子里的数', '顺序 = 下标', 'acc'],
+  ];
+  if (st.slowTotal != null) chips.push(['笨办法累计', st.slowTotal + ' 次比较', 'warn']);
+  if (st.fastTotal != null) chips.push(['正解累计', st.fastTotal + ' 次访问', 'acc']);
+  chips.forEach(([k, val, cls]) => { const c = el('div', 'chip ' + cls); c.appendChild(document.createTextNode(k + ' ')); c.appendChild(el('b', null, val)); ch.appendChild(c); });
+
+  document.getElementById('prog').textContent = `第 ${t + 1} / ${steps.length} 步`;
+  document.getElementById('prev').disabled = t === 0;
+  document.getElementById('next').disabled = t === steps.length - 1;
+}
+
+function load() {
+  const nums = document.getElementById('src').value.trim().split(/[\s,]+/).map(Number).filter(x => Number.isFinite(x));
+  if (nums.length < 2) return;
+  N = Math.min(20, Math.max(1, nums[0]));
+  const ids = nums.slice(2, 2 + N);
+  while (ids.length < N) ids.push(ids.length + 1);
+  IDS = ids.map(v => Math.min(1e9, Math.max(1, Math.round(v))));
+  QS = nums.slice(2 + N, 2 + N + Math.max(1, Math.min(6, nums[1] || 1)));
+  M = QS.length;
+  if (!M) { QS = [1]; M = 1; }
+  QS = QS.map(i => Math.min(N, Math.max(1, Math.round(i))));
+  t = 0; build(); render();
+}
+
+document.getElementById('next').onclick = () => { if (t < steps.length - 1) { t++; render(); } };
+document.getElementById('prev').onclick = () => { if (t > 0) { t--; render(); } };
+document.getElementById('load').onclick = load;
+document.getElementById('jump').onclick = () => { t = steps.length - 1; render(); };
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+  e.target.textContent = '⏸ 暂停';
+  timer = setInterval(() => {
+    if (t >= steps.length - 1) { clearInterval(timer); timer = null; e.target.textContent = '▶ 自动播放'; return; }
+    t++; render();
+  }, 700);
+};
+
+load();
+</script>
+</body>
+</html>

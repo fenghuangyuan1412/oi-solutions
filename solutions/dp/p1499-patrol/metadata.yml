@@ -1,0 +1,30 @@
+id: P1499
+title: "[CTSC2000] 公路巡逻"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1499
+alias: 洛谷训练单 320175
+topics: [dp/time-axis, ds/difference-array, math/geometry-criterion]
+difficulty: 省选/NOI-
+tags: [时间轴DP, 差分桶, 相遇判据, HHMMSS格式化, 双关键字]
+complexity:
+  time: O(sum_i 可达时刻数 * (该段车数 + 301))
+  space: O(n * 600 + m)
+status: 本地 g++ -static -O2 -std=c++14 编译运行，样例输出 0 / 061301 正确；node verify.js：闭式 DP vs 枚举每段时长的 DFS 随机对拍 20000 组 0 不一致，再用"10001 点采样判相遇"的第三种判据复核 300 组，判据不一致 0 组、采样暴力答案与 DP 不一致 0 组；n=49 / m=299 满规模随机数据 96 ms（连跑三轮 104/96/96 ms，首轮冷启动）；未在洛谷提交
+visualization: false
+samples:
+  - in: |
+      3 2
+      1 060000 301
+      2 060300 600
+    out: |
+      0
+      061301
+notes: |
+  交付精简：本题不做 HTML 动画，README 里用"时空图板书"代替（ASCII 时空图 + 三步手推）。
+  判据三分支必须分开论证：T>a 禁止 b>=X（后缀）、T<a 禁止 b<=X（前缀）、T==a 完全短路（同时出发不算相遇）；
+  b==X 算相遇、a==T 不算，两个等号方向相反。
+  实测坑：删掉 `if (T == a) continue;` 后官方样例仍然输出 0 / 061301（查不出来），
+  要自造 `2 1 / 1 060000 600`（正确 0 / 060500，错版 1 / 060500）
+  或 `2 1 / 1 060000 300`（正确 0 / 060500，错版 0 / 060501）才暴露。
+  另外 T_i 是 HHMMSS 必须按字符串读再拆位（当整数读会得 60000 秒=16:40），输出要补前导零。
+  朴素 cost（每对 (a,b) 遍历全段车）是 48*14401*301*300 ≈ 6e10 量级，差分桶把它降到每对 O(1) 区间加。
