@@ -1,5 +1,5 @@
 
-复用已生成的大样例 E:\ai\suanfa_study\oi-solutions\notes\zhenti-2026-s1\verify\fill2_big.txt（3755104 字节）
+复用已生成的大样例 E:\ai\suanfa_study\oi-solutions\notes\luogu-2026-s1\verify\fill2_big.txt（3755104 字节）
 大样例 n=k=m=1e5 官方答案: exit=0 输出行数=50052 用时 1.34s
 大样例 B1A: exit=0 行数=50052 1.15s
 大样例 B1B: exit=0 行数=50052 1.12s

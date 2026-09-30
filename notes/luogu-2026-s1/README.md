@@ -1,12 +1,13 @@
-# 2026 第一轮真题卷（洛谷 SCP-S1）零基础全题讲评
+# 2026 第一轮 · 洛谷 SCP-S1 卷（**不是 CCF 真题**）零基础全题讲评
 
-> **这是卷子本身的讲评，不是自编练习。** 题目原文逐字抄自你提供的 PDF
+> **这是卷子本身的讲评，不是自编练习。** 但"卷子"是**洛谷命制**的那一份：
+> 题目原文逐字抄自你提供的 PDF
 > `SCP2026 S1 全卷（附答案）.pdf`：机器可读版见 [`problem.txt`](problem.txt)，
 > 排版好读版见 [`paper.md`](paper.md)（含卷面答案）。
 > 卷面抬头：2026 LUOGU SCP-S1 · 非专业级别 · 提高级 C++ 语言试题，
 > 认证时间 2026 年 8 月 16 日 14:30~16:30，共 18 页满分 100 分，洛谷网校学术组命制。
 > 卷面自己还写了一句："本套试题难度高于一般的 CSP-S 初赛，主要用途在于辅助考生进行自我评估"
-> —— 所以 S 卷做不动是正常的，J 卷（`notes/zhenti-2026-j1/`）友好得多。
+> —— 所以 S 卷做不动是正常的，J 卷（`notes/luogu-2026-j1/`）友好得多。
 > 想练自编题请去 `notes/mock-cspjs-round1/`，那里才是模拟题。
 >
 > 机器实测证据：[`verify/RESULTS.md`](verify/RESULTS.md)
@@ -1966,7 +1967,7 @@ Node ans = x == y ? star(x) : query(1, 1, n - 1, x, y - 1);
 ## 六、复现全部实测数据
 
 ```bash
-cd notes/zhenti-2026-s1/verify
+cd notes/luogu-2026-s1/verify
 # 必须加 -static：本机两套 MinGW 的 DLL 会冲突，否则启动即段错误
 g++ -static -O2 -std=c++14 r1.cpp       -o r1.exe       && ./r1.exe       < in19.txt        # 题 19 -> 54
 g++ -static -O2 -std=c++14 r1_count.cpp -o r1_count.exe && ./r1_count.exe                    # 题 20/21 计数

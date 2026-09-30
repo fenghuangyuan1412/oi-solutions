@@ -1,7 +1,7 @@
 // 把卷面 problem.txt（从 PDF 抄下来的机器可读原文）转成好读的 paper.md。
 //
-//   node scripts/paper_from_text.js notes/zhenti-2026-j1 --num-at start --pdf "SCP2026 J1 全卷（附答案）.pdf" --paper SCP-J1 --level 入门级
-//   node scripts/paper_from_text.js notes/zhenti-2026-s1 --num-at end   --pdf "SCP2026 S1 全卷（附答案）.pdf" --paper SCP-S1 --level 提高级
+//   node scripts/paper_from_text.js notes/luogu-2026-j1 --num-at start --pdf "SCP2026 J1 全卷（附答案）.pdf" --paper SCP-J1 --level 入门级
+//   node scripts/paper_from_text.js notes/luogu-2026-s1 --num-at end   --pdf "SCP2026 S1 全卷（附答案）.pdf" --paper SCP-S1 --level 提高级
 //
 // --num-at 说明两份卷子的行号写法不同：J 卷写在行首（`01  #include ...`），
 // S 卷写在行尾（`#include <bits/stdc++.h> 1`）。

@@ -2,8 +2,8 @@
 //   · 每套卷的每一篇程序（阅读/完善）开头贴出「卷面完整程序」，一行不漏；
 //   · 每一道题的小节下面贴出「卷面原文」+ 四个选项。
 //
-//   node scripts/inject_paper_text.js notes/zhenti-2026-j1 --blanks 33-37,38-42
-//   node scripts/inject_paper_text.js notes/zhenti-2026-s1 --blanks 34-38,39-43
+//   node scripts/inject_paper_text.js notes/luogu-2026-j1 --blanks 33-37,38-42
+//   node scripts/inject_paper_text.js notes/luogu-2026-s1 --blanks 34-38,39-43
 //
 // 为什么要脚本化：手抄题面一定会抄错。README 里凡是「卷面原文」引用块，
 // 内容都来自 problem.txt，改题面只需改 problem.txt 再重跑本脚本。

@@ -3,8 +3,8 @@
 > 环境：Windows + Git Bash，MinGW g++ 13.1.0。
 > **所有程序必须 `-static` 编译**，否则启动即段错误：
 > `g++ -static -O2 -std=c++14 xxx.cpp -o xxx.exe`
-> 目录：`notes/zhenti-2026-j1/verify/`
-> 卷面原文：`notes/zhenti-2026-j1/problem.txt`
+> 目录：`notes/luogu-2026-j1/verify/`
+> 卷面原文：`notes/luogu-2026-j1/problem.txt`
 
 ## 0. 与官方答案的总对照
 

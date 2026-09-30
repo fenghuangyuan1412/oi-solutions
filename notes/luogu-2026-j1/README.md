@@ -1,10 +1,12 @@
-# 2026 第一轮真题卷（洛谷 SCP-J1）零基础全题讲评
+# 2026 第一轮 · 洛谷 SCP-J1 卷（**不是 CCF 真题**）零基础全题讲评
 
-> **这是卷子本身的讲评，不是自编练习。** 题目原文逐字抄自你提供的 PDF
+> **这是卷子本身的讲评，不是自编练习。** 但"卷子"是**洛谷命制**的那一份：
+> 题目原文逐字抄自你提供的 PDF
 > `SCP2026 J1 全卷（附答案）.pdf`：机器可读版见 [`problem.txt`](problem.txt)，
 > 排版好读版见 [`paper.md`](paper.md)（含卷面答案）。
 > 卷面抬头：2026 LUOGU SCP-J1 · 非专业级别 · 入门级 C++ 语言试题，
 > 认证时间 2026 年 8 月 9 日 09:30~11:30，共 12 页满分 100 分，由洛谷网校学术组命制。
+> **CCF 官方真卷（2026-09-19 认证）的讲评在 `notes/ccf-zhenti-2026-j1/`**，那份才是真题；
 > 想练自编题请去 `notes/mock-cspjs-round1/`，那里才是模拟题。
 >
 > 机器实测证据：[`verify/RESULTS.md`](verify/RESULTS.md)
@@ -1357,7 +1359,7 @@ B `q.push_back(...)` / C `q.insert(...)` —— `queue` 没有这两个成员函
 ## 六、复现全部实测数据
 
 ```bash
-cd notes/zhenti-2026-j1/verify
+cd notes/luogu-2026-j1/verify
 # 必须加 -static（本机两套 MinGW 的 DLL 会冲突，否则启动即段错误）
 g++ -static -O2 -std=c++14 r1_sum.cpp       -o r1_sum.exe       && echo 14 | ./r1_sum.exe
 g++ -static -O2 -std=c++14 isprime_variants.cpp -o iv.exe       && ./iv.exe

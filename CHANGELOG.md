@@ -13,27 +13,27 @@
 
 ## 2026-09-29
 
-- **新增** `notes/zhenti-2026-j1/`：2026 第一轮 · SCP-J1 真题卷 全 42 题零基础讲评（选择 15 + 阅读 3 篇 17 题 + 完善 2 篇 10 空）
+- **新增** `notes/luogu-2026-j1/`：2026 第一轮 · SCP-J1 真题卷 全 42 题零基础讲评（选择 15 + 阅读 3 篇 17 题 + 完善 2 篇 10 空）
   - 每题按"考什么 → 逐步拆开 → 手推一遍 → 与本机实测对上 → 常见错法"五步写
   - `verify/` 留了 40+ 个可复现程序与原始日志：三段阅读程序、两篇完善程序的**每个错误选项**都单独编译跑过
   - 卷面 42 题官方答案全部与实测一致；第 31 题的 PDF 丢上标坑已在 §3.6 标注
-- **新增** `notes/zhenti-2026-s1/`：2026 第一轮 · SCP-S1 真题卷 全 43 题零基础讲评
+- **新增** `notes/luogu-2026-s1/`：2026 第一轮 · SCP-S1 真题卷 全 43 题零基础讲评
   - 第 3 篇（异或哈希找必经边对）第 36 行闭式已推导，并用 33 题样例逐个手推核对到 `0 1500 … 10400 … 10000`
   - 选择题 4/12/13/14 补了机器复核（`verify/q4_q13.py`、`verify/q14.py`）：后缀式最大值 13、十二面体 Wiener index 500、翻灯可达状态 848、相邻交换 187 次
   - 43 题官方答案无一被证伪；36/38/42 题"输出区分不出选项"的事实已如实写出，改成按语义与 $O(n)$ 判据讲解
 - **可视化** J 卷 5 个：`j1-prime.html`（逐次试除 + `&&` 短路）、`j2-dp.html`（dp 表逐格填 + 来源箭头）、`j3-rings.html`（dfs 状态阶梯 + 递归栈）、`j-binary-kth.html`（对数数轴收缩 + 填错空当场死循环）、`j-maze-bfs.html`（按传送次数分层的距离表）
 - **可视化** S 卷 3 个：`s1-permanent.html`（子集格 + 求值/为真两个计数器）、`s2-fibword.html`（5 个 tab：拼词、dp 递推、Zeckendorf 剥段、三套 solve 对照、复杂度证据）、`s3-xorhash.html`（SVG 图 + `dfs1`/桶/`dfs2` 三段逐帧，程序算的与手推的两列并排）
 - **修复** `notes/mock-cspjs-round1/`：2026-09-28 记的 `j-trace.html` / `s-trace.html` 实际没落盘（讲义里是死链），本次真正补上
-- **修复** `notes/zhenti-2026-j1/`：实测 `g++ -Wall` 并**不会**对 `int r = 2e9;` 报 double→int 警告（只有真越界的 `2.2e9` 才报 `-Woverflow`），README 与 RESULTS.md 里"编译器会提示"的说法已改正
-- **新增** `notes/zhenti-2026-j1/verify/r1_divcount.cpp`：独立测出 `isPrime` 试除次数（n=20：实际 97 / 不短路 129 / 省下 32 / 跳过 10 次调用），给 `j1-prime.html` 的统计面板提供机器依据（RESULTS.md §1.6）
+- **修复** `notes/luogu-2026-j1/`：实测 `g++ -Wall` 并**不会**对 `int r = 2e9;` 报 double→int 警告（只有真越界的 `2.2e9` 才报 `-Woverflow`），README 与 RESULTS.md 里"编译器会提示"的说法已改正
+- **新增** `notes/luogu-2026-j1/verify/r1_divcount.cpp`：独立测出 `isPrime` 试除次数（n=20：实际 97 / 不短路 129 / 省下 32 / 跳过 10 次调用），给 `j1-prime.html` 的统计面板提供机器依据（RESULTS.md §1.6）
 - **讲义** 两份 README 各加 §0.1 可视化清单表（覆盖题号 / 默认演示 / 一帧看什么 / 建议播放量），根 `README.md` 加"讲义索引"一节
 - **验证** 8 个卷子配套可视化页面全部用本机 Chrome headless 实跑：逐个点遍所有按钮 + 单步 4000 次，0 抛错、页面无 `NaN` / `undefined` / `Infinity`；截图确认 1440px 下无横向溢出
 - **验证** `j-trace.html` / `s-trace.html` 同样过 Chrome headless 压测（点遍 3 个 tab、重新演示、载入并重跑、记忆化开关 + 单步 4000 次）：0 抛错、无 `NaN`/`undefined`/`Infinity`；截图逐 tab 核对，`programs/` 下 7 个二进制实测输出与页面逐帧结论一致（`j1→6 28`、`j2→9 / 1 2 3 5 6 8`、`j3→1101 4`、`s1→8 2026`、`s2→20 39`、`s2_memo→20 19`、`s3→8 8 -1 6 -1 4 -1`）
 - **讲义** `csp-j_first.md` / `csp-s_first.md` 各补"可视化"一节：默认演示、步数、实测输出三列对照表 + 课堂上该点哪个按钮的提示；`s-trace.html` 的记忆化开关按实测写（39 次调用 → 19 次，答案仍是 20）
-- **修复** 删除 `notes/zhenti-2026-j1/verify/dbg.err`（0 字节、无引用的遗留文件）；全仓 58 条相对链接扫描一遍，`notes/` 下已无死链
-- **改名** `notes/scp2026-j1/` → `notes/zhenti-2026-j1/`、`notes/scp2026-s1/` → `notes/zhenti-2026-s1/`；`notes/cspjs-round1-2026/` → `notes/mock-cspjs-round1/`。
+- **修复** 删除 `notes/luogu-2026-j1/verify/dbg.err`（0 字节、无引用的遗留文件）；全仓 58 条相对链接扫描一遍，`notes/` 下已无死链
+- **改名** `notes/scp2026-j1/` → `notes/zhenti-2026-j1/`、`notes/scp2026-s1/` → `notes/zhenti-2026-s1/`；`notes/cspjs-round1-2026/` → `notes/mock-cspjs-round1/`。（这两个 `zhenti-` 名字在 2026-09-30 又改成 `luogu-` 了，见当天记录）
   原来两套目录名分不清谁是卷子谁是练习，用户明确指出过这个混淆：现在 `zhenti-` = 用户给的那两份卷子，`mock-` = 自编仿真题（两份 `csp-*_first.md` 标题与开头也加了"我编的，不是任何一年真题"的警示）
-- **新增** `notes/zhenti-2026-j1/paper.md`、`notes/zhenti-2026-s1/paper.md`：整卷题面好读版（579 / 708 行），逐页对应 PDF，去掉重复页眉页脚与卷尾课程广告，程序包成带行号的代码块，卷面参考答案放在最后
+- **新增** `notes/luogu-2026-j1/paper.md`、`notes/luogu-2026-s1/paper.md`：整卷题面好读版（579 / 708 行），逐页对应 PDF，去掉重复页眉页脚与卷尾课程广告，程序包成带行号的代码块，卷面参考答案放在最后
 - **新增** `scripts/paper_from_text.js`：从 `problem.txt` 生成 `paper.md`。两份卷子的行号写法不同（J 卷在行首、S 卷在行尾），用 `--num-at start|end` 区分；PDF 把过宽的一行折成两行时会并回原行并与语句起点对齐
 - **新增** `scripts/inject_paper_text.js`：把卷面原文按题号机械贴进 README —— J 卷 42 题、S 卷 43 题**全部覆盖**，每篇另贴一行不漏的「卷面完整程序」。脚本可重复执行（已贴过的小节自动跳过），页眉页脚/广告/页码不会混进题干
 - **讲义** 两份 README 新增 §0.0「先说这份文档怎么用」：引用块是生成的、正文是手写的、行号就是"第几行"、以及"限时做卷 → 对答案 → 只读错题 → 放可视化"的四步用法
