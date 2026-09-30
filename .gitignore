@@ -22,3 +22,6 @@ notes/mock-cspj-round2/**/verify-shot-*.png
 # 真卷逐空对拍的随机数据：跑 gen_fill*_cases.js 随时重生成，不入库
 notes/ccf-zhenti-2026-j1/verify/cases1/
 notes/ccf-zhenti-2026-j1/verify/cases2/
+
+# 真卷可视化页面的自动截图核对产物：跑 vizcheck.js 随时重生成，不入库
+notes/ccf-zhenti-2026-j1/verify/viz/
