@@ -1598,7 +1598,7 @@ n ≤ 20，所以**枚举所有切法**完全跑得动（切法总数 2^(n-1) �
 | 二进制位统计 / 进制转换（题 2、阅读程序(1)、完善程序(1)） | [`notes/luogu-2026-j1/`](../luogu-2026-j1/README.md) 的进制篇 |
 | 高精度逐位进位（阅读程序(2)） | [`notes/luogu-2026-s1/`](../luogu-2026-s1/README.md)（S 组更狠） |
 | 质数 + DFS 逐位扩展（阅读程序(3)） | [`notes/mock-cspj-round2/`](../mock-cspj-round2/README.md) 的剪枝题 |
-| 5×5 网格 BFS（题 8） | [`notes/mock-cspjs-round1/`](../mock-cspjs-round1/README.md) 的搜索题 |
+| 5×5 网格 BFS（题 8） | [`notes/mock-cspjs-round1/`](../mock-cspjs-round1/csp-j_first.md) 的搜索题 |
 | 整卷考情与算法优先级 | [`notes/cspj-trend-2021-2025.md`](../cspj-trend-2021-2025.md)（2021—2025 趋势分析） |
 
 ---
