@@ -55,13 +55,13 @@
   .bar.hi{background:#16323f;border-color:var(--acc)}
   .bar.lo{background:#3d2b58;border-color:#9d6bff}
   .bar.now{background:#3a2f5e;border-color:#c4a6ff}
-  .bar .av{position:absolute;left:-2px;right:-2px;top:-19px;text-align:center;font:14px Consolas,monospace;color:var(--ink)}
-  .bar .mk{position:absolute;left:0;right:0;top:-38px;text-align:center;font:14px Consolas,monospace;font-weight:700}
-  .bar .bt{position:absolute;bottom:-19px;left:-6px;right:-6px;text-align:center;font:14px Consolas,monospace;color:var(--dim)}
+  .bar .av{position:absolute;left:0;right:0;top:-19px;text-align:center;white-space:nowrap;font:14px Consolas,monospace;color:var(--ink)}
+  .bar .mk{position:absolute;left:0;right:0;top:-38px;text-align:center;white-space:nowrap;font:14px Consolas,monospace;font-weight:700}
+  .bar .bt{position:absolute;bottom:-19px;left:0;right:0;text-align:center;white-space:nowrap;font:14px Consolas,monospace;color:var(--dim)}
   .zero{position:absolute;left:0;right:0;border-top:1px dashed #3b4368;font:14px Consolas,monospace;color:#4d5578}
   .range{position:absolute;width:0;border-left:2px solid var(--bad)}
   .range .ah{position:absolute;left:-5px;font-size:14px;color:var(--bad);line-height:1}
-  .range .rl{position:absolute;font:14px Consolas,monospace;color:var(--bad);white-space:nowrap;transform:translateX(8px)}
+  .range .rl{position:absolute;font:14px Consolas,monospace;color:var(--bad);white-space:nowrap;transform:translateX(calc(-100% - 8px))}
   /* 代码面板 */
   .cl{display:flex;gap:9px;padding:1px 5px;border-radius:6px}
   .cl .ln{width:20px;text-align:right;color:#5b6488;font:14px Consolas,monospace;flex:none}
@@ -580,9 +580,15 @@ function drawChart(f){
     bar.style.top = Math.min(yy, zy) + 'px';
     bar.style.height = Math.max(2, Math.abs(zy - yy)) + 'px';
     bar.appendChild(el('div', 'av', cppNum(s.avg)));
-    if(isMax) bar.appendChild(el('div', 'mk', 'mxb'));
-    else if(isMin) bar.appendChild(el('div', 'mk', 'mnb'));
-    bar.appendChild(el('div', 'bt', '[' + s.l + ',' + s.r + ']'));
+    const mkTxt = isMax ? 'mxb' : (isMin ? 'mnb' : null);
+    if(mkTxt){
+      const mk = el('div', 'mk', mkTxt);
+      // 最高的那根柱子顶到画布上沿了，mxb 标签往上放会被 #chart 的 overflow:hidden 切掉，改贴柱头内侧
+      if(Math.min(yy, zy) - 38 < 0) mk.style.top = '3px';
+      bar.appendChild(mk);
+    }
+    // 柱子多起来之后 [l,r] 会和邻柱的标签打架，这段区间下面的分段条里也写着
+    if(N <= 5) bar.appendChild(el('div', 'bt', '[' + s.l + ',' + s.r + ']'));
     host.appendChild(bar);
   });
   if(segs.length === 0){
@@ -594,14 +600,13 @@ function drawChart(f){
   const lab = document.getElementById('rangelab');
   if(typeof mnb === 'number' && typeof mxb === 'number' && isFinite(mnb) && isFinite(mxb) && segs.length){
     const line = el('div', 'range');
-    line.style.left = 'calc(100% - 14px)';
+    line.style.left = 'calc(100% - 34px)';
     line.style.top = y(mxb) + 'px';
     line.style.height = Math.max(2, y(mnb) - y(mxb)) + 'px';
     line.appendChild(el('div', 'ah', '▲')); line.lastChild.style.top = '-8px';
     line.appendChild(el('div', 'ah', '▼')); line.lastChild.style.bottom = '-8px';
     const rl = el('div', 'rl', '极差 = mxb − mnb = ' + cppNum(mxb - mnb));
     rl.style.top = (y(mxb) + (y(mnb) - y(mxb)) / 2 - 8) + 'px';
-    rl.style.left = '-96px';
     line.appendChild(rl);
     host.appendChild(line);
     lab.textContent = '最高的柱子是 mxb = ' + cppNum(mxb) + '，最矮的是 mnb = ' + cppNum(mnb) + '，右边那条带箭头的竖线就是第 18 行要的 mxb - mnb。';
