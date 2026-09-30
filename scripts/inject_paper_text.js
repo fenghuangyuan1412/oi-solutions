@@ -26,9 +26,15 @@ function parseQuestions(file) {
     // 卷尾广告不是试题：整段跳过，直到参考答案那一行
     if (/^广告\s/.test(t)) { inAd = true; cur = null; continue; }
     if (inAd) { if (/^参考答案/.test(t)) inAd = false; else continue; }
-    if (/^[一二三]、|^（\d+）|^·\s*(判断题|单选题)|^参考答案/.test(t)) { cur = null; continue; }
+    if (/^[一二三]、|^（\d+）|^（\d+\s|^\(\d+\)$|^[•·]\s*(判断题|单选题)|^参考答案|^原始资料缺页/.test(t)) { cur = null; continue; }
     // 页眉页脚
-    if (/^\d+\s*页|^题号 \d|^答案 |^第\s*\d+\s*页，共|^LUOGU SCP-[JS]|^\d{4} LUOGU|^（SCP-[JS]\d）|^认证时间/.test(t)) { cur = null; continue; }
+    if (/^\d+\s*页|^题号 \d|^答案 |^第\s*\d+\s*页，共|^LUOGU SCP-[JS]|^\d{4} LUOGU|^（SCP-[JS]\d）|^认证时间|^计分：|^本答案对应/.test(t)) { cur = null; continue; }
+    // 卷面代码行和网格图不是题干叙述，但**是这道题的一部分**（CCF 真卷的代码行形如 `01 int a = 7;`，
+    // 网格行形如 `S  .  .  #  .`）。它们跟在题干后面，原样收进 code 里，引用块里逐行贴出来。
+    if (/^\d{2}(\s|$)/.test(t) || /^[S#E. ]{3,}$/.test(t)) {
+      if (cur !== null && !inOpts) qs[cur].code.push(t);
+      continue;
+    }
     if (cur !== null && /^[A-D]\.\s/.test(t)) {
       inOpts = true;
       for (const p of t.split(/\s+(?=[A-D]\.\s)/)) qs[cur].options.push(p.trim());
@@ -37,7 +43,7 @@ function parseQuestions(file) {
     const q = /^(\d{1,2})\.\s*(.*)$/.exec(t);
     if (q && Number(q[1]) >= 1 && Number(q[1]) <= 43 && !/^\d{2}\s/.test(t)) {
       cur = Number(q[1]);
-      qs[cur] = qs[cur] || { stem: [], options: [] };
+      qs[cur] = qs[cur] || { stem: [], options: [], code: [] };
       qs[cur].stem.push(q[2]);
       inOpts = false;
       continue;
@@ -54,7 +60,7 @@ function parsePrograms(paperFile) {
   const parts = {};
   let cur = null, inb = false, buf = [];
   for (const l of L) {
-    const h = /^### (阅读程序|完善程序)（(\d)）$/.exec(l);
+    const h = /^### (阅读程序|完善程序)（(\d)[^）]*）$/.exec(l);
     if (h) { cur = (h[1] === '完善程序' ? 'fill' : 'read') + h[2]; continue; }
     if (/^```text$/.test(l)) { inb = true; buf = []; continue; }
     if (/^```$/.test(l)) { if (inb && cur) parts[cur] = (parts[cur] || []).concat(buf); inb = false; buf = []; continue; }
@@ -77,8 +83,13 @@ function questionNumsIn(line) {
   return [...new Set(nums)];
 }
 
-function quote(stem, options) {
+function quote(stem, options, code) {
   const out = ['> **卷面原文**　' + stem];
+  // 题干后面跟着的代码/网格图，原样贴在引用块里。
+  // 用代码围栏而不是行内反引号：网格里 `S  .  .  #  .` 的空格对齐在渲染时必须保住。
+  if (code && code.length) {
+    out.push('>', '> ```text', ...code.map((c) => '> ' + c), '> ```');
+  }
   if (options.length) { out.push('>'); for (const o of options) out.push('> `' + o + '`'); }
   return out.join('\n');
 }
@@ -101,7 +112,7 @@ function inject(readmeFile, qs, parts, blanks) {
     const q = qs[n];
     if (!q) { missing.add(n); return; }
     done.add(n);
-    out.push('', quote(q.stemText, q.options), '');
+    out.push('', quote(q.stemText, q.options, q.code), '');
     added++;
   };
 
