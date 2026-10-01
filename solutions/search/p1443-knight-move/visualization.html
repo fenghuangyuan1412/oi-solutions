@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1443 马的遍历 · BFS 逐层扩散演示</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:18px; }
+  .sub b { color:var(--ink); }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:16px 18px; margin-bottom:16px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 14px; font-size:14px; cursor:pointer; margin-right:8px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  input { background:#0d1020; color:var(--ink); border:1px solid #3d4778;
+          border-radius:8px; padding:7px 9px; font:15px/1.4 Consolas,monospace; width:52px; }
+  .topbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .topbar:last-child { margin-bottom:0; }
+  .prog { color:var(--dim); font-size:14px; margin-left:auto; }
+  .row { display:flex; gap:16px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:300px; }
+  .board { display:grid; gap:4px; }
+  .bcell { width:46px; height:46px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+           border-radius:7px; background:#232a4a; border:1px solid #333c66; font:17px Consolas,monospace; color:#c7cee6; }
+  .bcell .idx { font-size:8px; color:#5b6382; margin-top:1px; }
+  .bcell.set { background:#12312a; border-color:#2f7a55; color:var(--ok); }
+  .bcell.start { background:#15405a; border-color:var(--acc); color:var(--acc); font-weight:700; }
+  .bcell.cur { outline:3px solid var(--acc); outline-offset:1px; }
+  .bcell.try { outline:3px solid #f6c177; outline-offset:1px; }
+  .queue { display:flex; flex-wrap:wrap; gap:4px; min-height:34px; align-content:flex-start; }
+  .qitem { background:#20264a; border:1px solid #3a4680; border-radius:6px; padding:3px 7px; font:13px Consolas,monospace; }
+  .qitem.head { background:#15405a; border-color:var(--acc); color:var(--acc); font-weight:700; }
+  .empty { color:var(--dim); font-style:italic; }
+  .neg { color:#ff7b93; }
+  pre.code { margin:0; font:13px/1.55 Consolas,monospace; overflow-x:auto; }
+  .ln { display:block; padding:1px 8px; border-radius:4px; color:#c7cee6; white-space:pre; }
+  .ln.on { background:#173a4a; color:var(--acc); }
+  .ln .no { color:var(--dim); margin-right:10px; }
+  table.v { width:100%; border-collapse:collapse; font-size:14px; }
+  table.v td { padding:5px 8px; border-bottom:1px solid #262c4a; }
+  table.v td.k { color:var(--dim); width:42%; }
+  table.v td.val { font-family:Consolas,monospace; }
+  .note { color:var(--dim); font-size:14.5px; min-height:88px; }
+  .note b { color:var(--ink); }
+  .note .g { color:var(--ok); } .note .r { color:var(--warn); } .note .a { color:var(--acc); }
+  .legend { display:flex; gap:14px; flex-wrap:wrap; font-size:13px; color:var(--dim); margin-top:10px; }
+  .sw { display:inline-block; width:14px; height:14px; border-radius:4px; vertical-align:-2px; margin-right:5px; }
+</style>
+</head>
+<body>
+<h1>P1443 马的遍历 · BFS 是一层一层铺开的</h1>
+<div class="sub">洛谷 P1443：马从起点出发，求到棋盘<b>每一格</b>的最少步数，走不到输出 -1。<b>看点：队列里永远是"步数不递减"的，所以某个格子第一次被走到，那个步数就是最少步数。</b></div>
+
+<div class="card">
+  <h2>控制区</h2>
+  <div class="topbar">
+    n <input id="inN" value="3"> m <input id="inM" value="3"> 起点 x <input id="inX" value="1"> y <input id="inY" value="1">
+    <button id="btnLoad">载入并重跑</button>
+    <button id="btnPrev">上一步</button>
+    <button id="btnNext">下一步</button>
+    <button id="btnPlay">自动播放</button>
+    <button id="btnEnd">跳到末尾</button>
+    <span class="prog" id="prog"></span>
+  </div>
+  <div class="topbar">
+    预设：
+    <button class="preset" data-a="3" data-b="3" data-c="1" data-d="1">官方样例 3×3 从 (1,1)</button>
+    <button class="preset" data-a="4" data-b="4" data-c="2" data-d="2">4×4 从 (2,2)</button>
+    <button class="preset" data-a="5" data-b="4" data-c="1" data-d="1">5×4 从角上（有走不到的格子）</button>
+  </div>
+</div>
+
+<div class="row">
+  <div>
+    <div class="card">
+      <h2>棋盘（格子里是当前的最少步数）</h2>
+      <div class="board" id="board"></div>
+      <div class="legend">
+        <span><span class="sw" style="background:#15405a;border:1px solid #5eead4"></span>起点 0 步</span>
+        <span><span class="sw" style="background:#12312a;border:1px solid #2f7a55"></span>已定最少步数</span>
+        <span><span class="sw" style="outline:3px solid #5eead4"></span>正在出队扩展</span>
+        <span><span class="sw" style="outline:3px solid #f6c177"></span>本步在试探</span>
+        <span><span class="sw" style="background:#232a4a"></span>还没走到（暂为 -1）</span>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>这一帧在做什么</h2>
+      <div class="note" id="note"></div>
+    </div>
+    <div class="card">
+      <h2>队列（最左是队头，下一步出队）</h2>
+      <div class="queue" id="queue"></div>
+      <table class="v" id="vars" style="margin-top:12px"></table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>代码（与 solution.cpp 同一套结构）</h2>
+  <pre class="code" id="code"></pre>
+</div>
+
+<script>
+const CODE = [
+  'int dx[8] = {1, 1, -1, -1, 2, 2, -2, -2};   // 马的 8 个跳法',
+  'int dy[8] = {2, -2, 2, -2, 1, -1, 1, -1};   // 每行 1 列、每列 1 行的组合',
+  '',
+  'memset(dist, -1, sizeof dist);              // -1：既表示"没走到"，也是题目要的 -1',
+  'queue<pair<int,int>> q;',
+  'dist[sx][sy] = 0;  q.push({sx, sy});        // 起点 0 步入队',
+  '',
+  'while (!q.empty()) {',
+  '    int x = q.front().first, y = q.front().second;  q.pop();',
+  '    for (int k = 0; k < 8; k++) {                   // 试 8 个跳法',
+  '        int nx = x + dx[k], ny = y + dy[k];',
+  '        if (nx < 1 || nx > n || ny < 1 || ny > m) continue;   // 出界，跳过',
+  '        if (dist[nx][ny] != -1) continue;                     // 已定过最少步，跳过',
+  '        dist[nx][ny] = dist[x][y] + 1;  q.push({nx, ny});     // 第一次到 = 最少步',
+  '    }                                              // 注意：标记和入队一起做',
+  '}',
+];
+const KN = [[1,2],[1,-2],[-1,2],[-1,-2],[2,1],[2,-1],[-2,1],[-2,-1]];
+
+function buildFrames(n, m, sx, sy) {
+  const dist = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(-1));
+  const q = [];
+  const frames = [];
+  const snap = (e) => frames.push(Object.assign({ dist: dist.map(r => r.slice()), queue: q.slice(), line: [], cur: null, tryCell: null, vars: {} }, e));
+
+  snap({ line: [3], note: '<b>初始化</b>：整张棋盘全填 <span class="r">-1</span>。这个 -1 一物两用 —— 表示"还没被走到"，也正是最后要输出的"走不到 = -1"。',
+    vars: { '棋盘': `${n} × ${m}`, '起点': `(${sx}, ${sy})`, 'dist 初值': '-1' } });
+
+  dist[sx][sy] = 0; q.push(`${sx},${sy}`);
+  snap({ line: [5], cur: [sx, sy], note: `<b>起点</b> (${sx}, ${sy})：站在自己格子上要 <span class="g">0 步</span>，写 dist=0 并入队。队列里有东西，BFS 才有活可干。`,
+    vars: { 'dist[起点]': 0, '队列长度': 1 } });
+
+  while (q.length) {
+    const [x, y] = q[0].split(',').map(Number);
+    snap({ line: [8], cur: [x, y], note: `<b>出队 (${x}, ${y})</b>，它带 <span class="a">${dist[x][y]} 步</span>。队列里步数是"不递减"的：先是 0 步的，再是 1 步的，再是 2 步的……所以队头一定是当前最少步的格子。`,
+      vars: { '出队': `(${x}, ${y})`, '它的步数': dist[x][y], '队列长度': q.length } });
+    q.shift();
+
+    for (let k = 0; k < 8; k++) {
+      const [ax, ay] = KN[k];
+      const nx = x + ax, ny = y + ay;
+      if (nx < 1 || nx > n || ny < 1 || ny > m) {
+        snap({ line: [11], cur: [x, y], note: `试第 ${k + 1} 个跳法（走法 ${ax>=0?'+':''}${ax}, ${ay>=0?'+':''}${ay}）→ 落到棋盘外的 (${nx}, ${ny})，<span class="r">出界</span>，跳过。<b>先判出界再访问数组</b>，反了就越界崩溃。`,
+          vars: { '出队': `(${x}, ${y})`, '方向 k': `${k + 1}/8`, '落点': `(${nx}, ${ny}) 出界` } });
+        continue;
+      }
+      if (dist[nx][ny] !== -1) {
+        snap({ line: [12], cur: [x, y], tryCell: [nx, ny], note: `试第 ${k + 1} 个跳法 → (${nx}, ${ny})，它早就定过 <span class="g">${dist[nx][ny]} 步</span> 了。绕到这儿要 ${dist[x][y] + 1} 步，不可能更短，跳过。`,
+          vars: { '出队': `(${x}, ${y})`, '方向 k': `${k + 1}/8`, '落点': `(${nx}, ${ny}) 已定 ${dist[nx][ny]} 步` } });
+        continue;
+      }
+      dist[nx][ny] = dist[x][y] + 1; q.push(`${nx},${ny}`);
+      snap({ line: [13], cur: [x, y], tryCell: [nx, ny], note: `试第 ${k + 1} 个跳法 → (${nx}, ${ny}) <b>第一次被走到</b>：步数 = <span class="g">${dist[x][y]} + 1 = ${dist[nx][ny]}</span>，然后<b>当场标记 + 当场入队</b>。如果等它出队再标记，同一个格子会被反复塞进队列，规模一大就爆炸。`,
+        vars: { '出队': `(${x}, ${y})`, '方向 k': `${k + 1}/8`, '新定': `(${nx}, ${ny}) = ${dist[nx][ny]} 步`, '队列长度': q.length } });
+    }
+  }
+
+  const reach = [], unreach = [];
+  for (let i = 1; i <= n; i++) for (let j = 1; j <= m; j++) (dist[i][j] >= 0 ? reach : unreach).push(`(${i},${j})`);
+  const mx = Math.max(...dist.slice(1).flat().filter(v => v >= 0));
+  snap({ line: [7], final: true, note: `<b>队列空了，BFS 结束。</b>${n * m} 个格子里 <span class="g">${reach.length} 个走到了</span>` +
+    (unreach.length ? `，<span class="r">${unreach.length} 个走不到</span>：${unreach.slice(0, 8).join(' ')}${unreach.length > 8 ? ' …' : ''} —— 它们保持 -1，直接就是答案。` : '，全部可达，没有 -1。'),
+    vars: { '走到': `${reach.length} 格`, '走不到': `${unreach.length} 格`, '最远步数': mx } });
+  return frames;
+}
+
+let FRAMES = [], idx = 0, timer = null, N = 3, M = 3, SX = 1, SY = 1;
+
+function render() {
+  const f = FRAMES[idx];
+  const bd = document.getElementById('board');
+  bd.style.gridTemplateColumns = `repeat(${M}, 46px)`;
+  bd.innerHTML = '';
+  for (let i = 1; i <= N; i++) for (let j = 1; j <= M; j++) {
+    const d = f.dist[i][j];
+    const el = document.createElement('div');
+    let cls = 'bcell';
+    if (i === SX && j === SY) cls += ' start'; else if (d >= 0) cls += ' set';
+    if (f.cur && f.cur[0] === i && f.cur[1] === j) cls += ' cur';
+    if (f.tryCell && f.tryCell[0] === i && f.tryCell[1] === j) cls += ' try';
+    el.className = cls;
+    el.innerHTML = (d >= 0 ? d : (f.final ? '<span class="neg">-1</span>' : '<span class="empty">?</span>')) + `<span class="idx">${i},${j}</span>`;
+    bd.appendChild(el);
+  }
+  const qd = document.getElementById('queue');
+  qd.innerHTML = '';
+  if (!f.queue.length) qd.innerHTML = '<span class="empty">队列空 —— BFS 结束</span>';
+  f.queue.forEach((s, i) => {
+    const el = document.createElement('span');
+    el.className = 'qitem' + (i === 0 ? ' head' : '');
+    el.textContent = s;
+    qd.appendChild(el);
+  });
+  document.getElementById('note').innerHTML = f.note;
+  document.getElementById('vars').innerHTML = Object.entries(f.vars)
+    .map(([k, v]) => `<tr><td class="k">${k}</td><td class="val">${v}</td></tr>`).join('');
+  document.querySelectorAll('#code .ln').forEach((el, i) => el.classList.toggle('on', f.line.includes(i)));
+  document.getElementById('prog').textContent = `第 ${idx + 1} / ${FRAMES.length} 帧`;
+  document.getElementById('btnPrev').disabled = idx === 0;
+  document.getElementById('btnNext').disabled = idx >= FRAMES.length - 1;
+  if (idx >= FRAMES.length - 1) stopPlay();
+}
+
+function load(n, m, x, y) {
+  N = n; M = m; SX = x; SY = y;
+  FRAMES = buildFrames(n, m, x, y);
+  idx = 0;
+  render();
+}
+
+function stopPlay() {
+  if (timer) clearInterval(timer);
+  timer = null;
+  document.getElementById('btnPlay').textContent = '自动播放';
+}
+
+document.getElementById('btnNext').onclick = () => { if (idx < FRAMES.length - 1) { idx++; render(); } };
+document.getElementById('btnPrev').onclick = () => { if (idx > 0) { idx--; render(); } };
+document.getElementById('btnEnd').onclick = () => { idx = FRAMES.length - 1; stopPlay(); render(); };
+document.getElementById('btnPlay').onclick = () => {
+  if (timer) { stopPlay(); return; }
+  document.getElementById('btnPlay').textContent = '暂停';
+  timer = setInterval(() => { if (idx >= FRAMES.length - 1) { stopPlay(); return; } idx++; render(); }, 420);
+};
+function clampVals() {
+  let n = Math.min(8, Math.max(1, Number(document.getElementById('inN').value) || 1));
+  let m = Math.min(8, Math.max(1, Number(document.getElementById('inM').value) || 1));
+  let x = Math.min(n, Math.max(1, Number(document.getElementById('inX').value) || 1));
+  let y = Math.min(m, Math.max(1, Number(document.getElementById('inY').value) || 1));
+  return [n, m, x, y];
+}
+document.getElementById('btnLoad').onclick = () => {
+  const [n, m, x, y] = clampVals();
+  document.getElementById('inN').value = n; document.getElementById('inM').value = m;
+  document.getElementById('inX').value = x; document.getElementById('inY').value = y;
+  stopPlay(); load(n, m, x, y);
+};
+document.querySelectorAll('.preset').forEach(b => b.onclick = () => {
+  const v = ['a', 'b', 'c', 'd'].map(k => +b.dataset[k]);
+  ['inN', 'inM', 'inX', 'inY'].forEach((id, i) => document.getElementById(id).value = v[i]);
+  stopPlay(); load(v[0], v[1], v[2], v[3]);
+});
+
+document.getElementById('code').innerHTML = CODE.map((l, i) =>
+  `<span class="ln"><span class="no">${String(i + 1).padStart(2, '0')}</span>${l.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</span>`).join('');
+
+load(3, 3, 1, 1);
+</script>
+</body>
+</html>

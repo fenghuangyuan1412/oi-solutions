@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1219 八皇后 · 回溯 + 对角线剪枝演示</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:18px; }
+  .sub b { color:var(--ink); }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:16px 18px; margin-bottom:16px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 14px; font-size:14px; cursor:pointer; margin-right:8px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  input { background:#0d1020; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+          padding:7px 9px; font:15px/1.4 Consolas,monospace; width:56px; }
+  .topbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .topbar:last-child { margin-bottom:0; }
+  .prog { color:var(--dim); font-size:14px; margin-left:auto; }
+  .row { display:flex; gap:16px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:300px; }
+  .board { display:grid; gap:3px; justify-content:start; }
+  .qc { width:40px; height:40px; display:flex; align-items:center; justify-content:center; position:relative;
+        border-radius:6px; background:#232a4a; border:1px solid #333c66; font:20px Consolas,monospace; color:var(--acc); }
+  .qc .lab { position:absolute; right:3px; bottom:1px; font-size:8px; color:#5b6382; }
+  .qc.queen { background:#15405a; border-color:var(--acc); font-weight:700; }
+  .qc.cand { outline:3px solid #f6c177; outline-offset:-2px; color:#f6c177; }
+  .qc.bad { outline:3px solid var(--warn); outline-offset:-2px; color:var(--warn); }
+  .qc.hit { background:#3a1b22; border-color:#7a2f3a; color:var(--warn); }
+  .qc.path { border-color:#3b7fa8; }
+  table.marks { border-collapse:collapse; font:12.5px Consolas,monospace; width:100%; }
+  table.marks td, table.marks th { border:1px solid #2b3358; padding:2px 4px; text-align:center; color:var(--dim); }
+  table.marks th { background:#151a30; }
+  table.marks th.lbl { text-align:left; color:var(--ink); white-space:nowrap; }
+  table.marks td.on { background:#15405a; color:var(--acc); font-weight:700; }
+  table.marks td.hit { background:#3a1b22; color:var(--warn); font-weight:700; }
+  .stack { display:flex; flex-direction:column-reverse; gap:3px; min-height:40px; }
+  .frame { background:#20264a; border:1px solid #3a4680; border-radius:6px; padding:2px 8px;
+           font:13px Consolas,monospace; }
+  .frame.top { background:#15405a; border-color:var(--acc); color:var(--acc); font-weight:700; }
+  .empty { color:var(--dim); font-style:italic; }
+  pre.code { margin:0; font:13px/1.55 Consolas,monospace; overflow-x:auto; }
+  .ln { display:block; padding:1px 8px; border-radius:4px; color:#c7cee6; white-space:pre; }
+  .ln.on { background:#173a4a; color:var(--acc); }
+  .ln .no { color:var(--dim); margin-right:10px; }
+  table.v { width:100%; border-collapse:collapse; font-size:14px; }
+  table.v td { padding:5px 8px; border-bottom:1px solid #262c4a; }
+  table.v td.k { color:var(--dim); width:40%; }
+  table.v td.val { font-family:Consolas,monospace; }
+  .note { color:var(--dim); font-size:14.5px; min-height:120px; }
+  .note b { color:var(--ink); }
+  .note .g { color:var(--ok); } .note .r { color:var(--warn); } .note .a { color:var(--acc); }
+  .sol { font:15px Consolas,monospace; color:var(--ok); }
+  .legend { display:flex; gap:12px; flex-wrap:wrap; font-size:12.5px; color:var(--dim); margin-top:10px; }
+  .sw { display:inline-block; width:14px; height:14px; border-radius:4px; vertical-align:-2px; margin-right:4px; }
+</style>
+</head>
+<body>
+<h1>P1219 八皇后 · 一行放一个，撞了就退回</h1>
+<div class="sub">洛谷 P1219：n×n 棋盘放 n 个棋子，使每行每列各一个、每条对角线至多一个；输出前 3 个解与解的总数。<b>看点：把"每行恰好一个"变成递归的层级，就只剩"这一行放第几列"一个自由度；剪枝靠三个布尔数组，回溯就是把刚做的三件事撤销。</b></div>
+
+<div class="card">
+  <h2>控制区</h2>
+  <div class="topbar">
+    n <input id="inN" value="6">
+    <button id="btnLoad">载入并重跑</button>
+    <button id="btnPrev">上一步</button>
+    <button id="btnNext">下一步</button>
+    <button id="btnPlay">自动播放</button>
+    <button id="btnEnd">跳到末尾</button>
+    <span class="prog" id="prog"></span>
+  </div>
+  <div class="topbar">
+    预设：
+    <button class="preset" data-n="4">n=4（2 个解，最适合看清回溯）</button>
+    <button class="preset" data-n="6">n=6 官方样例（4 个解）</button>
+    <button class="preset" data-n="7">n=7（40 个解，5280 帧，用来感受搜索树规模）</button>
+    <span class="dim" id="capNote"></span>
+  </div>
+</div>
+
+<div class="row">
+  <div>
+    <div class="card">
+      <h2>棋盘（★ 是已放下的棋子，橙色是正在试的格子）</h2>
+      <div class="board" id="board"></div>
+      <div class="legend">
+        <span><span class="sw" style="background:#15405a;border:1px solid #5eead4"></span>已放棋子</span>
+        <span><span class="sw" style="outline:3px solid #f6c177"></span>本帧在试 (i, j)</span>
+        <span><span class="sw" style="outline:3px solid #f87171"></span>被剪掉的放法</span>
+        <span><span class="sw" style="background:#3a1b22;border:1px solid #7a2f3a"></span>与它冲突的旧棋子</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>三个标记数组（谁被占了）</h2>
+      <table class="marks" id="marks"></table>
+      <div class="dim" style="margin-top:8px">
+        <b>d1 = i + j</b>（同一条"左上↔右下"方向的对角线上，i+j 相同）；
+        <b>d2 = i − j + n</b>（另一族对角线，i−j 相同；加 n 是为了把负数挪进数组下标）。
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>这一帧在做什么</h2>
+      <div class="note" id="note"></div>
+      <table class="v" id="vars"></table>
+    </div>
+    <div class="card">
+      <h2>递归栈（当前每一行放了第几列）</h2>
+      <div class="stack" id="stack"></div>
+    </div>
+    <div class="card">
+      <h2>已找到的解（前 3 个会按题面输出）</h2>
+      <div id="sols"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>代码（与 solution.cpp 同一套结构）</h2>
+  <pre class="code" id="code"></pre>
+</div>
+
+<script>
+const CODE = [
+  'int n, total = 0;',
+  'bool col[20], d1[40], d2[40];   // 列 / i+j 那条对角线 / i-j 那条对角线',
+  'int pos[20];                    // pos[i] = 第 i 行放的是第几列',
+  '',
+  'void dfs(int i) {                   // 递归到"该放第 i 行了"',
+  '    if (i > n) {                    // 第 1..n 行全放满了 ⇒ 一个合法解',
+  '        total++;',
+  '        if (total <= 3)             // 题面只要前 3 个解',
+  '            for (int k = 1; k <= n; k++) print(pos[k]);',
+  '        return;                     // 数解要数完，不能到此为止',
+  '    }',
+  '    for (int j = 1; j <= n; j++) {  // 这一行试放第 j 列（j 从小到大 ⇒ 解自然按字典序出）',
+  '        int a = i + j, b = i - j + n;',
+  '        if (col[j] || d1[a] || d2[b]) continue;   // 撞列 / 撞对角线 ⇒ 剪掉',
+  '        col[j] = d1[a] = d2[b] = true;  pos[i] = j;',
+  '        dfs(i + 1);                 // 放得下就往下钻',
+  '        col[j] = d1[a] = d2[b] = false;           // ★ 回溯：撤销刚才那三件事',
+  '    }',
+  '}',
+  '',
+  'int main() {  cin >> n;  dfs(1);  cout << total; }',
+];
+
+function buildFrames(n) {
+  const col = new Array(n + 1).fill(false);
+  const d1 = new Array(2 * n + 1).fill(false);
+  const d2 = new Array(2 * n + 2).fill(false);
+  const pos = new Array(n + 1).fill(0);
+  const frames = [];
+  let total = 0;
+  const sols = [];
+
+  const snap = (e) => {
+    if (frames.length >= 9000) return;
+    frames.push(Object.assign({
+      pos: pos.slice(), col: col.slice(), d1: d1.slice(), d2: d2.slice(),
+      total, sols: sols.slice(0, 6), line: [], tryCell: null, hits: [], depth: 0,
+      vars: {}, phase: '',
+    }, e));
+  };
+
+  snap({ line: [0, 1, 2], phase: '准备',
+    note: `<b>n = ${n}。</b>先想清楚一件事：题面要求"每行、每列有且只有一个"。如果我们<b>规定递归的第 i 层就是第 i 行、每层只放一个棋子</b>，"每行一个"就自动成立了 —— 只剩"这一行放第几列"这一个自由度要枚举。`,
+    vars: { 'n': n, '要放几个棋子': n, '解的总数': 0 } });
+
+  function dfs(i) {
+    snap({ line: [4], depth: i - 1, phase: `进入第 ${i} 行`,
+      note: i > n
+        ? `递归到 <b>dfs(${i})</b>：第 1..n 行已经都放好了 ⇒ <span class="g">找到一个解</span>，见右下角。`
+        : `<b>进入第 ${i} 行</b>。上面 ${i - 1} 行的棋子已经落定（看棋盘与递归栈），现在要给它挑一列。`,
+      vars: { '递归深度 i': i, '栈': pos.slice(1, i).join(' ') || '（第一层）' } });
+
+    if (i > n) {
+      total++;
+      sols.push(pos.slice(1, n + 1).join(' '));
+      snap({ line: [5, 6, 7, 8], depth: n, phase: `第 ${total} 个解`,
+        note: `第 1..n 行都放下了棋子，列号依次是 <span class="g">${pos.slice(1, n + 1).join(' ')}</span>。` +
+          `于是 <b>total = ${total}</b>${total <= 3 ? '，它 ≤ 3，要按题面打印出来' : '，已经超过 3 个，不再打印，但<b>仍然要继续数</b>'}。` +
+          `注意这里<span class="r">不能 return 之后就不管了</span>：题面最后一行要的是解的总数。`,
+        vars: { '解': pos.slice(1, n + 1).join(' '), '解的总数': total } });
+      return;
+    }
+
+    for (let j = 1; j <= n; j++) {
+      const a = i + j, b = i - j + n;
+      const hits = [];
+      for (let k = 1; k < i; k++) {
+        const pk = pos[k];
+        if (pk === j || k + pk === a || k - pk + n === b) hits.push([k, pk]);
+      }
+      if (col[j] || d1[a] || d2[b]) {
+        const why = col[j] ? `第 ${j} 列已被上面某行占掉` : (d1[a] ? `i+j = ${a} 这条对角线已被占` : `i-j = ${i - j}（下标 ${b}）这条对角线已被占`);
+        snap({ line: [11, 12, 13], tryCell: [i, j], hits, depth: i - 1, phase: `试 (第${i}行, 第${j}列)`,
+          note: `试第 ${i} 行第 ${j} 列 → <span class="r">剪掉</span>：${why}。冲突的旧棋子在棋盘上标红了。` +
+            `一次判断只用三个数组，这就是"回溯 + 标记数组"比"每次重新检查整张棋盘"快的原因。`,
+          vars: { '试的格子': `(${i}, ${j})`, 'd1 下标 i+j': a, 'd2 下标 i-j+n': b, '判定': '冲突，跳过' } });
+        continue;
+      }
+      snap({ line: [11, 12, 13], tryCell: [i, j], depth: i - 1, phase: `试 (第${i}行, 第${j}列)`,
+        note: `试第 ${i} 行第 ${j} 列 → <span class="g">三个标记都是空的</span>（col[${j}]=${col[j]}, d1[${a}]=${d1[a]}, d2[${b}]=${d2[b]}），放得下。`,
+        vars: { '试的格子': `(${i}, ${j})`, 'd1 下标 i+j': a, 'd2 下标 i-j+n': b, '判定': '合法，准备放下' } });
+
+      col[j] = d1[a] = d2[b] = true; pos[i] = j;
+      snap({ line: [14], tryCell: [i, j], depth: i, phase: `放下 (第${i}行, 第${j}列)`,
+        note: `落子：col[${j}]、d1[${a}]、d2[${b}] 全部置 <b>true</b>，pos[${i}] = ${j}，然后 <b>dfs(${i + 1})</b> 钻到下一行。`,
+        vars: { '落子': `(${i}, ${j})`, '占用的列': j, '占用 d1': a, '占用 d2': b, '递归深度': i } });
+
+      dfs(i + 1);
+
+      col[j] = d1[a] = d2[b] = false; pos[i] = 0;
+      snap({ line: [16], tryCell: [i, j], depth: i - 1, phase: `回溯：撤掉 (第${i}行, 第${j}列)`,
+        note: `<b>回溯</b>：从 dfs(${i + 1}) 回来，说明"第 ${i} 行放第 ${j} 列"这一支已经穷尽。` +
+          `把刚才那三件事<span class="r">一件件撤销</span>：col[${j}]、d1[${a}]、d2[${b}] 回到 false，pos[${i}] 清零。` +
+          `忘撤销是回溯题的头号错法 —— 表现是"解的个数莫名其妙变少"。`,
+        vars: { '撤销': `(${i}, ${j})`, '解的总数至今': total, '下一步': j < n ? `试第 ${j + 1} 列` : `第 ${i} 行没列可试 ⇒ 退回第 ${i - 1} 行` } });
+    }
+  }
+
+  dfs(1);
+  snap({ line: [20], depth: 0, phase: '搜索结束',
+    note: `<b>整棵搜索树走完。</b>第 ${n} 皇后问题在这张 ${n}×${n} 棋盘上一共有 <span class="g">${total}</span> 个解；` +
+      `题面要的是"前 3 个解 + 最后一行总数"，前 3 个是：${sols.slice(0, 3).map(s => `[${s}]`).join(' ') || '（无）'}。` +
+      `把 n 调到 12 或 13，帧数会爆炸 —— 那正是"可视化只看小数据、真实规模交给程序"的意思。`,
+    vars: { '解的总数': total, '打印了前': Math.min(3, total) + ' 个解', '棋盘': `${n} × ${n}` } });
+  return frames;
+}
+
+let FRAMES = [], idx = 0, timer = null, N = 6;
+
+function render() {
+  const f = FRAMES[idx];
+  const bd = document.getElementById('board');
+  bd.style.gridTemplateColumns = `repeat(${N}, 40px)`;
+  bd.innerHTML = '';
+  for (let i = 1; i <= N; i++) for (let j = 1; j <= N; j++) {
+    const e = document.createElement('div');
+    let cls = 'qc';
+    const isQ = f.pos[i] === j && f.pos[i] !== 0;
+    if (isQ) cls += ' queen';
+    if (f.tryCell && f.tryCell[0] === i && f.tryCell[1] === j) cls += (f.note.includes('剪掉') ? ' bad' : ' cand');
+    if (f.hits.some(h => h[0] === i && h[1] === j)) cls += ' hit';
+    if (!isQ && i === f.depth + 1) cls += ' path';
+    e.className = cls;
+    e.innerHTML = (isQ ? '★' : (f.tryCell && f.tryCell[0] === i && f.tryCell[1] === j ? '·' : '')) +
+      `<span class="lab">${i},${j}</span>`;
+    bd.appendChild(e);
+  }
+  // 标记数组表：三行各自带自己的下标行，否则 col(1..n) 和 d1/d2(2..2n) 会错位
+  const sub = (from, to) => {
+    let r = '<tr><th class="lbl">下标</th>';
+    for (let j = from; j <= to; j++) r += `<th>${j}</th>`;
+    return r + '</tr>';
+  };
+  const row = (name, arr, from, to, cls) => {
+    let r = `<tr><th class="lbl">${name}</th>`;
+    for (let j = from; j <= to; j++) {
+      const on = arr[j] ? 'on' : '';
+      const hit = cls && cls(j) ? 'hit' : '';
+      r += `<td class="${on}${on ? '' : hit}">${arr[j] ? 1 : 0}</td>`;
+    }
+    return r + '</tr>';
+  };
+  const hitSet = new Set(f.hits.map(h => h[1]));
+  document.getElementById('marks').innerHTML =
+    sub(1, N) + row('col(列)', f.col, 1, N, j => hitSet.has(j)) +
+    sub(2, 2 * N) + row('d1 = i+j', f.d1, 2, 2 * N) +
+    sub(1, 2 * N - 1) + row('d2 = i-j+n', f.d2, 1, 2 * N - 1);
+  // 栈
+  const st = document.getElementById('stack');
+  st.innerHTML = '';
+  const depth = f.depth;
+  if (!depth) st.innerHTML = '<span class="empty">（栈空 / 还没落子）</span>';
+  for (let i = 1; i <= depth; i++) {
+    if (!f.pos[i]) continue;
+    const e = document.createElement('div');
+    e.className = 'frame' + (i === depth ? ' top' : '');
+    e.textContent = `第 ${i} 行 → 第 ${f.pos[i]} 列`;
+    st.appendChild(e);
+  }
+  // 解
+  const sd = document.getElementById('sols');
+  sd.innerHTML = (f.sols.length ? f.sols.map((s, i) =>
+    `<div class="sol">${i < 3 ? '①②③'[i] : ' '} ${s}${i < 3 ? '  ← 题面要打印' : ''}</div>`).join('')
+    : '<span class="empty">（还没有解）</span>') + `<div class="dim">已找到 ${f.total} 个解</div>`;
+  document.getElementById('note').innerHTML = f.note;
+  document.getElementById('vars').innerHTML = Object.entries(f.vars)
+    .map(([k, v]) => `<tr><td class="k">${k}</td><td class="val">${v}</td></tr>`).join('');
+  document.querySelectorAll('#code .ln').forEach((el, i) => el.classList.toggle('on', f.line.includes(i)));
+  document.getElementById('prog').textContent = `第 ${idx + 1} / ${FRAMES.length} 帧　${f.phase}`;
+  document.getElementById('btnPrev').disabled = idx === 0;
+  document.getElementById('btnNext').disabled = idx >= FRAMES.length - 1;
+  if (idx >= FRAMES.length - 1) stopPlay();
+}
+
+function stopPlay() { if (timer) clearInterval(timer); timer = null; document.getElementById('btnPlay').textContent = '自动播放'; }
+function load(n) {
+  N = n;
+  FRAMES = buildFrames(n);
+  idx = 0;
+  document.getElementById('capNote').textContent =
+    `本页逐帧演示上限 n=7（当前 ${N}，共 ${FRAMES.length} 帧）。n=8 有 92 个解、n=12 有 14200 个、题面上限 n=13 有 73712 个解，帧数太多不适合逐帧看，请用 solution.cpp 跑。`;
+  render();
+}
+
+document.getElementById('btnNext').onclick = () => { if (idx < FRAMES.length - 1) { idx++; render(); } };
+document.getElementById('btnPrev').onclick = () => { if (idx > 0) { idx--; render(); } };
+document.getElementById('btnEnd').onclick = () => { idx = FRAMES.length - 1; stopPlay(); render(); };
+document.getElementById('btnPlay').onclick = () => {
+  if (timer) { stopPlay(); return; }
+  document.getElementById('btnPlay').textContent = '暂停';
+  timer = setInterval(() => { if (idx >= FRAMES.length - 1) { stopPlay(); return; } idx++; render(); }, 120);
+};
+document.getElementById('btnLoad').onclick = () => {
+  const n = Math.min(7, Math.max(4, Number(document.getElementById('inN').value) || 6));
+  document.getElementById('inN').value = n;
+  stopPlay(); load(n);
+};
+document.querySelectorAll('.preset').forEach(b => b.onclick = () => {
+  document.getElementById('inN').value = b.dataset.n;
+  stopPlay(); load(+b.dataset.n);
+});
+
+document.getElementById('code').innerHTML = CODE.map((l, i) =>
+  `<span class="ln"><span class="no">${String(i + 1).padStart(2, '0')}</span>${l.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</span>`).join('');
+
+load(6);
+</script>
+</body>
+</html>

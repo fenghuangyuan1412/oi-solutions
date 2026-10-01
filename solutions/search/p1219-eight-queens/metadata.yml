@@ -1,0 +1,28 @@
+id: P1219
+title: "[USACO1.5] 八皇后 Checker Challenge"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1219
+alias: USACO Training 1.5 八皇后 / Checker Challenge
+topics: [search/dfs, search/backtracking]
+difficulty: 普及（洛谷页面标注难度 3）
+tags: [回溯, 剪枝, 对角线编号i+j与i-j+n, 按行降维, 字典序枚举, 前3解与全计数]
+complexity:
+  time: 最坏与排列树 O(n n!) 同阶，实际被三个标记数组大幅剪枝；n=13 实测 229~235 ms
+  space: O(n)
+status: 未本地评测（未在洛谷提交）；本机 g++ -static -O2 -std=c++14 -Wall 编译无警告；官方样例 n=6 前 3 解与总数逐字一致；与"枚举全排列 + 对角线检查"参照实现（next_permutation，机制不同）在 n=6..9 共 4 组对拍 0 不一致（总数 4/40/92/352）；n=12 解总数 14200 多测 46~49 ms，n=13 解总数 73712 多测 229~235 ms
+limits: 6 <= n <= 13; 题目翻译来自 NOCW，USACO Training Section 1.5
+visualization: true
+files:
+  problem.txt: 题面原文（洛谷页面抓取，scripts/parse_luogu.js 解析后整理）
+  solution.cpp: 讲解代码（按行回溯 + col/usedCol/d1/d2 三标记数组）
+  visualization.html: 分步动画（按行回溯全过程：试列/三种剪枝原因/落子/★撤销三件事/逐个出解，含 col、d1=i+j、d2=i-j+n 三张标记数组表）
+  verify.js: Node 验算脚本（n=6 样例逐字比对 + n=6..9 全排列参照对拍 + n=12/13 计时），仅用于验证，非讲解代码
+samples:
+  - in: "6"
+    out: "2 4 6 1 3 5\n3 6 2 5 1 4\n4 1 5 2 6 3\n4"
+notes: |
+  降维关键：按行放子 => 每行恰一个免费满足，放满 n 行且列互异 => 每列也恰一个，解即列号排列。
+  副对角线 i+j 恒定，范围 [2,2n] 不必平移；主对角线 i-j 恒定，范围 [1-n,n-1] 为负，必须加偏移 n 变 [1,2n-1]，
+  所以 d1/d2 都要按 2n 开（n=13 时最大下标 26，代码开 30）。列升序枚举天然产出字典序，"前 3 解"= 最先命中的 3 个叶子。
+  与 P1443/P1135 的对照：要"最少步"用 BFS（入队永久标记），要"全部方案+计数"用回溯（标记必须撤销）。
+  实测插桩：n=6 时 col[1]=1 的整棵子树 0 解，第 1 个解 2 4 6 1 3 5 在第 2 幕出现；总数 4 的第四个解只计数不打印。

@@ -1,0 +1,27 @@
+id: P1443
+title: "马的遍历"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1443
+alias: 洛谷 P1443 马的遍历（BFS 求每格最少步数）
+topics: [search/bfs]
+difficulty: 入门（洛谷页面标注难度 2）
+tags: [BFS, 马步偏移, dist初值-1兼vis, 入队即标记, 无权图最短路]
+complexity:
+  time: O(n m)
+  space: O(n m)
+status: 未本地评测（未在洛谷提交）；本机 g++ -static -O2 -std=c++14 -Wall 编译无警告；官方样例 3 3 1 1 按"整数序列"口径逐格一致（原样例行末带空格，题面声明空格或合理场宽均判对）；与"每格单独跑一次 BFS"参照实现（O((nm)^2)，机制不同）随机对拍 200 组（n,m<=12，含 1x1/1x2 退化棋盘）0 不一致；极限 400x400 两轮各三轮实测 26/25/25 与 24/25/23 ms（区间 23~26 ms），输出 160000 个整数共 605757 字节
+limits: 1 <= x <= n <= 400, 1 <= y <= m <= 400; 2022-08 起输出去除场宽要求，空格或合理场宽分割均判对
+visualization: true
+files:
+  problem.txt: 题面原文（洛谷页面抓取，scripts/parse_luogu.js 解析后整理）
+  solution.cpp: 讲解代码（BFS + dist 初值 -1 兼作 vis，马 8 偏移）
+  visualization.html: 分步动画（BFS 波前逐格铺开：出队/8 个跳法逐个试探/入队即标记，末帧直接就是输出矩阵）
+  verify.js: Node 验算脚本（样例整数序列比对 + 每格单独 BFS 参照对拍 200 组 + 400x400 计时），仅用于验证，非讲解代码
+samples:
+  - in: "3 3 1 1"
+    out: "0 3 2\n3 -1 1\n2 1 4"
+notes: |
+  教学主线：BFS 按层扩展 => 第一次到达即最少步；同一方向顺序下"全局打标记的错误 DFS"在 4x4 上
+  把 (3,2) 记成 3、(1,2) 记成 13，而 BFS 给出 1 和 3（本机实测），用作 DFS/BFS 对照反例。
+  3x3 样例中心 (2,2) 真实不可达，输出 -1，说明 -1 分支必须保留。
+  入队时打标记（而非出队时）是复杂度 O(nm) 成立的前提，课堂务必演示两种写法差异。

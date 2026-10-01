@@ -1,0 +1,29 @@
+id: P1706
+title: "全排列问题"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1706
+alias: 全排列（搜索入门模板）
+topics: [search/dfs]
+difficulty: 普及-（洛谷页面标注难度 2）
+tags: [DFS, 回溯, vis 数组, 字典序, setw 场宽]
+complexity:
+  time: O(n * n!)（输出规模下限）
+  space: O(n)
+status: 未本地评测（未在洛谷提交）；本机 g++ -static -O2 -std=c++14 -Wall 编译无警告；官方样例 n=3 逐字一致（6 行、每行 15 字符、行末无空格、末尾有换行）；与"字典序 next_permutation"参照实现随机对拍 120 组（n=1..7）逐字比对 0 不一致，行数实测 1/2/6/24/120/720/5040 恰为 n!；极限 n=9 输出 362880 行、16692480 字符，与参照逐字一致，C++ 侧实测 190~249 ms（六轮 190/191/196/199/215/249 ms），dfs 调用 986410 次
+limits: 1 <= n <= 9；输出每个数字保留 5 个场宽
+visualization: false
+files:
+  problem.txt: 题面原文（洛谷页面抓取，scripts/parse_luogu.js 解析后整理）
+  solution.cpp: 讲课用代码：DFS + vis[] 回溯 + setw(5)
+  verify.js: Node 验算脚本（官方样例逐字比对 / next_permutation 参照对拍 120 组 / n=9 极限计时），仅用于验证，非讲解代码
+  README.md: 讲稿正文（含 n=3 递归树的板书事件表与四种误写的实测后果）
+samples:
+  - in: "3\n"
+    out: "    1    2    3\n    1    3    2\n    2    1    3\n    2    3    1\n    3    1    2\n    3    2    1\n"
+notes: |
+  排列 vs 组合的唯一差别要讲透：排列每层都 from 1..n（靠 vis[] 去重），组合每层 from 上一个数+1（天然去重、天然字典序）。
+  回溯三句话：做了什么（a[d]=x; vis[x]=true）→ 往下递归（dfs(d+1)）→ 撤销什么（vis[x]=false）。
+  实测误写后果：漏 vis[x]=false 时 n=3 只输出 1 行、n=4 也只 1 行；把撤销写在递归之前则 vis 全程 false，n=3 输出 27 行（=3^3）。
+  字典序不是巧合：每层按 x 升序枚举 + 深度优先走完一整棵子树，输出天然按字典序，不需要排序。
+  格式坑：setw 需要 #include <iomanip>（实测漏掉报 error: 'setw' was not declared in this scope）；行末不打空格；末尾保留一个换行。
+  n=9 时输出 16.7MB，endl + 不关同步实测 574~658ms，改成 '\n' + sync_with_stdio(false) 实测 157~215ms。

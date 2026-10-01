@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1162 填涂颜色 · 从边界反向洪泛演示</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:18px; }
+  .sub b { color:var(--ink); }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:16px 18px; margin-bottom:16px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 14px; font-size:14px; cursor:pointer; margin-right:8px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  textarea { background:#0d1020; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+             padding:9px 11px; font:14px/1.5 Consolas,monospace; width:100%; height:132px; resize:vertical; }
+  .topbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .topbar:last-child { margin-bottom:0; }
+  .prog { color:var(--dim); font-size:14px; margin-left:auto; }
+  .row { display:flex; gap:16px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:300px; }
+  .board { display:grid; gap:3px; justify-content:start; }
+  .bcell { width:38px; height:38px; display:flex; align-items:center; justify-content:center;
+           border-radius:6px; background:#232a4a; border:1px solid #333c66; font:16px Consolas,monospace; color:#c7cee6;
+           position:relative; }
+  .bcell .idx { position:absolute; right:2px; bottom:1px; font:8px Consolas,monospace; color:#5b6382; }
+  .bcell.wall { background:#0d1020; border-color:#3d4778; color:#6de1ff; font-weight:700; }
+  .bcell.out { background:#15405a; border-color:#3b7fa8; color:#8fd8ff; }
+  .bcell.inn { background:#12312a; border-color:#2f7a55; color:var(--ok); font-weight:700; }
+  .bcell.cur { outline:3px solid var(--acc); outline-offset:1px; }
+  .bcell.try { outline:3px solid #f6c177; outline-offset:1px; }
+  .bcell.scan { outline:2px solid var(--acc); outline-offset:-2px; }
+  .stack { display:flex; flex-direction:column-reverse; gap:3px; min-height:36px; }
+  .frame { background:#20264a; border:1px solid #3a4680; border-radius:6px; padding:2px 8px;
+           font:13px Consolas,monospace; }
+  .frame.top { background:#15405a; border-color:var(--acc); color:var(--acc); font-weight:700; }
+  pre.code { margin:0; font:13px/1.55 Consolas,monospace; overflow-x:auto; }
+  .ln { display:block; padding:1px 8px; border-radius:4px; color:#c7cee6; white-space:pre; }
+  .ln.on { background:#173a4a; color:var(--acc); }
+  .ln .no { color:var(--dim); margin-right:10px; }
+  table.v { width:100%; border-collapse:collapse; font-size:14px; }
+  table.v td { padding:5px 8px; border-bottom:1px solid #262c4a; }
+  table.v td.k { color:var(--dim); width:40%; }
+  table.v td.val { font-family:Consolas,monospace; }
+  .note { color:var(--dim); font-size:14.5px; min-height:112px; }
+  .note b { color:var(--ink); }
+  .note .g { color:var(--ok); } .note .r { color:var(--warn); } .note .a { color:var(--acc); }
+  .empty { color:var(--dim); font-style:italic; }
+  .legend { display:flex; gap:12px; flex-wrap:wrap; font-size:12.5px; color:var(--dim); margin-top:10px; }
+  .sw { display:inline-block; width:14px; height:14px; border-radius:4px; vertical-align:-2px; margin-right:4px; }
+  pre.out { margin:0; font:14px/1.6 Consolas,monospace; color:var(--ok); }
+  .dim { color:var(--dim); font-size:13px; }
+</style>
+</head>
+<body>
+<h1>P1162 填涂颜色 · 别找"圈内"，先找"圈外"</h1>
+<div class="sub">洛谷 P1162：0 方阵里有一个由 1 围成的闭合圈，要把圈内的 0 全填成 2。<b>看点：圈外的 0 一定能从棋盘边界只走 0 到达 —— 于是从四条边反向洪泛标 <code>outside</code>，剩下"是 0 又没标 outside"的就是圈内。</b>本页代码面板与 <code>solution.cpp</code> 同一套结构：递归 <code>flood()</code> + 独立的 <code>outside[][]</code>，<b>标记绝不撤销</b>。</div>
+
+<div class="card">
+  <h2>输入（第一行 n，之后 n 行 0/1，空格分隔；演示限 1 ≤ n ≤ 10）</h2>
+  <textarea id="src" spellcheck="false"></textarea>
+  <div class="topbar">
+    <button id="btnLoad">载入并重跑</button>
+    <button id="btnPrev">上一步</button>
+    <button id="btnNext">下一步</button>
+    <button id="btnPlay">自动播放</button>
+    <button id="btnEnd">跳到末尾</button>
+    <span class="prog" id="prog"></span>
+  </div>
+  <div class="topbar">
+    预设：
+    <button class="preset" data-p="sample">官方样例 6×6</button>
+    <button class="preset" data-p="figure">题面示意图 6×6</button>
+    <button class="preset" data-p="small">小例 5×5（一圈套一格）</button>
+  </div>
+</div>
+
+<div class="row">
+  <div>
+    <div class="card">
+      <h2>棋盘（格子里是打印出来的值；底色表示 outside）</h2>
+      <div class="board" id="board"></div>
+      <div class="legend">
+        <span><span class="sw" style="background:#0d1020;border:1px solid #3d4778"></span>1 = 墙</span>
+        <span><span class="sw" style="background:#232a4a"></span>0，还没判定</span>
+        <span><span class="sw" style="background:#15405a;border:1px solid #3b7fa8"></span>outside=true（圈外，仍打印 0）</span>
+        <span><span class="sw" style="background:#12312a;border:1px solid #2f7a55"></span>圈内 → 打印 2</span>
+        <span><span class="sw" style="outline:3px solid #5eead4"></span>本帧处理</span>
+        <span><span class="sw" style="outline:3px solid #f6c177"></span>本帧试探</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>递归栈（最上面是当前正在执行的那次 flood）</h2>
+      <div class="stack" id="stack"></div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>这一帧在做什么</h2>
+      <div class="note" id="note"></div>
+      <table class="v" id="vars"></table>
+    </div>
+    <div class="card">
+      <h2>最终输出</h2>
+      <pre class="out" id="outprev"><span class="empty">播到最后一帧才揭晓（否则剧透）</span></pre>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>代码（与 solution.cpp 同一套结构；行号对应高亮）</h2>
+  <pre class="code" id="code"></pre>
+</div>
+
+<script>
+// 与 solutions/search/p1162-fill-color/solution.cpp 同结构：0-based、递归 flood、独立 outside[][]
+const CODE = [
+  'int a[35][35];        bool outside[35][35];   // 原图 / "这个 0 能走到边界吗"',
+  'const int dx[4] = {-1, 1, 0, 0};              // 只准上下左右（题面写的是 4 个方向）',
+  'const int dy[4] = { 0, 0, -1, 1};',
+  '',
+  'void flood(int x, int y) {',
+  '    outside[x][y] = true;                     // ★ 进门先标记，而且永不撤销',
+  '    for (int d = 0; d < 4; d++) {',
+  '        int nx = x + dx[d], ny = y + dy[d];',
+  '        if (nx < 0 || nx >= n || ny < 0 || ny >= n) continue;   // 先判界，再碰数组',
+  '        if (a[nx][ny] == 0 && !outside[nx][ny]) flood(nx, ny);  // 是 0 且没标过才钻',
+  '    }                                         // 返回时不清 outside —— 与八皇后回溯的分水岭',
+  '}',
+  '',
+  'cin >> n;                                     // 读入 n 和 n×n 个 0/1',
+  '',
+  'for (int i = 0; i < n; i++) {                 // ① 扫整条边界，不是只扫一个角',
+  '    if (a[0][i]     == 0 && !outside[0][i])     flood(0, i);        // 上边',
+  '    if (a[n - 1][i] == 0 && !outside[n - 1][i]) flood(n - 1, i);    // 下边',
+  '    if (a[i][0]     == 0 && !outside[i][0])     flood(i, 0);        // 左边',
+  '    if (a[i][n - 1] == 0 && !outside[i][n - 1]) flood(i, n - 1);    // 右边',
+  '}',
+  '',
+  'for (int i = 0; i < n; i++) {                 // ② 输出：是 0 且 !outside ⇒ 圈内，打印 2',
+  '    for (int j = 0; j < n; j++) {',
+  '        int v = a[i][j];                      //    墙 1 原样输出，圈外的 0 也原样输出 0',
+  '        if (v == 0 && !outside[i][j]) v = 2;',
+  "        if (j) cout << ' ';                   // 数字之间一个空格",
+  '        cout << v;                            // 行末不留空格',
+  '    }',
+  "    cout << char(10);",
+  '}',
+];
+const DX = [-1, 1, 0, 0], DY = [0, 0, -1, 1];
+const DIR_NAME = ['上(-1,0)', '下(+1,0)', '左(0,-1)', '右(0,+1)'];
+const EDGE_LINE = [15, 16, 17, 18, 19, 20];
+
+const PRESETS = {
+  sample: ['6', '0 0 0 0 0 0', '0 0 1 1 1 1', '0 1 1 0 0 1', '1 1 0 0 0 1', '1 0 0 0 0 1', '1 1 1 1 1 1'],
+  figure: ['6', '0 0 0 0 0 0', '0 0 0 1 1 1', '0 1 1 0 0 1', '1 1 0 0 0 1', '1 0 0 1 0 1', '1 1 1 1 1 1'],
+  small: ['5', '0 0 0 0 0', '0 1 1 1 0', '0 1 0 1 0', '0 1 1 1 0', '0 0 0 0 0'],
+};
+
+function parseSrc(text) {
+  const lines = text.split(/\r?\n/).map(s => s.trim()).filter(s => s.length);
+  if (!lines.length) return null;
+  const n = Number(lines[0]);
+  if (!(n >= 1 && n <= 10)) return null;
+  if (lines.length < n + 1) return null;
+  const a = [];
+  for (let i = 0; i < n; i++) {
+    const row = lines[i + 1].split(/[\s,]+/).filter(s => s.length).map(Number);
+    if (row.length !== n || row.some(v => v !== 0 && v !== 1)) return null;
+    a.push(row);
+  }
+  return { n, a };
+}
+
+function valOf(a, out, filled, i, j) {
+  if (a[i][j] === 1) return 1;
+  if (filled[i][j]) return 2;
+  return 0;
+}
+function fmt(a, out, filled, n) {
+  const rows = [];
+  for (let i = 0; i < n; i++) {
+    const r = [];
+    for (let j = 0; j < n; j++) r.push(valOf(a, out, filled, i, j));
+    rows.push(r.join(' '));
+  }
+  return rows.join('\n');
+}
+// want = 1（墙）/ 0（圈外）/ 2（圈内）在"最终输出"口径下各有多少格
+function cnt(a, out, want, n) {
+  let c = 0;
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+    const v = a[i][j] === 1 ? 1 : (out[i][j] ? 0 : 2);
+    if (v === want) c++;
+  }
+  return c;
+}
+
+function buildFrames(n, a0) {
+  const a = a0.map(r => r.slice());
+  const out = a.map(r => r.map(() => false));
+  const filled = a.map(r => r.map(() => false));
+  const frames = [];
+  const stack = [];
+  let enters = 0;
+
+  const snap = (e) => frames.push(Object.assign({
+    a: a.map(r => r.slice()), out: out.map(r => r.slice()), filled: filled.map(r => r.slice()),
+    line: [], cur: null, tryCell: null, scan: null, stack: stack.slice(),
+    phase: '', vars: {}, final: false,
+  }, e));
+
+  snap({ line: [13], phase: '读入',
+    note: `<b>读入完毕：${n} × ${n}，<code>outside</code> 全 false。</b>题面只保证"闭合圈内的 0 是连通的"，并没有说圈长什么样 —— 所以<em>别去猜圈</em>。用逆否命题：圈内 0 的定义是"只走 0 <b>到不了</b>边界"，那么反过来，<b>能从边界只走 0 到达的 0 一定在圈外</b>。先标圈外，剩下的就是圈内。`,
+    vars: { '棋盘': `${n} × ${n}`, '输出会是 0 的格数': cnt(a, out, 0, n), '墙 1': cnt(a, out, 1, n), 'outside=true': 0 } });
+
+  function flood(x, y) {
+    out[x][y] = true; enters++;
+    stack.push(`flood(${x}, ${y})`);
+    snap({ line: [5], cur: [x, y], phase: '② 洪泛圈外',
+      note: `<b>进入 <code>flood(${x}, ${y})</code></b>：函数第一行就是 <code>outside[${x}][${y}] = true</code>。<span class="g">进门先标记</span> —— 否则会从别的方向再钻回来，无限递归直接爆栈。`,
+      vars: { '递归深度': stack.length, '已标圈外': enters, '当前格': `(${x}, ${y})` } });
+
+    for (let d = 0; d < 4; d++) {
+      const nx = x + DX[d], ny = y + DY[d];
+      if (nx < 0 || nx >= n || ny < 0 || ny >= n) {
+        snap({ line: [8], cur: [x, y], phase: '② 洪泛圈外',
+          note: `试 ${DIR_NAME[d]} → (${nx}, ${ny}) 在棋盘外 ⇒ <span class="r">continue</span>。<b>顺序不能反</b>：先算出越界坐标再去读 <code>a[nx][ny]</code>，就是越界访问。`,
+          vars: { '当前格': `(${x}, ${y})`, '试的方向': `${DIR_NAME[d]} → 出界` } });
+        continue;
+      }
+      if (a[nx][ny] === 1) {
+        snap({ line: [9], cur: [x, y], tryCell: [nx, ny], phase: '② 洪泛圈外',
+          note: `试 ${DIR_NAME[d]} → (${nx}, ${ny}) 是 <span class="r">1（墙）</span>：条件 <code>a[nx][ny] == 0</code> 不成立，闭合圈穿不过去。<b>这正是"圈内的 0 到不了边界"的机制。</b>`,
+          vars: { '当前格': `(${x}, ${y})`, '试的方向': `${DIR_NAME[d]} → (${nx},${ny}) 是墙` } });
+        continue;
+      }
+      if (out[nx][ny]) {
+        snap({ line: [9], cur: [x, y], tryCell: [nx, ny], phase: '② 洪泛圈外',
+          note: `试 ${DIR_NAME[d]} → (${nx}, ${ny}) <em>已经标过 outside</em> ⇒ 跳过。<b><code>outside</code> 就是 vis</b>：不判它，两个相邻空格会互相递归个没完。`,
+          vars: { '当前格': `(${x}, ${y})`, '试的方向': `${DIR_NAME[d]} → (${nx},${ny}) 已标圈外` } });
+        continue;
+      }
+      snap({ line: [9], cur: [x, y], tryCell: [nx, ny], phase: '② 洪泛圈外',
+        note: `试 ${DIR_NAME[d]} → (${nx}, ${ny})：是 0 且没标过 ⇒ <span class="a">递归进去</span>。它紧邻一个已确认在圈外的格子，沿来路就能回到边界，所以它必然也在圈外 —— 这就是洪泛的正确性。`,
+        vars: { '当前格': `(${x}, ${y})`, '试的方向': `${DIR_NAME[d]} → (${nx},${ny}) 递归`, '递归深度': stack.length } });
+      flood(nx, ny);
+    }
+
+    stack.pop();
+    snap({ line: [10], cur: [x, y], phase: '② 洪泛圈外',
+      note: `<b>从 <code>flood(${x}, ${y})</code> 返回</b>，四个方向都试完了。<span class="r">注意这里没有"撤销 outside"</span> —— 本题只问"这块属不属于圈外"，不数路径条数，标过就该一直留着。这一句和 P1219 八皇后的 <code>col[j] = d1[a] = d2[b] = false;</code> 正好相反，是搜索题最容易混的一处。`,
+      vars: { '返回自': `flood(${x}, ${y})`, '剩余递归深度': stack.length, '已标圈外': enters } });
+  }
+
+  // ① 扫四条边：顺序与 solution.cpp 一致（每个 i 依次试 上/下/左/右）
+  for (let i = 0; i < n; i++) {
+    const edges = [['上边', 0, i], ['下边', n - 1, i], ['左边', i, 0], ['右边', i, n - 1]];
+    for (const [name, x, y] of edges) {
+      if (a[x][y] !== 0 || out[x][y]) {
+        snap({ line: EDGE_LINE, scan: [x, y], phase: '① 扫边界',
+          note: `扫到${name}的 (${x}, ${y})：${a[x][y] === 1 ? '<span class="r">是 1（墙）</span>' : '<em>已经标过 outside</em>（前面某次洪泛已经把它带进去了）'} ⇒ 条件不成立，<b>不调用 flood</b>。<br><b>四条边都要扫，不能只从 (0,0) 一个角出发</b>：闭合圈可以贴边，角上那个格子完全可能是 1。`,
+          vars: { '扫到': `(${x}, ${y}) ${name}`, 'a 值': a[x][y], 'outside': out[x][y] ? 'true' : 'false', '动作': '跳过' } });
+        continue;
+      }
+      snap({ line: EDGE_LINE, scan: [x, y], phase: '① 扫边界',
+        note: `扫到${name}的 (${x}, ${y})：<span class="g">是 0 且没标过 ⇒ 从它开始洪泛</span>。边界上的 0 天然"能到边界"，它就是圈外的源头。`,
+        vars: { '扫到': `(${x}, ${y}) ${name}`, 'a 值': 0, '动作': `flood(${x}, ${y})`, '已标圈外': enters } });
+      flood(x, y);
+    }
+  }
+
+  snap({ line: [15, 20], phase: '① 完成',
+    note: `边界扫完，洪泛结束。<b>所有能到边界的 0 都标上 outside 了</b>，共 ${enters} 格。现在"还是 0 且没标 outside"的格子，就是到不了边界的那些 —— 圈内。`,
+    vars: { '圈外(outside=true)': enters, '圈内（待打印 2）': cnt(a, out, 2, n), '墙 1': cnt(a, out, 1, n) } });
+
+  // ② 逐格输出，顺便把圈内的格子点亮成 2
+  let shown = 0;
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+    if (a[i][j] === 0 && !out[i][j]) {
+      filled[i][j] = true; shown++;
+      snap({ line: [24, 25], cur: [i, j], phase: '② 打印 2',
+        note: `输出到 (${i}, ${j})：<code>v = a[${i}][${j}] = 0</code> 且 <code>outside[${i}][${j}] == false</code> ⇒ <code>v = 2</code>，打印 <span class="g">2</span>。`,
+        vars: { '格子': `(${i}, ${j})`, '已打印 2': shown } });
+    }
+  }
+
+  snap({ line: [22, 23, 24, 25, 26, 27, 28, 29, 30], phase: '③ 输出完毕', final: true,
+    note: `<b>全部结束。</b>右下角就是本盘的输出，可和洛谷官方样例逐字对照：墙 1 原样输出，圈外的 0 <span class="r">没有被改成 2</span>（被 <code>outside</code> 挡住了），圈内打印 2。填成 2 的格子共 <span class="g">${shown}</span> 个。`,
+    vars: { '打印 2': shown + ' 格', '圈外仍打印 0': enters + ' 格', '墙 1': cnt(a, out, 1, n) + ' 格' } });
+  return frames;
+}
+
+let FRAMES = [], idx = 0, timer = null, N = 6;
+
+function render() {
+  const f = FRAMES[idx];
+  const bd = document.getElementById('board');
+  bd.style.gridTemplateColumns = `repeat(${N}, 38px)`;
+  bd.innerHTML = '';
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+    const v = valOf(f.a, f.out, f.filled, i, j);
+    const el = document.createElement('div');
+    let cls = 'bcell';
+    if (v === 1) cls += ' wall';
+    else if (v === 2) cls += ' inn';
+    else if (f.out[i][j]) cls += ' out';
+    if (f.cur && f.cur[0] === i && f.cur[1] === j) cls += ' cur';
+    if (f.tryCell && f.tryCell[0] === i && f.tryCell[1] === j) cls += ' try';
+    if (f.scan && f.scan[0] === i && f.scan[1] === j) cls += ' scan';
+    el.className = cls;
+    el.innerHTML = v + `<span class="idx">${i},${j}</span>`;
+    bd.appendChild(el);
+  }
+  const st = document.getElementById('stack');
+  st.innerHTML = '';
+  if (!f.stack.length) st.innerHTML = '<span class="empty">栈空（此刻不在任何一次 flood 里）</span>';
+  f.stack.forEach((s, i) => {
+    const el = document.createElement('div');
+    el.className = 'frame' + (i === f.stack.length - 1 ? ' top' : '');
+    el.textContent = s;
+    st.appendChild(el);
+  });
+  document.getElementById('note').innerHTML = f.note;
+  document.getElementById('vars').innerHTML = Object.entries(f.vars)
+    .map(([k, v]) => `<tr><td class="k">${k}</td><td class="val">${v}</td></tr>`).join('');
+  const op = document.getElementById('outprev');
+  op.innerHTML = f.final ? fmt(f.a, f.out, f.filled, N).replace(/</g, '&lt;')
+    : '<span class="empty">播到最后一帧才揭晓（否则剧透）</span>';
+  document.querySelectorAll('#code .ln').forEach((el, i) => el.classList.toggle('on', f.line.includes(i)));
+  document.getElementById('prog').textContent = `第 ${idx + 1} / ${FRAMES.length} 帧　阶段：${f.phase}`;
+  document.getElementById('btnPrev').disabled = idx === 0;
+  document.getElementById('btnNext').disabled = idx >= FRAMES.length - 1;
+  if (idx >= FRAMES.length - 1) stopPlay();
+}
+
+function stopPlay() { if (timer) clearInterval(timer); timer = null; document.getElementById('btnPlay').textContent = '自动播放'; }
+function load(text) {
+  const p = parseSrc(text);
+  if (!p) {
+    document.getElementById('prog').textContent = '输入不合法：第一行 n（1..10），随后 n 行、每行 n 个 0/1';
+    return;
+  }
+  N = p.n;
+  FRAMES = buildFrames(p.n, p.a);
+  idx = 0;
+  render();
+}
+
+document.getElementById('btnNext').onclick = () => { if (idx < FRAMES.length - 1) { idx++; render(); } };
+document.getElementById('btnPrev').onclick = () => { if (idx > 0) { idx--; render(); } };
+document.getElementById('btnEnd').onclick = () => { idx = FRAMES.length - 1; stopPlay(); render(); };
+document.getElementById('btnPlay').onclick = () => {
+  if (timer) { stopPlay(); return; }
+  document.getElementById('btnPlay').textContent = '暂停';
+  timer = setInterval(() => { if (idx >= FRAMES.length - 1) { stopPlay(); return; } idx++; render(); }, 110);
+};
+document.getElementById('btnLoad').onclick = () => { stopPlay(); load(document.getElementById('src').value); };
+document.querySelectorAll('.preset').forEach(b => b.onclick = () => {
+  const text = PRESETS[b.dataset.p].join('\n');
+  document.getElementById('src').value = text;
+  stopPlay(); load(text);
+});
+
+document.getElementById('code').innerHTML = CODE.map((l, i) =>
+  `<span class="ln"><span class="no">${String(i + 1).padStart(2, '0')}</span>${l.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</span>`).join('');
+
+document.getElementById('src').value = PRESETS.sample.join('\n');
+load(PRESETS.sample.join('\n'));
+</script>
+</body>
+</html>

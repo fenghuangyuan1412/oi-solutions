@@ -21,7 +21,7 @@
 | 字符串 | 0 | [solutions/string](solutions/string) |
 | 计算几何 | 0 | [solutions/geometry](solutions/geometry) |
 
-共 47 题（按"有 README.md 的目录"统计；其中 [solutions/search](solutions/search) 的 10 道搜索题由另一条工作线并行补写，下面的「题目列表」暂未列出它们的行）。全部题目来自训练单与洛谷/NOIP 真题，暂无半成品目录。
+共 47 题（按"有 README.md 的目录"统计，本机 `find solutions -mindepth 3 -name README.md | wc -l` 实得 47；含 [solutions/search](solutions/search) 的 10 道搜索入门题，已在下表逐行列出）。全部题目来自训练单与洛谷/NOIP 真题，暂无半成品目录。
 
 **怎么用这张表全局浏览**：
 
@@ -76,6 +76,16 @@
 | [P14357](https://www.luogu.com.cn/problem/P14357) | [[CSP-J 2025] 拼数](solutions/greedy/p14357-number/README.md) | 贪心 / 计数排序 | 位数用满 + 降序交换论证 | [html](solutions/greedy/p14357-number/visualization.html) |
 | [P14359](https://www.luogu.com.cn/problem/P14359) | [[CSP-J 2025] 异或和](solutions/greedy/p14359-xor/README.md) | 贪心 / 前缀异或 | 前缀异或配对 + 最多不相交区间最早结束贪心 | [html](solutions/greedy/p14359-xor/visualization.html) |
 | [T228758](https://www.luogu.com.cn/problem/T228758) | [L1-008 字符串](solutions/greedy/t228758-string/README.md) | 贪心 / 字符串字典序 | 两个"非空"把首尾钉死 ⇒ 只看下一个字符与 s2[0]，严格更小才延长 | —— |
+| [P1036](https://www.luogu.com.cn/problem/P1036) | [[NOIP 2002 普及组] 选数](solutions/search/p1036-choose-prime/README.md) | 搜索 / DFS·组合枚举 | 枚举归搜索（下一层起点 = 上一个下标 + 1，`sum` 当参数带走所以回溯免费），判定归数学（$v<2$ 先否、只试除到 $i\times i\le v$） | —— |
+| [P1135](https://www.luogu.com.cn/problem/P1135) | [奇怪的电梯](solutions/search/p1135-strange-elevator/README.md) | 搜索 / BFS·最短路 | "状态只有 $n$ 个、每状态固定两个动作"就是 BFS 的信号：楼层当点、按键当边，`dist` 的 $-1$ 初值兼职 vis 与"无解"输出 | —— |
+| [P1157](https://www.luogu.com.cn/problem/P1157) | [组合的输出](solutions/search/p1157-combination/README.md) | 搜索 / DFS·组合 | 组合的唯一直觉：下一层从"上一个数 + 1"开始 ⇒ 自动不重复、行内升序、行间字典序，不需要 `vis[]` | —— |
+| [P1162](https://www.luogu.com.cn/problem/P1162) | [填涂颜色](solutions/search/p1162-fill-color/README.md) | 搜索 / DFS·反向洪泛 | "到不了边界"逆过来做：从**整条边界**洪泛标圈外，剩下的就是圈内，$O(n^4)\to O(n^2)$；**只从一个角出发在样例上碰巧对** | [html](solutions/search/p1162-fill-color/visualization.html) |
+| [P1219](https://www.luogu.com.cn/problem/P1219) | [[USACO1.5] 八皇后 Checker Challenge](solutions/search/p1219-eight-queens/README.md) | 搜索 / 回溯·剪枝 | 按行放子让"每行每列恰一个"变成免费约束，两条对角线用 $i+j$、$i-j$ 各一张表 $O(1)$ 查；标记→递归→**撤销** | [html](solutions/search/p1219-eight-queens/visualization.html) |
+| [P1443](https://www.luogu.com.cn/problem/P1443) | [马的遍历](solutions/search/p1443-knight-move/README.md) | 搜索 / BFS·网格 | 按层扩散 ⇒ 第一次到达即最少步；入队即打标记，`dist` 的 $-1$ 既是 vis 又是"到不了"的答案 | [html](solutions/search/p1443-knight-move/visualization.html) |
+| [P1451](https://www.luogu.com.cn/problem/P1451) | [求细胞数量](solutions/search/p1451-cells/README.md) | 搜索 / DFS·连通块计数 | 数块模板：扫到未标记的目标格就 `ans++` 并洪泛整块、标记永不撤销；陷阱全在"四方向 + 非 `0` 即同类" | —— |
+| [P1596](https://www.luogu.com.cn/problem/P1596) | [[USACO10OCT] Lake Counting S / 数水塘](solutions/search/p1596-lake-counting/README.md) | 搜索 / DFS·连通块计数 | 与 P1451 同一套模板，**唯一代码差异**是八方向偏移表：斜角相连也算同一个塘 | —— |
+| [P1605](https://www.luogu.com.cn/problem/P1605) | [迷宫](solutions/search/p1605-maze/README.md) | 搜索 / DFS·回溯计数 | 数"块"不撤销、数"路"必须撤销 `vis` —— 这一行写不写就是两类搜索题的分界线 | —— |
+| [P1706](https://www.luogu.com.cn/problem/P1706) | [全排列问题](solutions/search/p1706-permutation/README.md) | 搜索 / DFS·回溯 | 回溯三句话：做了什么 → 往下递归 → 撤销什么；每层从 $1..n$ 试、靠 `vis[]` 去重，`setw(5)` 场宽是格式分 | —— |
 
 > 上表标 **骗分练习 ①~⑤** 的五题 + 五道纯模拟题，配套教案见 [notes/partial-score-handbook.md](notes/partial-score-handbook.md)（骗分 / 部分分技术手册，含每个技术点的实测证据与考场时间预算表）。
 

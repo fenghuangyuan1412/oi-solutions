@@ -1,0 +1,41 @@
+id: P1596
+title: "[USACO10OCT] Lake Counting S / 数水塘"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1596
+alias: USACO 2010 October Silver；中文常称"湖计数"
+topics: [search/dfs, ds/dsu]
+difficulty: 洛谷难度 2
+tags: [搜索, DFS, 洪水填充, 连通块计数, 八方向, 并查集（仅参照实现）]
+complexity:
+  time: "O(8*N*M)；实测 100x100 全水 6 ms、随机水密度 0.5 6 ms、棋盘格 5 ms（含进程启动）"
+  space: "O(N*M) 网格 + vis + 递归栈（100x100 全水时约 1e4 层，本机正常结束）"
+status: 未本地评测（未在洛谷提交）；本机 g++ -static -O2 -std=c++14 -Wall 编译无警告，官方样例输出 3 与题面逐字一致，与"并查集合并八邻域后数根"参照实现随机对拍 200 组 0 不一致，极限规模 100x100 三组数据耗时 5~6 ms
+limits: 1 <= N <= 100, 1 <= M <= 100
+visualization: false
+files:
+  problem.txt: 题面原文（洛谷页面抓取，scripts/parse_luogu.js 解析后整理）
+  solution.cpp: 讲解代码（八方向 DFS 洪泛数水塘，进入即标记、永不撤销）
+  verify.js: Node 验算脚本（官方样例逐字比对 + 并查集数根参照对拍 200 组 + 100x100 极限计时），仅用于验证，非讲解代码
+samples:
+  - in: |
+      10 12
+      W........WW.
+      .WWW.....WWW
+      ....WW...WW.
+      .........WW.
+      .........W..
+      ..W......W..
+      .W.W.....WW.
+      W.W.W.....W.
+      .W.W......W.
+      ..W.......W.
+    out: |
+      3
+notes: |
+  原文是 USACO 英文题面（题目页首行即为英文），README 里给了中文复述。
+  "A pond is a connected set of squares with water in them, where a square is considered
+  adjacent to all eight of its neighbors" —— 八个方向，斜角也算相邻，这是本题与 P1451 唯一的差别。
+  连通块计数模板：扫描到未标记的目标格就 ans++ 并洪泛整块，vis 置位后永不撤销（与 P1605 的回溯撤销对照）。
+  实测漏掉斜角（偏移表只写 4 项）时：官方样例 3 -> 13，100x100 棋盘格 1 -> 5000，
+  单独取样例第 1 块的 6 个水格按四方向跑是 3 块，取第 3 块的 9 个水格跑是 9 块（每格孤立）。
+  并查集参照数根前必须先过滤顶点：官方样例只数水格得 3 个根，对全部 120 格数根得 92（水 3 + 干地 89）。
