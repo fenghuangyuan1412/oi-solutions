@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1002 马拦过河卒 · 控制点与逐格填表</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:4px; }
+  .sub b { color:var(--ink); }
+  .legend { font-size:12px; color:var(--dim); margin:4px 0 14px; }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:3px; margin:0 4px 0 12px; vertical-align:middle; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 14px; font-size:14px; cursor:pointer; margin-right:8px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  input[type=text] { background:#0d1020; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+             padding:8px 10px; font:14px Consolas,monospace; width:220px; }
+  label.sw { font-size:13px; color:var(--dim); margin-left:14px; user-select:none; }
+  label.sw b { color:var(--warn); }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .prog { color:var(--acc); font-size:14px; margin-left:auto; font-weight:700; }
+  .wrap { overflow-x:auto; }
+  table.g { border-collapse:separate; border-spacing:4px; margin:0 auto; }
+  table.g th { font:11px Consolas,monospace; color:#6b7396; font-weight:400; width:26px; }
+  td.c { width:56px; height:46px; border-radius:8px; background:#232a4a; border:1px solid #333c66;
+         text-align:center; font:13px Consolas,monospace; color:var(--ink); position:relative; }
+  td.c .f { color:var(--dim); }
+  td.c.done .f { color:var(--acc); font-weight:700; }
+  td.c.blk { background:#3a1f2a; border-color:var(--warn); }
+  td.c.blk .f { color:var(--warn); }
+  td.c.blk::after { content:'✕'; position:absolute; right:3px; top:1px; color:var(--warn); font-size:11px; }
+  td.c.horse { background:#5b1f1f; border-color:#ffb4b4; }
+  td.c.horse::after { content:'马'; color:#ffd7d7; font-size:11px; position:absolute; right:3px; top:1px; }
+  td.c.cur { outline:2px solid var(--acc); outline-offset:1px; }
+  td.c.src { border-color:var(--warn); background:#3a2f14; }
+  td.c.src .f { color:#fca5a5; }
+  td.c.start { border-color:#6b5a2a; background:#3a2f14; }
+  td.c.goal { border-style:dashed; }
+  .ans { margin-top:10px; text-align:center; font:15px/1.5 Consolas,monospace; color:var(--dim); }
+  .ans b { color:var(--ok); font-size:22px; }
+  .ans b.bad { color:var(--warn); }
+  .cols { display:flex; gap:14px; flex-wrap:wrap; }
+  .cols > div { flex:1; min-width:320px; }
+  pre.code { margin:0; font:13px/1.75 Consolas,monospace; }
+  pre.code .ln { display:block; padding:0 8px; border-left:3px solid transparent; white-space:pre; }
+  pre.code .ln.on { background:#173a4a; border-left-color:var(--acc); color:var(--acc); }
+  table.vars { border-collapse:collapse; width:100%; font:13px Consolas,monospace; }
+  table.vars td { border:1px solid #2b3358; padding:4px 8px; }
+  table.vars td.k { color:var(--dim); }
+  table.vars td.v { color:var(--acc); font-weight:700; }
+  .note { font-size:14px; min-height:88px; }
+  .note b { color:var(--acc); }
+  .note .bad { color:var(--warn); }
+  .err { color:var(--warn); font-size:13px; }
+</style>
+</head>
+<body>
+<h1>P1002 马拦过河卒 · 先标控制点，再逐格填表</h1>
+<div class="sub">卒只能<b>向下或向右</b>，所以 f[i][j] 只可能来自<b>上方</b> f[i-1][j] 和<b>左方</b> f[i][j-1]。马的 9 个控制点直接置 0，等于把这格从图里挖掉。</div>
+<div class="legend">图例：<i style="background:#3a1f2a;border:1px solid #f87171"></i>控制点（✕，值为 0） <i style="background:#5b1f1f"></i>马本身 <i style="background:#3a2f14;border:1px solid #f87171"></i>本轮读取的两个来源 <i style="background:#173a4a;border:1px solid #5eead4"></i>正在写入</div>
+
+<div class="topbar">
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到结尾</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="card">
+  <h2>输入（一行四个整数：n m hx hy，默认就是官方样例）</h2>
+  <input type="text" id="src" spellcheck="false" value="6 6 3 3">
+  <label class="sw"><input type="checkbox" id="intmode"> 把 f 声明成 <b>int</b>（错版对比：看它什么时候炸）</label>
+  <button id="load" style="margin-left:14px">载入并重新演示</button> <span class="err" id="err"></span>
+</div>
+
+<div class="card">
+  <h2>棋盘（行 = x，列 = y，左上角是起点 A=(0,0)，右下角是目标 B=(n,m)）</h2>
+  <div class="wrap"><table class="g" id="g"></table></div>
+  <div class="ans" id="ans"></div>
+</div>
+
+<div class="cols">
+  <div class="card">
+    <h2>代码执行位置</h2>
+    <pre class="code" id="code"></pre>
+  </div>
+  <div>
+    <div class="card">
+      <h2>变量状态</h2>
+      <table class="vars" id="vars"></table>
+    </div>
+    <div class="card">
+      <h2>这一步在做什么</h2>
+      <div class="note" id="note"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CODE = [
+  '    scanf("%d%d%d%d", &bx, &by, &hx, &hy);',
+  '    static const int dx[9] = {0, -2, -2, -1, -1, 1, 1, 2, 2};',
+  '    static const int dy[9] = {0, -1, 1, -2, 2, -2, 2, -1, 1};',
+  '    for (int k = 0; k < 9; k++) {',
+  '        int x = hx + dx[k], y = hy + dy[k];',
+  '        if (x >= 0 && x <= bx && y >= 0 && y <= by) blocked[x][y] = true;',
+  '    }',
+  '    f[0][0] = blocked[0][0] ? 0 : 1;',
+  '    for (int i = 0; i <= bx; i++)',
+  '        for (int j = 0; j <= by; j++) {',
+  '            if (blocked[i][j]) { f[i][j] = 0; continue; }',
+  '            f[i][j] = (i > 0 ? f[i-1][j] : 0) + (j > 0 ? f[i][j-1] : 0);',
+  '        }',
+  '    printf("%lld\\n", f[bx][by]);',
+];
+const DIR = [[0,0],[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+let n = 6, m = 6, hx = 3, hy = 3, steps = [], cur = 0, timer = null, intMode = false;
+
+function wrap32(v) { return v | 0; }                    // 模拟 32 位有符号整数回绕
+function calc() {
+  const blocked = [];
+  for (let i = 0; i <= n; i++) blocked.push(new Array(m + 1).fill(false));
+  DIR.forEach(d => { const x = hx + d[0], y = hy + d[1];
+    if (x >= 0 && x <= n && y >= 0 && y <= m) blocked[x][y] = true; });
+  const f = [], real = [];
+  for (let i = 0; i <= n; i++) { f.push(new Array(m + 1).fill(null)); real.push(new Array(m + 1).fill(0)); }
+  for (let i = 0; i <= n; i++) for (let j = 0; j <= m; j++) {
+    let v;
+    if (blocked[i][j]) v = 0;
+    else if (i === 0 && j === 0) v = 1;
+    else v = (i > 0 ? real[i - 1][j] : 0) + (j > 0 ? real[i][j - 1] : 0);
+    real[i][j] = v;
+    f[i][j] = intMode ? wrap32(v) : v;
+  }
+  return { blocked, f, real };
+}
+
+function build() {
+  steps = [];
+  const S = calc();
+  steps.push({ line: 0, phase: 'read',
+    note: '读入 n=' + n + '、m=' + m + '、马=(' + hx + ',' + hy + ')。棋盘是 (n+1)×(m+1) 个<b>格点</b>，不是格子——坐标从 0 开始，所以 6×6 的坐标范围其实是 7×7=49 个点。' });
+  const shown = [];
+  DIR.forEach((d, k) => {
+    const x = hx + d[0], y = hy + d[1];
+    const inside = x >= 0 && x <= n && y >= 0 && y <= m;
+    if (inside) shown.push([x, y]);
+    steps.push({ line: inside ? 5 : 4, phase: 'mark', marks: shown.slice(),
+      note: (k === 0 ? '马<b>所在的点本身</b>也是控制点' : '第 ' + (k + 1) + ' 个日字落点 (' + x + ',' + y + ')') +
+        (inside ? '，落在盘内，标红。' : '，<span class="bad">越界（x 或 y 出了 0..n / 0..m），必须丢掉</span>。不丢掉的话要么数组越界，要么把盘外的点当存在，答案直接错。') +
+        ' 目前盘内共 ' + shown.length + ' 个控制点。' });
+  });
+  for (let i = 0; i <= n; i++) for (let j = 0; j <= m; j++) {
+    const blk = S.blocked[i][j];
+    const up = i > 0 ? S.f[i - 1][j] : null, lf = j > 0 ? S.f[i][j - 1] : null;
+    let line, note;
+    if (i === 0 && j === 0) {
+      line = 7;
+      note = '起点 f[0][0] = 1：<b>站在起点算一种走法</b>（"零步"也是一条路径）。这里写成 0 的话整张表全是 0。';
+    } else if (blk) {
+      line = 10;
+      note = '(' + i + ',' + j + ') 是控制点，<span class="bad">f=0 并 continue</span>。注意是"置 0"而不是"跳过"——跳过会让这格留着上一轮/零初始化的值，从这格绕过去的路径就凭空多出来了。';
+    } else {
+      line = 11;
+      const parts = [];
+      if (i > 0) parts.push('上方 f[' + (i - 1) + '][' + j + ']=' + up);
+      if (j > 0) parts.push('左方 f[' + i + '][' + (j - 1) + ']=' + lf);
+      note = '(' + i + ',' + j + ')：' + parts.join(' + ') + ' = <b>' + S.f[i][j] + '</b>。' +
+        (i === 0 || j === 0 ? ' 这一格在边界上，只有一个来源（另一侧越界当 0），所以边界值只可能是 1 或被控制点截断成 0。' : '');
+    }
+    steps.push({ line, phase: 'fill', i, j, up, lf, val: S.f[i][j], blk, note,
+      S, order: i * (m + 1) + j });
+  }
+  const ans = S.f[n][m], realAns = S.real[n][m];
+  let tail = '最后一格 f[' + n + '][' + m + ']=' + ans + ' 就是答案。';
+  if (intMode) {
+    tail += realAns > 2147483647
+      ? ' <span class="bad">真正的值是 ' + realAns + '，已经超过 int 上限 2147483647，回绕成了 ' + ans + '</span>——这就是本题最常见的错法：路径条数是组合数，长得比你想的快得多。'
+      : ' 这一组数据 int 还没炸（答案 ' + realAns + ' < 2^31），但换成 20 20 1 1 就会炸：本机实测 int 版输出 −470076692，long long 版输出 8119857900。';
+  } else if (realAns > 2147483647) {
+    tail += ' <span class="bad">这个数已经超过 int 上限 2147483647</span>，勾上面的 int 错版就能看到回绕结果。';
+  }
+  steps.push({ line: 13, phase: 'end', S, note: tail });
+}
+
+function render() {
+  const s = steps[cur], S = s.S || calc();
+  const isMarked = (i, j) => {
+    if (s.phase === 'fill' || s.phase === 'end') return S.blocked[i][j];
+    if (s.phase === 'mark') return s.marks.some(p => p[0] === i && p[1] === j);
+    return false;
+  };
+  const orderNow = s.phase === 'fill' ? s.order : (s.phase === 'end' ? (n + 1) * (m + 1) - 1 : -1);
+  let h = '<tr><th></th>';
+  for (let j = 0; j <= m; j++) h += '<th>y' + j + '</th>';
+  h += '</tr>';
+  for (let i = 0; i <= n; i++) {
+    h += '<tr><th>x' + i + '</th>';
+    for (let j = 0; j <= m; j++) {
+      const cls = ['c'];
+      let v = '';
+      const mk = isMarked(i, j);
+      if (mk) cls.push('blk');
+      if (i === hx && j === hy) cls.push('horse');
+      if (i === 0 && j === 0) cls.push('start');
+      if (i === n && j === m) cls.push('goal');
+      const idx = i * (m + 1) + j;
+      if (orderNow >= idx && idx >= 0) { cls.push('done'); v = S.f[i][j]; }
+      else if (mk) { v = 0; cls.push('done'); }
+      if (s.phase === 'fill') {
+        if (i === s.i && j === s.j) cls.push('cur');
+        if (s.i > 0 && s.i - 1 === i && s.j === j) cls.push('src');
+        if (s.j > 0 && s.i === i && s.j - 1 === j) cls.push('src');
+      }
+      h += '<td class="' + cls.join(' ') + '"><span class="f">' + v + '</span></td>';
+    }
+    h += '</tr>';
+  }
+  document.getElementById('g').innerHTML = h;
+
+  const realAns = S.real[n][m], ans = S.f[n][m];
+  document.getElementById('ans').innerHTML = s.phase === 'end'
+    ? '答案 <b class="' + (intMode && ans !== realAns ? 'bad' : '') + '">' + ans + '</b>' +
+      (intMode && ans !== realAns ? ' <span style="color:var(--warn)">（真实值 ' + realAns + '）</span>' : '')
+    : (intMode && ans !== realAns ? '当前 int 回绕值 ' + ans + ' / 真实值 ' + realAns : '');
+
+  document.getElementById('code').innerHTML = CODE.map((c, i) =>
+    '<span class="ln' + (i === s.line ? ' on' : '') + '">' + c + '</span>').join('');
+
+  const v = [['n（B 的 x）', n], ['m（B 的 y）', m], ['hx, hy（马）', hx + ', ' + hy]];
+  if (s.phase === 'mark') v.push(['k', s.line === 4 ? '越界，跳过' : '命中'], ['盘内控制点数', (s.marks || []).length]);
+  if (s.phase === 'fill') {
+    v.push(['i', s.i], ['j', s.j], ['blocked[i][j]', s.blk ? 'true' : 'false'],
+      ['f[i-1][j]（上）', s.up === null ? '—（越界当 0）' : s.up],
+      ['f[i][j-1]（左）', s.lf === null ? '—（越界当 0）' : s.lf],
+      ['f[i][j]', s.val]);
+  }
+  document.getElementById('vars').innerHTML = v.map(x =>
+    '<tr><td class="k">' + x[0] + '</td><td class="v">' + x[1] + '</td></tr>').join('');
+  document.getElementById('note').innerHTML = s.note;
+  document.getElementById('prog').textContent = (cur + 1) + ' / ' + steps.length;
+  document.getElementById('prev').disabled = cur === 0;
+  document.getElementById('next').disabled = cur === steps.length - 1;
+}
+
+function load() {
+  const t = document.getElementById('src').value.trim().split(/\s+/).map(Number);
+  if (t.length !== 4 || t.some(Number.isNaN) || t[0] < 1 || t[1] < 1 || t[0] > 20 || t[1] > 20 ||
+      t[2] < 0 || t[3] < 0 || t[2] > 20 || t[3] > 20) {
+    document.getElementById('err').textContent = '格式不对：需要 4 个整数 n m hx hy，1<=n,m<=20，0<=hx,hy<=20。';
+    return;
+  }
+  document.getElementById('err').textContent = '';
+  n = t[0]; m = t[1]; hx = t[2]; hy = t[3];
+  cur = 0; build(); render();
+}
+
+document.getElementById('next').onclick = () => { if (cur < steps.length - 1) { cur++; render(); } };
+document.getElementById('prev').onclick = () => { if (cur > 0) { cur--; render(); } };
+document.getElementById('jump').onclick = () => { stop(); cur = steps.length - 1; render(); };
+document.getElementById('load').onclick = load;
+document.getElementById('intmode').onchange = e => { intMode = e.target.checked; cur = 0; build(); render(); };
+function stop() { if (timer) { clearInterval(timer); timer = null; document.getElementById('play').textContent = '▶ 自动播放'; } }
+document.getElementById('play').onclick = () => {
+  if (timer) return stop();
+  document.getElementById('play').textContent = '⏸ 暂停';
+  timer = setInterval(() => { if (cur >= steps.length - 1) return stop(); cur++; render(); }, 260);
+};
+
+build(); render();
+</script>
+</body>
+</html>

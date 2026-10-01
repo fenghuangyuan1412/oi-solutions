@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1216 数字三角形 · 自底向上，只用一行滚动</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:16px; }
+  .sub b { color:var(--ink); }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 14px; font-size:14px; cursor:pointer; margin-right:8px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  textarea { background:#0d1020; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+             padding:8px 10px; font:13px/1.5 Consolas,monospace; width:100%; height:124px; }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .prog { color:var(--acc); font-size:14px; margin-left:auto; font-weight:700; }
+  .tri { display:flex; flex-direction:column; align-items:center; gap:5px; }
+  .trow { display:flex; gap:5px; }
+  .cell { width:62px; height:54px; border-radius:8px; background:#232a4a; border:1px solid #333c66;
+          display:flex; flex-direction:column; justify-content:center; align-items:center;
+          font:12px Consolas,monospace; transition:all .18s; }
+  .cell .v { font-size:14px; color:var(--ink); }
+  .cell .f { font-size:13px; color:var(--dim); min-height:16px; }
+  .cell.done .f { color:var(--acc); font-weight:700; }
+  .cell.gone { border-style:dashed; opacity:.55; }
+  .cell.gone .f { color:var(--warn); }
+  .cell.read { border-color:var(--warn); background:#3a1f2a; opacity:1; }
+  .cell.read .f { color:var(--warn); }
+  .cell.write { outline:2px solid var(--acc); outline-offset:1px; transform:translateY(-3px); background:#173a4a; }
+  .cell.seed { border-color:#6b5a2a; background:#3a2f14; }
+  .ans { margin-top:10px; text-align:center; font:16px/1.5 Consolas,monospace; color:var(--dim); }
+  .ans b { color:var(--ok); font-size:22px; }
+  .cols { display:flex; gap:14px; flex-wrap:wrap; }
+  .cols > div { flex:1; min-width:320px; }
+  pre.code { margin:0; font:13px/1.8 Consolas,monospace; }
+  pre.code .ln { display:block; padding:0 8px; border-left:3px solid transparent; white-space:pre; }
+  pre.code .ln.on { background:#173a4a; border-left-color:var(--acc); color:var(--acc); }
+  table.vars { border-collapse:collapse; width:100%; font:13px Consolas,monospace; }
+  table.vars td { border:1px solid #2b3358; padding:4px 8px; }
+  table.vars td.k { color:var(--dim); }
+  table.vars td.v { color:var(--acc); font-weight:700; }
+  .note { font-size:14px; min-height:84px; }
+  .note b { color:var(--acc); }
+  .note .bad { color:var(--warn); }
+  .roll { margin-top:10px; display:flex; gap:4px; flex-wrap:wrap; align-items:center; }
+  .roll span { font-size:12px; color:var(--dim); }
+  .rcell { min-width:46px; padding:3px 6px; border-radius:6px; background:#232a4a; border:1px solid #333c66;
+           font:13px Consolas,monospace; text-align:center; }
+  .rcell small { display:block; color:#6b7396; font-size:10px; }
+  .rcell.on { outline:2px solid var(--acc); background:#173a4a; color:var(--acc); font-weight:700; }
+  .rcell.src { border-color:var(--warn); color:var(--warn); }
+  .err { color:var(--warn); font-size:13px; }
+  .legend { font-size:12px; color:var(--dim); margin:4px 0 14px; }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:3px; margin:0 4px 0 12px; }
+</style>
+</head>
+<body>
+<h1>P1216 数字三角形 · 自底向上，只用一行滚动</h1>
+<div class="sub">每个格子上排是 a[i][j]，下排是该格当前的 f 值。<b>算第 i 行只用得到第 i+1 行的 f[j] 和 f[j+1]</b>，所以整张表塌缩成一条滚动的 f。</div>
+<div class="legend">图例：<i style="background:#3a2f14;border:1px solid #6b5a2a"></i>塔底初值 <i style="background:#3a1f2a;border:1px solid #f87171"></i>本轮读取的两个来源（旧值） <i style="background:#173a4a;border:1px solid #5eead4"></i>正在写入 <i style="background:#232a4a;border:1px dashed #f87171"></i>已被覆盖，拿不回来了</div>
+
+<div class="topbar">
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到结尾</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="card">
+  <h2>输入（第一行是 R，下面第 i 行有 i 个数；默认就是官方样例。本演示限 R ≤ 14）</h2>
+  <textarea id="src" spellcheck="false">5
+7
+3 8
+8 1 0
+2 7 4 4
+4 5 2 6 5</textarea>
+  <div style="margin-top:8px"><button id="load">载入并重新演示</button> <span class="err" id="err"></span></div>
+</div>
+
+<div class="card">
+  <h2>数塔</h2>
+  <div class="tri" id="tri"></div>
+  <div class="ans" id="ans"></div>
+  <div class="roll" id="roll"></div>
+</div>
+
+<div class="cols">
+  <div class="card">
+    <h2>代码执行位置</h2>
+    <pre class="code" id="code"></pre>
+  </div>
+  <div>
+    <div class="card">
+      <h2>变量状态</h2>
+      <table class="vars" id="vars"></table>
+    </div>
+    <div class="card">
+      <h2>这一步在做什么</h2>
+      <div class="note" id="note"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CODE = [
+  '    for (int j = 1; j <= r; j++) f[j] = a[r][j];   // 塔底：自己就是最大值',
+  '    for (int i = r - 1; i >= 1; i--)',
+  '        for (int j = 1; j <= i; j++)',
+  '            f[j] = a[i][j] + max(f[j], f[j + 1]);  // 先读后写',
+  '    printf("%d\\n", f[1]);',
+];
+let rows = [], steps = [], cur = 0, timer = null;
+
+// 完整二维 f（只用来还原最优路径，演示里仍然只滚一维）
+function bestPath() {
+  const R = rows.length;
+  const dp = rows.map(r => r.slice());
+  for (let i = R - 2; i >= 0; i--)
+    for (let j = 0; j <= i; j++) dp[i][j] = rows[i][j] + Math.max(dp[i + 1][j], dp[i + 1][j + 1]);
+  const path = [rows[0][0]];
+  let j = 0;
+  for (let i = 1; i < R; i++) {
+    if (dp[i][j] >= dp[i][j + 1]) path.push(rows[i][j]);
+    else { path.push(rows[i][j + 1]); j++; }
+  }
+  return { value: dp[0][0], text: path.join('→') };
+}
+
+function build() {
+  steps = [];
+  const R = rows.length;
+  const f0 = rows[R - 1].slice();
+  steps.push({ line: 0, i: R, j: 0, fa: f0.slice(), fb: f0.slice(),
+    note: '先把<b>塔底那一行</b>原样抄进 f：' + f0.join(', ') + '。这一层不需要转移，每个格子的最大值就是它自己。<span class="bad">如果这里写成 f[j]=0（"从第 0 行推起"的直觉），塔底的数就全被漏掉：官方样例上本机实测答案从 30 变成 25。</span>' });
+  for (let i = R - 1; i >= 1; i--) {
+    let f = steps[steps.length - 1].fa.slice();
+    for (let j = 1; j <= i; j++) {
+      const fb = f.slice();                       // 读之前：j..i+1 还是下一行的旧值
+      const l = fb[j - 1], r = fb[j];
+      const fa = fb.slice();
+      fa[j - 1] = rows[i - 1][j - 1] + Math.max(l, r);
+      f = fa;
+      steps.push({ line: 3, i, j, l, r, fb, fa: fa.slice(),
+        note: '第 ' + i + ' 行第 ' + j + ' 格：a=' + rows[i - 1][j - 1] + '，读下面一行的左下 f[' + j + ']=' + l +
+              ' 与右下 f[' + (j + 1) + ']=' + r + '，取 max=' + Math.max(l, r) + '，<b>写回 f[' + j + ']=' + fa[j - 1] + '</b>。' +
+              (j === 1 ? '注意 f[' + j + '] 这一格写完之后，下一行的第 ' + j + ' 个值就永久没了——但后面只会用到 f[' + (j + 1) + '] 及更右边，所以没关系。' : '') });
+    }
+  }
+  const tail = steps[steps.length - 1];
+  const p = bestPath();
+  steps.push({ line: 4, i: 1, j: 1, fa: tail.fa.slice(), fb: tail.fa.slice(),
+    note: '推回塔顶，<b>f[1]=' + tail.fa[0] + '</b> 就是答案。最优路径 ' + p.text +
+          '。整张表只用了 ' + R + ' 个格子，而不是 ' + R + '×' + R + ' 个。' });
+}
+
+function render() {
+  const s = steps[cur], R = rows.length;
+  let h = '';
+  for (let i = 1; i <= R; i++) {
+    h += '<div class="trow">';
+    for (let j = 1; j <= i; j++) {
+      const cls = ['cell']; let fv = '';
+      if (s.line === 0) {
+        if (i === R) { cls.push('seed', 'done'); fv = s.fa[j - 1]; }
+      } else if (s.line === 4) {
+        if (i === 1) { cls.push('done'); fv = s.fa[0]; }
+      } else if (i === s.i) {
+        if (j < s.j) { cls.push('done'); fv = s.fa[j - 1]; }
+        else if (j === s.j) { cls.push('write', 'done'); fv = s.fa[j - 1]; }
+      } else if (i === s.i + 1) {
+        if (j >= s.j) { cls.push('done'); if (j === s.j || j === s.j + 1) cls.push('read'); fv = s.fb[j - 1]; }
+        else { cls.push('gone'); fv = '—'; }
+      }
+      h += '<div class="' + cls.join(' ') + '"><span class="v">' + rows[i - 1][j - 1] +
+           '</span><span class="f">' + fv + '</span></div>';
+    }
+    h += '</div>';
+  }
+  document.getElementById('tri').innerHTML = h;
+  document.getElementById('ans').innerHTML = s.line === 4 ? '答案 <b>' + s.fa[0] + '</b>' : '';
+
+  const len = s.line === 3 ? s.i + 1 : (s.line === 0 ? R : 1);
+  let roll = '<span>滚动数组 f（本轮有效长度 ' + len + '）：</span>';
+  for (let j = 1; j <= len; j++) {
+    const wr = s.line === 3 && j === s.j;
+    const cls = wr ? 'rcell on' : (s.line === 3 && j === s.j + 1) ? 'rcell src' : 'rcell';
+    roll += '<div class="' + cls + '">' + (wr ? s.fa[j - 1] : s.fb[j - 1]) + '<small>f[' + j + ']</small></div>';
+  }
+  document.getElementById('roll').innerHTML = roll;
+
+  document.getElementById('code').innerHTML = CODE.map((c, i) =>
+    '<span class="ln' + (i === s.line ? ' on' : '') + '">' + c + '</span>').join('');
+
+  const v = [['R', R], ['i', s.i], ['j', s.j || '—']];
+  if (s.line === 3) {
+    v.push(['a[i][j]', rows[s.i - 1][s.j - 1]],
+           ['f[j]（左下，旧值）', s.l],
+           ['f[j+1]（右下，旧值）', s.r],
+           ['max(f[j], f[j+1])', Math.max(s.l, s.r)],
+           ['写入后 f[j]', s.fa[s.j - 1]]);
+  } else {
+    v.push(['本轮写入', s.line === 4 ? 'f[1]=' + s.fa[0] : '塔底初值 f[1..' + R + ']']);
+  }
+  document.getElementById('vars').innerHTML = v.map(x =>
+    '<tr><td class="k">' + x[0] + '</td><td class="v">' + x[1] + '</td></tr>').join('');
+  document.getElementById('note').innerHTML = s.note;
+  document.getElementById('prog').textContent = (cur + 1) + ' / ' + steps.length;
+  document.getElementById('prev').disabled = cur === 0;
+  document.getElementById('next').disabled = cur === steps.length - 1;
+}
+
+function load() {
+  const txt = document.getElementById('src').value.trim().split(/\s+/).map(Number);
+  const R = txt[0];
+  const want = R * (R + 1) / 2;
+  if (!R || R < 1 || R > 14 || txt.length !== want + 1 || txt.some(Number.isNaN)) {
+    document.getElementById('err').textContent = '格式不对：第一行 R（1..14），随后第 i 行 i 个数，共 ' +
+      (R && R <= 14 ? want : '?') + ' 个；当前给了 ' + (txt.length - 1) + ' 个。';
+    return;
+  }
+  document.getElementById('err').textContent = '';
+  rows = []; let p = 1;
+  for (let i = 1; i <= R; i++) { const r = []; for (let j = 1; j <= i; j++) r.push(txt[p++]); rows.push(r); }
+  cur = 0; build(); render();
+}
+
+document.getElementById('next').onclick = () => { if (cur < steps.length - 1) { cur++; render(); } };
+document.getElementById('prev').onclick = () => { if (cur > 0) { cur--; render(); } };
+document.getElementById('jump').onclick = () => { stop(); cur = steps.length - 1; render(); };
+document.getElementById('load').onclick = load;
+function stop() { if (timer) { clearInterval(timer); timer = null; document.getElementById('play').textContent = '▶ 自动播放'; } }
+document.getElementById('play').onclick = () => {
+  if (timer) return stop();
+  document.getElementById('play').textContent = '⏸ 暂停';
+  timer = setInterval(() => { if (cur >= steps.length - 1) return stop(); cur++; render(); }, 650);
+};
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+id: P1115
+title: "最大子段和"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1115
+alias: 入门 DP 十题（第一批）
+topics: [dp/linear, dp/max-subarray]
+difficulty: 普及~普及+（Kadane 一行转移，坑在初始化与"答案记在哪"）
+tags: [线性DP, Kadane, 滚动变量, 全负hack, 数据范围分析]
+complexity:
+  time: O(n)
+  space: O(1)
+status: 本地 g++ -static -O2 -std=c++14 编译通过（本机两套 MinGW 冲突必须加 -static，否则退出码 139）；官方样例输入 7 / 2 -4 3 -1 2 -4 3 输出 4，与 problem.txt 逐字核对一致；与 O(n^2) 枚举所有子段的暴力在 node 里随机对拍 400 组（n<=120，值域 [-50,50]）0 不一致；n=200000、a_i 随机属于 [-10000,10000] 的满数据（输入 1.08 MB）输出 2026425，5 次运行 29.1 / 29.2 / 34.6 ms（最小/中位/最大，含进程启动）；错版实测：cur/ans 初值写成 0 时官方样例仍输出 4，自造全负数据 3 / -1 -2 -3 输出 0（正解 -1）；未在洛谷提交
+visualization: false
+samples:
+  - in: |
+      7
+      2 -4 3 -1 2 -4 3
+    out: |
+      4
+notes: |
+  交付精简：不做 HTML 动画，README 用程序打印的逐元素状态表（i / x / 决策 / cur / ans 七行）当板书。
+  对应洛谷 2026-01-21 官方新增 hack 数据（见 problem.txt 末行）：初值置 0 的写法样例查不出来，
+  全负数据才爆炸——错版实测官方样例照样输出 4，自造 3 / -1 -2 -3 输出 0（正解 -1）。
+  两个变量两个职责：cur = 以 i 结尾的最大段（转移 max(x, cur+x)），
+  ans = 所有结尾里最好（样例里 cur 终于 3、ans 是 4，可直接看出区别）。

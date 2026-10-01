@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1048 采药 · 一维背包：倒序 vs 正序</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --fresh:#c084fc; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:4px; }
+  .sub b { color:var(--ink); }
+  .legend { font-size:12px; color:var(--dim); margin:4px 0 14px; }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:3px; margin:0 4px 0 12px; vertical-align:middle; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 14px; font-size:14px; cursor:pointer; margin-right:8px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  textarea { background:#0d1020; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+             padding:8px 10px; font:13px/1.5 Consolas,monospace; width:260px; height:110px; vertical-align:top; }
+  .mode { display:inline-flex; flex-direction:column; gap:6px; margin-left:18px; font-size:14px; }
+  .mode label { cursor:pointer; }
+  .mode .bad b { color:var(--warn); }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .prog { color:var(--acc); font-size:14px; margin-left:auto; font-weight:700; }
+  .chart { display:flex; align-items:flex-end; gap:4px; height:210px; overflow-x:auto; padding-top:22px; }
+  .bar { position:relative; min-width:34px; display:flex; flex-direction:column; justify-content:flex-end; height:100%; }
+  .bar .fill { background:#2f3a68; border-radius:4px 4px 0 0; border:1px solid #3d4778; border-bottom:none;
+               transition:height .18s, background .18s; }
+  .bar .val { text-align:center; font:12px Consolas,monospace; color:var(--dim); }
+  .bar .idx { text-align:center; font:11px Consolas,monospace; color:#6b7396; margin-top:4px; }
+  .bar.cur .fill { background:var(--acc); border-color:var(--acc); }
+  .bar.cur .val { color:var(--acc); font-weight:700; }
+  .bar.src .fill { background:#6b5a2a; border-color:var(--warn); }
+  .bar.src .val { color:#fca5a5; }
+  .bar.fresh .fill { background:#5b2a86; border-color:var(--fresh); }
+  .bar.fresh .val { color:var(--fresh); font-weight:700; }
+  .bar.keep .fill { background:#2f3a68; }
+  .bar.new .fill { background:#256a4a; border-color:var(--ok); }
+  .wrap { display:flex; gap:14px; flex-wrap:wrap; }
+  .wrap > div { flex:1; min-width:320px; }
+  pre.code { margin:0; font:13px/1.8 Consolas,monospace; }
+  pre.code .ln { display:block; padding:0 8px; border-left:3px solid transparent; white-space:pre; }
+  pre.code .ln.on { background:#173a4a; border-left-color:var(--acc); color:var(--acc); }
+  pre.code .ln.bad.on { background:#3a1f2a; border-left-color:var(--warn); color:var(--warn); }
+  table.vars { border-collapse:collapse; width:100%; font:13px Consolas,monospace; }
+  table.vars td { border:1px solid #2b3358; padding:4px 8px; }
+  table.vars td.k { color:var(--dim); }
+  table.vars td.v { color:var(--acc); font-weight:700; }
+  .note { font-size:14px; min-height:92px; }
+  .note b { color:var(--acc); }
+  .note .bad { color:var(--warn); } .note .good { color:var(--ok); } .note .pu { color:var(--fresh); }
+  .items { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .it { padding:6px 10px; border-radius:8px; background:#232a4a; border:1px solid #333c66; font:13px Consolas,monospace; }
+  .it.on { outline:2px solid var(--acc); background:#173a4a; color:var(--acc); font-weight:700; }
+  .it.done { opacity:.45; }
+  .ans { margin-top:12px; text-align:center; font:15px/1.5 Consolas,monospace; color:var(--dim); }
+  .ans b { color:var(--ok); font-size:22px; } .ans b.bad { color:var(--warn); }
+  .err { color:var(--warn); font-size:13px; }
+</style>
+</head>
+<body>
+<h1>P1048 采药 · 一维背包，倒序才是 01 背包</h1>
+<div class="sub">f[j] = "只有 j 时间时能采到的最大价值"。加入第 i 株 (t, v) 时：<b>f[j] = max(f[j], f[j-t] + v)</b>。
+而 <b>f[j-t] 必须是"还没考虑第 i 株"时的旧值</b> —— 这就是内层循环必须倒序的全部理由。</div>
+<div class="legend">图例：<i style="background:#6b5a2a;border:1px solid #f87171"></i>本轮读取的 f[j-t] <i style="background:#5b2a86;border:1px solid #c084fc"></i>它本轮已被改过（同一株被采了两次！） <i style="background:#256a4a;border:1px solid #86efac"></i>变大了 <i style="background:#2f3a68"></i>保持原值</div>
+
+<div class="topbar">
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到结尾</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="card">
+  <h2>输入（第一行 T M，下面 M 行每行 t v；默认就是板书那组 T=10 的演示数据，本演示限 T ≤ 200）</h2>
+  <textarea id="src" spellcheck="false">10 4
+3 4
+5 6
+7 8
+1 1</textarea>
+  <div class="mode">
+    <label><input type="radio" name="md" value="down" checked> 倒序 <b>j = T → t</b>（01 背包，正解）</label>
+    <label class="bad"><input type="radio" name="md" value="up"> 正序 <b>j = t → T</b>（错版：同一株能反复采）</label>
+  </div>
+  <button id="load" style="margin-left:18px">载入并重新演示</button> <span class="err" id="err"></span>
+</div>
+
+<div class="card">
+  <h2>f[0..T] 条形图</h2>
+  <div class="items" id="items"></div>
+  <div class="chart" id="chart"></div>
+  <div class="ans" id="ans"></div>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <h2>代码执行位置</h2>
+    <pre class="code" id="code"></pre>
+  </div>
+  <div>
+    <div class="card">
+      <h2>变量状态</h2>
+      <table class="vars" id="vars"></table>
+    </div>
+    <div class="card">
+      <h2>这一步在做什么</h2>
+      <div class="note" id="note"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let T = 10, herbs = [[3, 4], [5, 6], [7, 8], [1, 1]], order = 'down';
+let steps = [], cur = 0, timer = null, peak = 12;
+
+function codeLines() {
+  return [
+    '    scanf("%d%d", &T, &m);',
+    '    for (int i = 1; i <= m; i++) {',
+    '        int t, v;',
+    '        scanf("%d%d", &t, &v);',
+    order === 'down' ? '        for (int j = T; j >= t; j--)        // 倒序'
+                     : '        for (int j = t; j <= T; j++)         // 正序（错）',
+    '            f[j] = max(f[j], f[j - t] + v);',
+    '    }',
+    '    printf("%d\\n", f[T]);',
+  ];
+}
+
+function solve(ord) {
+  const f = new Array(T + 1).fill(0);
+  for (const [t, v] of herbs) {
+    if (ord === 'down') { for (let j = T; j >= t; j--) f[j] = Math.max(f[j], f[j - t] + v); }
+    else { for (let j = t; j <= T; j++) f[j] = Math.max(f[j], f[j - t] + v); }
+  }
+  return f[T];
+}
+
+function build() {
+  steps = [];
+  const f0 = new Array(T + 1).fill(0);
+  peak = 1;
+  steps.push({ line: 0, phase: 'init', fa: f0.slice(),
+    note: 'f[0..' + T + '] 全 0。"什么都不采"在任何剩余时间下都是合法方案，价值 0，所以初值就是 0，不需要特殊处理。' });
+  let f = f0.slice();
+  herbs.forEach((h, idx) => {
+    const t = h[0], v = h[1];
+    steps.push({ line: 3, phase: 'item', i: idx + 1, t, v, fa: f.slice(),
+      note: '取出第 ' + (idx + 1) + ' 株：耗时 t=' + t + '，价值 v=' + v + '。' +
+        (order === 'down' ? '内层 j 从 ' + T + ' 递减到 ' + t + '。' : '<span class="bad">内层 j 从 ' + t + ' 递增到 ' + T + '（错版写法）。</span>') +
+        ' j &lt; ' + t + ' 的那些格子装不下这株，保持原值，所以循环根本不用写 else。' +
+        (order === 'down' ? ' 倒序时 f[j-t] 的下标总比当前 j 小，本轮还没轮到它，读到的必然是<b>没考虑这株的旧值</b>。' : ' 正序时 f[j-t] 本轮已经处理过了，读到的可能是<b>已经采过这株</b>的值。') });
+    const js = [];
+    if (order === 'down') for (let j = T; j >= t; j--) js.push(j);
+    else for (let j = t; j <= T; j++) js.push(j);
+    const changed = new Set();
+    js.forEach(j => {
+      const fb = f.slice();
+      const src = j - t;
+      const cand = fb[src] + v;
+      const upd = cand > fb[j];
+      if (upd) { f[j] = cand; changed.add(j); }
+      peak = Math.max(peak, f[j]);
+      const fresh = changed.has(src);
+      steps.push({ line: 5, phase: 'cell', i: idx + 1, t, v, j, src, old: fb[j], cand,
+        upd, fresh, fb, fa: f.slice(),
+        note: 'j=' + j + '：读 f[' + j + '-' + t + ']=f[' + src + ']=' + fb[src] + '，加这株的 ' + v +
+          ' ⇒ 候选 ' + cand + '；不采是 ' + fb[j] + '。' +
+          '<b>' + (upd ? '采！f[' + j + '] = ' + cand : '不采，保持 ' + fb[j]) + '</b>。' +
+          (fresh ? ' <span class="pu">注意 f[' + src + '] 本轮刚被改过（它已经含这株药），所以这里等于把同一株采了两次。</span>' : '') });
+    });
+  });
+  const a = solve('down'), b = solve('up');
+  const mine = order === 'down' ? a : b;
+  let tail = '最后输出 f[' + T + '] = <b>' + mine + '</b>。';
+  tail += order === 'down'
+    ? ' 同一段代码只把内层循环改成正序，答案会变成 <span class="bad">' + b + '</span>' +
+      (b > a ? '——比正解还大，因为 (' + herbs[herbs.length - 1][0] + ',' + herbs[herbs.length - 1][1] + ') 这株被反复采。"答案偏大"就是方向写反的典型症状。' : '（这组数据恰好没暴露问题，换一组就会）。')
+    : ' <span class="bad">这就是正序（完全背包）的结果 ' + mine + '；倒序的正解是 ' + a + '。</span>切回上面的"倒序"再走一遍，重点看最后那株被反复加的地方。';
+  steps.push({ line: 7, phase: 'end', fa: f.slice(), note: tail });
+}
+
+function render() {
+  const s = steps[cur];
+  let h = '';
+  herbs.forEach((x, i) => {
+    const on = s.i === i + 1 && s.phase !== 'init' && s.phase !== 'end';
+    const done = (s.i || 0) > i + 1 || s.phase === 'end';
+    h += '<div class="it' + (on ? ' on' : done ? ' done' : '') + '">#' + (i + 1) + ' t=' + x[0] + ' v=' + x[1] + '</div>';
+  });
+  document.getElementById('items').innerHTML = h;
+
+  let c = '';
+  for (let j = 0; j <= T; j++) {
+    const cls = ['bar'];
+    if (s.phase === 'cell') {
+      if (j === s.j) { cls.push('cur'); if (!s.upd) cls.push('keep'); }
+      else if (j === s.src) cls.push(s.fresh ? 'fresh' : 'src');
+    }
+    const val = s.fa[j];
+    const hp = Math.max(2, Math.round(val / peak * 150));
+    c += '<div class="' + cls.join(' ') + '"><span class="val">' + val + '</span>' +
+      '<div class="fill" style="height:' + hp + 'px"></div><div class="idx">' + j + '</div></div>';
+  }
+  document.getElementById('chart').innerHTML = c;
+
+  const a = solve('down'), b = solve('up');
+  document.getElementById('ans').innerHTML = s.phase === 'end'
+    ? '答案 <b class="' + (order === 'up' ? 'bad' : '') + '">' + (order === 'down' ? a : b) + '</b>' +
+      ' <span style="color:var(--dim)">（倒序 ' + a + ' ｜ 正序 ' + b + '）</span>'
+    : '';
+
+  const CL = codeLines();
+  document.getElementById('code').innerHTML = CL.map((x, i) =>
+    '<span class="ln' + (i === 4 && order === 'up' ? ' bad' : '') + (i === s.line ? ' on' : '') + '">' + x + '</span>').join('');
+
+  const v = [['T（总时间）', T], ['M（草药数）', herbs.length]];
+  if (s.i) { v.push(['i（第几株）', s.i], ['t（本株耗时）', s.t], ['v（本株价值）', s.v]); }
+  if (s.phase === 'cell') {
+    v.push(['j', s.j], ['f[j-t]（旧值）', s.fb[s.src]],
+      ['候选 f[j-t]+v', s.cand], ['f[j]（旧）', s.old], ['f[j]（新）', s.upd ? s.cand : s.old]);
+  }
+  document.getElementById('vars').innerHTML = v.map(x =>
+    '<tr><td class="k">' + x[0] + '</td><td class="v">' + x[1] + '</td></tr>').join('');
+  document.getElementById('note').innerHTML = s.note;
+  document.getElementById('prog').textContent = (cur + 1) + ' / ' + steps.length;
+  document.getElementById('prev').disabled = cur === 0;
+  document.getElementById('next').disabled = cur === steps.length - 1;
+}
+
+function load() {
+  const t = document.getElementById('src').value.trim().split(/\s+/).map(Number);
+  if (t.length < 2 || t.some(Number.isNaN)) { bad('至少要两个整数 T 和 M'); return; }
+  const TT = t[0], MM = t[1];
+  if (TT < 1 || TT > 200 || MM < 1 || MM > 30 || t.length !== 2 + 2 * MM) {
+    bad('格式不对：T 需 1..200（演示用），M 需 1..30，且后面要有 M 行 "t v"。当前 T=' + TT + ' M=' + MM + '，后面 ' + ((t.length - 2) / 2) + ' 对。');
+    return;
+  }
+  const hs = [];
+  for (let i = 0; i < MM; i++) hs.push([t[2 + 2 * i], t[3 + 2 * i]]);
+  if (hs.some(x => x[0] < 1 || x[1] < 0)) { bad('t 必须 ≥ 1'); return; }
+  document.getElementById('err').textContent = '';
+  T = TT; herbs = hs; cur = 0; build(); render();
+}
+function bad(msg) { document.getElementById('err').textContent = msg; }
+
+document.getElementById('next').onclick = () => { if (cur < steps.length - 1) { cur++; render(); } };
+document.getElementById('prev').onclick = () => { if (cur > 0) { cur--; render(); } };
+document.getElementById('jump').onclick = () => { stop(); cur = steps.length - 1; render(); };
+document.getElementById('load').onclick = load;
+[].forEach.call(document.getElementsByName('md'), r => r.onchange = () => {
+  order = r.value; cur = 0; build(); render();
+});
+function stop() { if (timer) { clearInterval(timer); timer = null; document.getElementById('play').textContent = '▶ 自动播放'; } }
+document.getElementById('play').onclick = () => {
+  if (timer) return stop();
+  document.getElementById('play').textContent = '⏸ 暂停';
+  timer = setInterval(() => { if (cur >= steps.length - 1) return stop(); cur++; render(); }, 420);
+};
+
+build(); render();
+</script>
+</body>
+</html>

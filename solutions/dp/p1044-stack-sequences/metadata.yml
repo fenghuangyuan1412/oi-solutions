@@ -1,0 +1,25 @@
+id: P1044
+title: "[NOIP 2003 普及组] 栈"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1044
+alias: 入门 DP 十题（第一批）
+topics: [dp/recurrence, dp/counting, math/catalan]
+difficulty: 普及（NOIP 2003 普及组 T3，卡特兰数递推第一课）
+tags: [计数DP, 卡特兰数, 栈, 分治推导, f0=1地基]
+complexity:
+  time: O(n^2)
+  space: O(n)
+status: 本地 g++ -static -O2 -std=c++14 编译通过（本机两套 MinGW 冲突必须加 -static，否则退出码 139）；官方样例输入 3 输出 5，与 problem.txt 逐字核对一致；未做随机对拍（没有独立且更慢的标准暴力），用 n=3 全枚举 5 种出栈序列当自检；n=18 满数据输出 477638700，5 次运行 4.9 / 5.1 / 10.3 ms（最小/中位/最大，含进程启动）；错版实测：删掉 f[0]=1 后官方样例输出 0（正解 5）；未在洛谷提交
+visualization: false
+samples:
+  - in: |
+      3
+    out: |
+      5
+notes: |
+  交付精简：不做 HTML 动画，README 用两块板书代替（卡特兰递推表 f[0..8]=1,1,2,5,14,42,132,429,1430 /
+  n=3 全部 5 种出栈序列枚举表 321、231、213、132、123，缺 312）。
+  推导要点：盯住第一个进栈的数 1，它是第 k+1 个出栈的，前 k 个与后 n-1-k 个彼此独立，
+  f[n]=sum f[k]*f[n-1-k]，f[0]=1（空序列算一种）。
+  数据范围点评：C_18=477638700 刚好在 int 内，但 C_20=6564120420 已超 int，
+  代码用 long long 是多留一格余量的习惯。

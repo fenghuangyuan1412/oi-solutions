@@ -1,0 +1,27 @@
+id: P1255
+title: "数楼梯"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1255
+alias: 入门 DP 十题（第一批）
+topics: [dp/recurrence, dp/fibonacci, math/big-integer]
+difficulty: 入门~普及-（递推入门，真正的门槛是高精度加法）
+tags: [递推, 斐波那契, 高精度, 字符串竖式加法, 数据范围分析]
+complexity:
+  time: O(N*L)，L≈1045 为最终答案位数
+  space: O(L)（滚动两个大数串）
+status: 本地 g++ -static -O2 -std=c++14 编译通过（本机两套 MinGW 冲突必须加 -static，否则退出码 139）；官方样例输入 4 输出 5，与 problem.txt 逐字核对一致；未做随机对拍（递推式唯一，暴力枚举路径的复杂度就是答案本身），代之以整数溢出实测：int 第 46 项爆（2971215073 > 2147483647），unsigned long long 撑到第 92 项、第 93 项起回绕；N=5000 满数据输出与 f[5000] 前 12 位 627630280048… 一致（共 1045 位），5 次运行 17.5 / 17.6 / 23.3 ms（最小/中位/最大，含进程启动）；未在洛谷提交
+visualization: false
+samples:
+  - in: |
+      4
+    out: |
+      5
+notes: |
+  交付精简：不做 HTML 动画，README 用三块板书表格代替（前 20 项递推表 /
+  整数溢出实测表 / 竖式加法逐轮表）。
+  溢出实测数据来自独立的 unsigned long long 逐项推算小程序：
+  f45=1836311903、f46=2971215073、f50=20365011074、f92=12200160415121876738、
+  f93=1293530146158671551（真值 12935301461586715516，最高位被砍）、
+  f100=1298777728820984005。
+  addString 三个命门：循环条件 i>=0 || j>=0 || carry（漏 carry 丢最高位）、
+  低位先算最后 reverse、f[0] 不能由 f[2]=f[1]+f[0] 反解出来当已知初值（题面 1<=N）。

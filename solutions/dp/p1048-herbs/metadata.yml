@@ -1,0 +1,28 @@
+id: P1048
+title: "[NOIP 2005 普及组] 采药"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1048
+alias: 入门 DP 十题（第一批）
+topics: [dp/knapsack-01, dp/rolling-array]
+difficulty: 入门~普及-
+tags: [动态规划, 01背包, 滚动数组, 倒序枚举]
+complexity:
+  time: O(T*M)
+  space: O(T)
+status: 未本地评测（洛谷题目页需登录才能提交）；本地 g++ -static -O2 -std=c++14 编译通过，官方样例 70 3 / 71 100 / 69 1 / 1 2 输出 3 逐字正确；node verify.js --exe ./solution.exe --rounds=200 与"枚举 2^M 个子集"的暴力随机对拍 200 组（T<=60, M<=16）0 不一致；T=1000/M=100 满数据输出 2656，5 次运行 4.9 / 5.2 / 10.9 ms（最小/中位/最大，含进程启动）
+visualization: true
+samples:
+  - in: |
+      70 3
+      71 100
+      69 1
+      1 2
+    out: |
+      3
+notes: |
+  01 背包的第一课。易错点全部做了错误版本实测：
+  内层正序（01 背包写成完全背包）官方样例输出 140（正解 3），自造最小例 2 1 / 1 1 输出 2（正解 1）；
+  同一批 200 组随机数据里有 167 组正序版本严格大于正解，README 用它说明"方向写反是系统性偏大，不是偶发"。
+  板书表用演示数据 T=10、(t,v) = (3,4)(5,6)(7,8)(1,1)，逐株打印整条 f[0..10]，
+  最后一行给出正序错版的 f（f[10]=13 > 正解 12），课堂上对比"同一株被采多次"。
+  visualization.html 支持"倒序 / 正序"一键切换，是本批三个动画里最有讲课价值的一个。

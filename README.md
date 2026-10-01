@@ -12,16 +12,16 @@
 | 主题 | 题数 | 目录 |
 | --- | --- | --- |
 | 基础 | 10 | [solutions/basic](solutions/basic) |
-| 动态规划 | 5 | [solutions/dp](solutions/dp) |
+| 动态规划 | 15 | [solutions/dp](solutions/dp) |
 | 数据结构 | 8 | [solutions/ds](solutions/ds) |
 | 图论 | 0 | [solutions/graph](solutions/graph) |
-| 搜索 | 0 | [solutions/search](solutions/search) |
+| 搜索 | 10 | [solutions/search](solutions/search) |
 | 贪心 | 4 | [solutions/greedy](solutions/greedy) |
 | 数学 | 0 | [solutions/math](solutions/math) |
 | 字符串 | 0 | [solutions/string](solutions/string) |
 | 计算几何 | 0 | [solutions/geometry](solutions/geometry) |
 
-共 27 题（按"有 README.md 的目录"统计），全部来自训练单与洛谷/NOIP 真题，暂无半成品目录。
+共 47 题（按"有 README.md 的目录"统计；其中 [solutions/search](solutions/search) 的 10 道搜索题由另一条工作线并行补写，下面的「题目列表」暂未列出它们的行）。全部题目来自训练单与洛谷/NOIP 真题，暂无半成品目录。
 
 **怎么用这张表全局浏览**：
 
@@ -54,6 +54,16 @@
 | [P14360](https://www.luogu.com.cn/problem/P14360) | [[CSP-J 2025] 多边形](solutions/dp/p14360-polygon/README.md) | 动态规划 / 背包计数 | 极值锚定 + 补集转化，m≥3 由判据自动蕴含 | [html](solutions/dp/p14360-polygon/visualization.html) |
 | [P3017](https://www.luogu.com.cn/problem/P3017) | [[USACO11MAR] Brownie Slicing G / 布朗尼切片](solutions/dp/p3017-brownie/README.md) | 动态规划 / 二分答案·贪心 | 二分"最小块≥X"→带内贪心数块+带间DP选带；合格性对扩行单调使 DP 塌回贪心，O(R²C)→O(RC) | [html](solutions/dp/p3017-brownie/visualization.html) |
 | [P7074](https://www.luogu.com.cn/problem/P7074) | [[CSP-J 2020] 方格取数](solutions/dp/p7074-grid/README.md) | 动态规划 / 前缀最优 | **骗分练习 ④**：每列单向 ⇒ DFS 20 分 / $O(n^2m)$ 70 分 / $O(nm)$ 100 分三级阶梯，三版互拍 | —— |
+| [P1216](https://www.luogu.com.cn/problem/P1216) | [[IOI 1994 / USACO1.5] Number Triangles](solutions/dp/p1216-number-triangle/README.md) | 动态规划 / 入门·递推滚动 | 自底向上，整张表塌缩成一条滚动 f；塔底要原样抄进 f，写成 `f[j]=0` 本机实测样例从 30 变 25 | [html](solutions/dp/p1216-number-triangle/visualization.html) |
+| [P1255](https://www.luogu.com.cn/problem/P1255) | [数楼梯](solutions/dp/p1255-staircase/README.md) | 动态规划 / 入门·递推·高精度 | 递推式就是斐波那契，门槛在数值：`int` 第 46 项就爆，$N=5000$ 答案 1045 位 ⇒ 手写竖式加法 | —— |
+| [P1002](https://www.luogu.com.cn/problem/P1002) | [[NOIP 2002 普及组] 过河卒](solutions/dp/p1002-river-passage/README.md) | 动态规划 / 入门·网格计数 | 马的 9 个控制点直接置 0，$f[i][j]=上+左$；答案能到 8119857900，`int` 会回绕成 −470076692 | [html](solutions/dp/p1002-river-passage/visualization.html) |
+| [P1044](https://www.luogu.com.cn/problem/P1044) | [[NOIP 2003 普及组] 栈](solutions/dp/p1044-stack-sequences/README.md) | 动态规划 / 入门·计数·卡特兰 | 最后一个进栈的元素把序列切成独立两半 ⇒ $f[n]=\sum f[k]f[n-1-k]$；$f[0]=1$ 是地基，漏了样例输出 0 | —— |
+| [P1115](https://www.luogu.com.cn/problem/P1115) | [最大子段和](solutions/dp/p1115-max-subarray/README.md) | 动态规划 / 入门·线性 Kadane | `cur=max(x,cur+x)`；初值必须取第一个数而不是 0，否则全负数据输出 0（正解 −1） | —— |
+| [P1091](https://www.luogu.com.cn/problem/P1091) | [[NOIP 2004 提高组] 合唱队形](solutions/dp/p1091-chorus-line/README.md) | 动态规划 / 入门·双向 LIS | 正反各跑一次 LIS，答案 $n-\max(up+down-1)$；峰被左右共用，忘减 1 时样例从 4 变 3 | —— |
+| [P1048](https://www.luogu.com.cn/problem/P1048) | [[NOIP 2005 普及组] 采药](solutions/dp/p1048-herbs/README.md) | 动态规划 / 入门·01 背包 | 一维 f + 内层**倒序**是 01 背包的全部命门；写成正序就变成完全背包，本机实测样例从 3 变 140 | [html](solutions/dp/p1048-herbs/visualization.html) |
+| [P1049](https://www.luogu.com.cn/problem/P1049) | [[NOIP 2001 普及组] 装箱问题](solutions/dp/p1049-box-packing/README.md) | 动态规划 / 入门·背包·体积当价值 | `f[j]=max(f[j],f[j-v]+v)`，问的是剩余空间 ⇒ 必须输出 $V-f[V]$，直接印 `f[V]` 样例从 0 变 24 | —— |
+| [P1164](https://www.luogu.com.cn/problem/P1164) | [小 A 点菜](solutions/dp/p1164-order-dishes/README.md) | 动态规划 / 入门·背包计数 | "恰好花光"让 $\max$ 变成 $+$：$f[j]+=f[j-a]$ 且 $f[0]=1$；官方数据弱，但自造数据能把 `long long` 也打爆 | —— |
+| [P1435](https://www.luogu.com.cn/problem/P1435) | [[IOI 2000] 回文字串](solutions/dp/p1435-palindrome-string/README.md) | 动态规划 / 入门·区间 DP | 两端相等白捡 $f[i+1][j-1]$，不等才 $\min+1$；填表必须先短后长，$1005^2$ 数组必须开全局 | —— |
 | [P1160](https://www.luogu.com.cn/problem/P1160) | [队列安排](solutions/ds/p1160-queue-arrangement/README.md) | 数据结构 / 双向链表 | 编号本身就是节点号 ⇒ 定位 $O(1)$，0 号哨兵把链接成环免特判；**重复删除必须用 `gone[]` 挡住（样例查不出来）** | —— |
 | [P1241](https://www.luogu.com.cn/problem/P1241) | [括号序列](solutions/ds/p1241-bracket-sequence/README.md) | 数据结构 / 栈 | 右括号类型不符时右括号作废，栈顶左括号**不弹出** | [html](solutions/ds/p1241-bracket-sequence/visualization.html) |
 | [P1540](https://www.luogu.com.cn/problem/P1540) | [[NOIP 2010 提高组] 机器翻译（队列版）](solutions/ds/p1540-machine-translation/README.md) | 数据结构 / 队列·FIFO缓存 | 与上面"基础 / 模拟"那行是**同一道题的两份实现**：这版只用 `queue` + `bool in[]`，命中时什么都不做（FIFO 不是 LRU） | —— |

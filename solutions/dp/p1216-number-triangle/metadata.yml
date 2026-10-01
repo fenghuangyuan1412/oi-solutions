@@ -1,0 +1,30 @@
+id: P1216
+title: "[IOI 1994 / USACO1.5] 数字三角形 Number Triangles"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1216
+alias: 入门 DP 十题（第一批）
+topics: [dp/number-triangle, dp/rolling-array]
+difficulty: 入门~普及-
+tags: [动态规划, 数塔, 滚动数组, 自底向上]
+complexity:
+  time: O(R^2)
+  space: O(R)
+status: 未本地评测（洛谷题目页需登录才能提交）；本地 g++ -static -O2 -std=c++14 编译无警告，官方样例输出 30 逐字正确；node verify.js 与"DFS 枚举全部 2^(R-1) 条路径"的暴力随机对拍 400 组（R<=10）0 不一致，--exe 模式再让编译好的 C++ 程序对拍 200 组 0 不一致，3 项定向边界（R=1、全 0、最大值埋在塔底中间）全对；R=1000 满数据（输入 1.42 MB）输出 74444，5 次运行 191 / 199 / 206 ms（最小/中位/最大，含进程启动）
+visualization: true
+samples:
+  - in: |
+      5
+      7
+      3 8
+      8 1 0
+      2 7 4 4
+      4 5 2 6 5
+    out: |
+      30
+notes: |
+  本题是"入门 DP 十题"第一批的第一题，配套还有 p1255 / p1002 / p1044 / p1115 / p1091 /
+  p1048 / p1049 / p1164 / p1435 九题，难度都在洛谷标 2~3（入门~普及左右）。
+  易错点做了错误版本实测：塔底初值写成 0（f[j] = a[r][j] 改成 f[j] = 0）后官方样例输出 25（正解 30），
+  程序能编过、有输出，属于最容易被忽视的一类 bug。
+  贪心反例（每步取较大子节点走 7->8->1->4->5=25）写在 README 的"正确性说明"里，课堂上必讲。
+  visualization.html 是自底向上逐行填表的分步动画，默认数据即官方样例。

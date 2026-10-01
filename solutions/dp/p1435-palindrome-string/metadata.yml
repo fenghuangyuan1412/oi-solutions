@@ -1,0 +1,34 @@
+id: P1435
+title: "[IOI 2000] 回文字串"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1435
+topics: [dp/interval-dp, string/palindrome]
+difficulty: 普及/提高-
+tags: [区间DP, 回文, 填表顺序, 全局大数组]
+complexity:
+  time: O(l^2)
+  space: O(l^2)
+status: 本地 g++ -static -O2 -std=c++14 编译通过，官方样例输入 Ab3bd 输出 2 逐字核对一致；node verify.js：与另一个独立结论"最少插入数 = l - LCS(s, reverse(s))"交叉随机对拍 400 组（串长 <=11，字母表 abAB3，区分大小写）0 不一致，定向边界自检全 OK；两个错版实测均跑官方样例——丢掉 s[i]==s[j] 分支一律 min+1 输出 4、填表顺序写成外层 i 从大到小内层 j 从小到大输出 0，正解 2；满数据 l=1000 大小写混合随机串输出 755，5 次运行 7.6 / 8.3 / 14.2 ms（最小/中位/最大，node execFileSync 起进程，含进程启动与 Defender 噪声）；未在洛谷提交
+visualization: false
+samples:
+  - in: |
+      Ab3bd
+    out: |
+      2
+notes: |
+  交付精简：不做 HTML 动画，README 用「板书演示」的上三角表格（行 = i，列 = j，下三角无意义记 .）代替。
+  板书表由本机程序打印，s = A b 3 b d：
+    i=0: 0 1 2 1 2
+    i=1: . 0 1 0 1
+    i=2: . . 0 1 2
+    i=3: . . . 0 1
+    i=4: . . . . 0
+  ⇒ f[0][4] = 2。
+  两个必讲点：
+    1) 转移为什么长这样——两端相等 ⇒ 配对免费、中间怎么处理与两端无关，取 f[i+1][j-1]；
+       两端不等 ⇒ 逼其中一端单独去找配对，取 min(f[i+1][j], f[i][j-1]) + 1；
+    2) 必须按区间长度从小到大填表，因为 f[i][j] 依赖 f[i+1][j-1]、f[i+1][j]、f[i][j-1] 三个更短的区间。
+  空间提醒：int f[1005][1005] 是 4 MB，必须开全局（放 main 里会爆栈），
+  这也是洛谷 128 MB 限制下唯一的坑位；len 从 2 起、靠全局零初始化把 len<=1 的区间兜成 0。
+  变式 l - LCS(s, reverse(s)) 值相同，但正确性要额外论证（LCS 未必对应得上回文子序列），
+  且本题区分大小写，反转串要用同一份字符集比较；verify.js 用它做独立参考实现。
