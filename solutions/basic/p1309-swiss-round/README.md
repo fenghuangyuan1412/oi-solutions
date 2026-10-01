@@ -1,6 +1,7 @@
 # P1309 [NOIP 2011 普及组] 瑞士轮 —— 骗分练习 ①「暴力本身就是分数」
 
 > 原题链接：<https://www.luogu.com.cn/problem/P1309>
+> 本目录导航：[← 题库索引](../../../README.md) ｜ [讲解代码](solution.cpp) · [元信息](metadata.yml) · [对拍脚本](verify.js)
 
 ## 元信息
 

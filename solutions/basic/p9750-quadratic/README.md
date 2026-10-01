@@ -1,6 +1,7 @@
 # P9750 [CSP-J 2023] 一元二次方程 —— 骗分练习 ⑤「特殊性质分档 + 输出格式逐字」
 
 > 原题链接：<https://www.luogu.com.cn/problem/P9750>
+> 本目录导航：[← 题库索引](../../../README.md) ｜ [讲解代码](solution.cpp) · [元信息](metadata.yml) · [对拍脚本](verify.js)
 
 ## 元信息
 

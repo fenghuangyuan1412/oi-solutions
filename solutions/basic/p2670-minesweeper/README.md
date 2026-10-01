@@ -1,6 +1,7 @@
 # P2670 [NOIP 2015 普及组] 扫雷游戏
 
 > 原题链接：<https://www.luogu.com.cn/problem/P2670>
+> 本目录导航：[← 题库索引](../../../README.md) ｜ [讲解代码](solution.cpp) · [元信息](metadata.yml) · [对拍脚本](verify.js)
 
 ## 元信息
 

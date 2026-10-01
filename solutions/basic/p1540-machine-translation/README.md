@@ -1,6 +1,9 @@
 # P1540 [NOIP 2010 提高组] 机器翻译
 
 > 原题链接：<https://www.luogu.com.cn/problem/P1540>
+>
+> 同题另有一份写法不同的讲评在 [`solutions/ds/p1540-machine-translation/`](../../ds/p1540-machine-translation/)（只用 `queue` + `bool in[]`，考场上最短、最好讲）。两份都保留，讲课时任选其一。
+> 本目录导航：[← 题库索引](../../../README.md) ｜ [讲解代码](solution.cpp) · [元信息](metadata.yml) · [对拍脚本](verify.js)
 
 ## 元信息
 

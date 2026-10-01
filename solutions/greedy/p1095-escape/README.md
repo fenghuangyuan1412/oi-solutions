@@ -1,6 +1,7 @@
 # P1095 [NOIP 2005 提高组] 守望者的逃离 —— 骗分练习 ③「漏一条规则的代价」
 
 > 原题链接：<https://www.luogu.com.cn/problem/P1095>
+> 本目录导航：[← 题库索引](../../../README.md) ｜ [讲解代码](solution.cpp) · [元信息](metadata.yml) · [对拍脚本](verify.js)
 
 ## 元信息
 

@@ -1,6 +1,7 @@
 # P14359 [CSP-J 2025] 异或和
 
 > 原题链接：<https://www.luogu.com.cn/problem/P14359>
+> 本目录导航：[← 题库索引](../../../README.md) ｜ [讲解代码](solution.cpp) · [元信息](metadata.yml) · [对拍脚本](verify.js) · [分步动画](visualization.html)
 
 ## 元信息
 

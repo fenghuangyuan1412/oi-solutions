@@ -10,7 +10,7 @@ complexity:
   time: O(n + sum k_i)
   space: O(sum k_i + max x)
 status: 未本地评测（洛谷题目页需登录）；本地 g++ -static -O2 -std=c++14 编译运行，样例 #1 输出 3/4/4、样例 #2 输出 3/3/3/4 均逐字正确；与"每艘船重建 Set"的暴力随机对拍 200000 组 0 不一致，另用编译好的 C++ 程序复核 300 组 0 不一致；60000 艘船 / 300000 名乘客压力测试 15~21ms
-visualization: true
+visualization: false   # 无 html 动画；README「可视化讲解」用 mermaid + 课堂手算状态表代替
 samples:
   - in: |
       3

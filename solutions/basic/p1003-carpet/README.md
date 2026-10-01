@@ -1,6 +1,7 @@
 # P1003 [NOIP 2011 提高组] 铺地毯
 
 > 原题链接：<https://www.luogu.com.cn/problem/P1003>
+> 本目录导航：[← 题库索引](../../../README.md) ｜ [讲解代码](solution.cpp) · [元信息](metadata.yml) · [对拍脚本](verify.js)
 
 ## 元信息
 

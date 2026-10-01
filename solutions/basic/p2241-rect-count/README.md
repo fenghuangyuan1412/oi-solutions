@@ -1,6 +1,7 @@
 # P2241 统计方形（数据加强版）
 
 > 原题链接：<https://www.luogu.com.cn/problem/P2241>
+> 本目录导航：[← 题库索引](../../../README.md) ｜ [讲解代码](solution.cpp) · [元信息](metadata.yml) · [对拍脚本](verify.js)
 
 ## 元信息
 

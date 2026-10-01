@@ -1,6 +1,7 @@
 # P3017 [USACO11MAR] Brownie Slicing G / 布朗尼切片
 
 > 原题链接：<https://www.luogu.com.cn/problem/P3017>
+> 本目录导航：[← 题库索引](../../../README.md) ｜ [讲解代码](solution.cpp) · [元信息](metadata.yml) · [分步动画](visualization.html)
 
 ## 元信息
 

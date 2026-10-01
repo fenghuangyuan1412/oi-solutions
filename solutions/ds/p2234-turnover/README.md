@@ -1,6 +1,7 @@
 # P2234 [HNOI2002] 营业额统计
 
 > 原题链接：<https://www.luogu.com.cn/problem/P2234>
+> 本目录导航：[← 题库索引](../../../README.md) ｜ [题目原文](problem.txt) · [讲解代码](solution.cpp) · [元信息](metadata.yml) · [对拍脚本](verify.js)
 
 ## 元信息
 

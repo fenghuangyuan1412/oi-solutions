@@ -1,6 +1,7 @@
 # P1563 [NOIP 2016 提高组] 玩具谜题
 
 > 原题链接：<https://www.luogu.com.cn/problem/P1563>
+> 本目录导航：[← 题库索引](../../../README.md) ｜ [讲解代码](solution.cpp) · [元信息](metadata.yml) · [对拍脚本](verify.js)
 
 ## 元信息
 

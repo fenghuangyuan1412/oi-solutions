@@ -1,6 +1,7 @@
 # P1005 [NOIP 2007 提高组] 矩阵取数游戏 —— 骗分练习 ②「分数藏在数据类型里」
 
 > 原题链接：<https://www.luogu.com.cn/problem/P1005>
+> 本目录导航：[← 题库索引](../../../README.md) ｜ [讲解代码](solution.cpp) · [元信息](metadata.yml) · [对拍脚本](verify.js)
 
 ## 元信息
 

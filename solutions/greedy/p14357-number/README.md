@@ -1,6 +1,7 @@
 # P14357 [CSP-J 2025] 拼数 / number
 
 > 原题链接：<https://www.luogu.com.cn/problem/P14357>
+> 本目录导航：[← 题库索引](../../../README.md) ｜ [讲解代码](solution.cpp) · [元信息](metadata.yml) · [分步动画](visualization.html)
 
 ## 元信息
 

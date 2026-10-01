@@ -2,8 +2,9 @@
 
 > 原题链接：<https://www.luogu.com.cn/problem/P1540>
 >
-> 同题另有一份写法不同的讲评在 [`solutions/basic/p1540-machine-translation/`](../basic/p1540-machine-translation/)（`set` 判存在 + 数组手工 shift 淘汰）。
+> 同题另有一份写法不同的讲评在 [`solutions/basic/p1540-machine-translation/`](../../basic/p1540-machine-translation/)（`set` 判存在 + 数组手工 shift 淘汰）。
 > 本目录这一版只用**队列 + 一个 `bool in[]` 标记数组**，是考场上最短、最好讲的一种实现；两份都保留，讲课时任选其一。
+> 本目录导航：[← 题库索引](../../../README.md) ｜ [题目原文](problem.txt) · [讲解代码](solution.cpp) · [元信息](metadata.yml)
 
 ## 元信息
 

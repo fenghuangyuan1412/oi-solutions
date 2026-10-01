@@ -2,6 +2,7 @@
 
 > 原题链接：<https://www.luogu.com.cn/problem/U397952>（洛谷训练单 <https://www.luogu.com.cn/training/320175>）
 > 卷面题面逐字版（抄自题目页截图）：[`problem.txt`](problem.txt)
+> 本目录导航：[← 题库索引](../../../README.md) ｜ [题目原文](problem.txt) · [讲解代码](solution.cpp) · [元信息](metadata.yml) · [对拍脚本](verify.js)
 
 ## 元信息
 

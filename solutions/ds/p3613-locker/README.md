@@ -1,6 +1,7 @@
 # P3613 【深基15.例2】寄包柜
 
 > 原题链接：<https://www.luogu.com.cn/problem/P3613>
+> 本目录导航：[← 题库索引](../../../README.md) ｜ [题目原文](problem.txt) · [讲解代码](solution.cpp) · [元信息](metadata.yml)
 
 ## 元信息
 
