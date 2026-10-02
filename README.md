@@ -16,12 +16,12 @@
 | 数据结构 | 8 | [solutions/ds](solutions/ds) |
 | 图论 | 0 | [solutions/graph](solutions/graph) |
 | 搜索 | 10 | [solutions/search](solutions/search) |
-| 贪心 | 4 | [solutions/greedy](solutions/greedy) |
+| 贪心 | 5 | [solutions/greedy](solutions/greedy) |
 | 数学 | 0 | [solutions/math](solutions/math) |
 | 字符串 | 0 | [solutions/string](solutions/string) |
 | 计算几何 | 0 | [solutions/geometry](solutions/geometry) |
 
-共 47 题（按"有 README.md 的目录"统计，本机 `find solutions -mindepth 3 -name README.md | wc -l` 实得 47；含 [solutions/search](solutions/search) 的 10 道搜索入门题，已在下表逐行列出）。全部题目来自训练单与洛谷/NOIP 真题，暂无半成品目录。
+共 48 题（按"有 README.md 的目录"统计，本机 `find solutions -mindepth 3 -name README.md | wc -l` 实得 48；含 [solutions/search](solutions/search) 的 10 道搜索入门题，已在下表逐行列出）。全部题目来自训练单与洛谷/NOIP 真题，暂无半成品目录。
 
 **怎么用这张表全局浏览**：
 
@@ -72,6 +72,7 @@
 | [P2234](https://www.luogu.com.cn/problem/P2234) | [[HNOI2002] 营业额统计](solutions/ds/p2234-turnover/README.md) | 数据结构 / 有序集合·前驱后继 | "离我最近的历史数据"只可能在前驱或后继里；`it!=end()` 管后继、`it!=begin()` 管前驱，两个判断缺一不可 | —— |
 | [P3613](https://www.luogu.com.cn/problem/P3613) | [【深基15.例2】寄包柜](solutions/ds/p3613-locker/README.md) | 数据结构 / 稀疏存储·键编码 | $a_i$ 未知就是提示：别开二维表，只存被点名的 $(i,j)$；乘数要**严格**大于格子号上界（取 100001） | —— |
 | [P4387](https://www.luogu.com.cn/problem/P4387) | [【深基15.习9】验证栈序列](solutions/ds/p4387-validate-stack-sequences/README.md) | 数据结构 / 栈·模拟 | 入栈序列是任意排列；一次压入后要连续弹出，判据是"全部弹出"而非"栈空" | [html](solutions/ds/p4387-validate-stack-sequences/visualization.html) |
+| [P1752](https://www.luogu.com.cn/problem/P1752) | [点菜](solutions/greedy/p1752-ordering/README.md) | 贪心 / 二分答案·堆 | 改编自 IOI 2013 D2T2。时间轴塌缩成容量：最挑剔的先吃"够格里最贵的"（价格大根堆），穷人从最富的吃吃得起的最贵的，吃不起的甩给普通人兜底；二分上界是 $m$ 不是 $\lceil m/n\rceil$ | [html](solutions/greedy/p1752-ordering/visualization.html) |
 | [P1095](https://www.luogu.com.cn/problem/P1095) | [[NOIP 2005 提高组] 守望者的逃离](solutions/greedy/p1095-escape/README.md) | 贪心 / 枚举·DP | **骗分练习 ③**：三条规则漏一条就掉一半分（反面教材实测只对该 21%~25%）；无魔法上限 ⇒ 枚举闪光次数 $k$ | —— |
 | [P14357](https://www.luogu.com.cn/problem/P14357) | [[CSP-J 2025] 拼数](solutions/greedy/p14357-number/README.md) | 贪心 / 计数排序 | 位数用满 + 降序交换论证 | [html](solutions/greedy/p14357-number/visualization.html) |
 | [P14359](https://www.luogu.com.cn/problem/P14359) | [[CSP-J 2025] 异或和](solutions/greedy/p14359-xor/README.md) | 贪心 / 前缀异或 | 前缀异或配对 + 最多不相交区间最早结束贪心 | [html](solutions/greedy/p14359-xor/visualization.html) |

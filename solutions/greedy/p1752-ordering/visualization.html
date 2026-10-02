@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1752 点菜 · 二分答案 + 价格大根堆贪心 分步演示</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:20px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:14px; margin-bottom:16px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .card h2 { font-size:14px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 13px; font-size:14px; cursor:pointer; margin-right:6px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  textarea { background:#0d1020; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+             padding:8px 10px; font:14px/1.45 Consolas,monospace; width:260px; height:128px; }
+  input[type=number] { background:#0d1020; color:var(--acc); border:1px solid #3d4778; border-radius:8px;
+             padding:8px 10px; font:15px Consolas,monospace; width:76px; }
+  .lab { font-size:14px; color:var(--dim); margin-top:6px; }
+  .prog { color:var(--dim); font-size:14px; margin-left:auto; white-space:nowrap; }
+  .topbar { display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; }
+  .row > .card { flex:1 1 340px; min-width:0; }
+  /* 菜的排队 */
+  .dishrow { display:flex; gap:6px; flex-wrap:wrap; align-items:flex-start; }
+  .dish { min-width:64px; padding:4px 7px; border-radius:8px; background:#232a4a; border:1px solid #333c66;
+          font:13px Consolas,monospace; text-align:center; }
+  .dish .tag { display:block; font-size:11px; color:#5a6288; }
+  .dish .own { display:block; font-size:11px; margin-top:1px; }
+  .dish.queued { opacity:.55; }
+  .dish.inheap { background:#173a4a; border-color:var(--acc); color:var(--ok); }
+  .dish.inheap.top { outline:2px solid var(--acc); outline-offset:-2px; }
+  .dish.eaten { background:#1c2b24; border-color:#2f5d44; color:var(--ok); }
+  .dish.eaten .own { color:#86efac; }
+  .dish.forced { background:#4a1c1c; border-color:var(--warn); color:var(--warn); }
+  .dish.forced .own { color:var(--warn); }
+  .idxmark { color:var(--acc); font:13px Consolas,monospace; display:flex; flex-direction:column; align-items:center;
+             justify-content:flex-end; min-width:20px; }
+  /* 堆 */
+  .heaprow { display:flex; gap:6px; flex-wrap:wrap; min-height:34px; align-items:center; }
+  .heapempty { color:#5a6288; font-size:14px; }
+  /* 人 */
+  .prow { display:flex; align-items:flex-start; gap:8px; padding:6px 8px; border-radius:8px;
+          border:1px solid transparent; flex-wrap:wrap; }
+  .prow.active { background:#141a33; border-color:#3d4778; }
+  .prow .pname { min-width:96px; font-size:14px; }
+  .prow .pname small { color:var(--dim); display:block; font-size:12px; }
+  .prow .pills { display:flex; gap:4px; flex-wrap:wrap; flex:1; }
+  .prow .cap { font:13px Consolas,monospace; color:var(--dim); white-space:nowrap; }
+  .prow .cap.full { color:var(--ok); }
+  .mini { padding:2px 6px; border-radius:6px; font:12px Consolas,monospace;
+          background:#1c2b24; color:var(--ok); border:1px solid #2f5d44; }
+  .mini.f { background:#4a1c1c; color:var(--warn); border-color:var(--warn); }
+  /* 判定条 */
+  .verdict { font-size:15px; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:14px; }
+  .badge.ok { background:#173a2a; color:var(--ok); }
+  .badge.no { background:#4a1c1c; color:var(--warn); }
+  .wtable { display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; }
+  .wcell { padding:3px 8px; border-radius:6px; font:13px Consolas,monospace;
+           background:#232a4a; border:1px solid #333c66; color:var(--dim); }
+  .wcell.no { color:#5a6288; }
+  .wcell.yes { background:#173a2a; color:var(--ok); border-color:#2f5d44; }
+  .wcell.best { outline:2px solid var(--acc); font-weight:700; }
+  pre.code { margin:0 0 10px; background:#0d1020; border:1px solid #262c4a; border-radius:8px; overflow-x:auto;
+             padding:8px 10px; font:13px/1.55 Consolas,monospace; }
+  pre.code .ln { display:block; color:#7b84ab; border-radius:4px; padding:0 6px; white-space:pre-wrap; }
+  pre.code .ln.on { background:#1b3b4a; color:var(--ink); box-shadow:inset 3px 0 0 var(--acc); }
+  pre.code .cm { color:#5a6288; }
+  table.vars { border-collapse:collapse; width:100%; font-size:14px; }
+  table.vars td { border-bottom:1px solid #262c4a; padding:3px 6px; }
+  table.vars td.k { color:var(--dim); width:46%; }
+  table.vars td.v { font-family:Consolas,monospace; color:var(--acc); }
+  .note { font-size:14.5px; min-height:96px; }
+  .note b { color:var(--ink); }
+  .note i { color:#7dd3fc; font-style:normal; font-family:Consolas,monospace; }
+  .err { color:var(--warn); font-size:14px; min-height:20px; }
+</style>
+</head>
+<body>
+<h1>P1752 点菜 · 二分答案 + 价格大根堆贪心</h1>
+<div class="sub">默认数据 = <b>官方样例</b>（n=2, m=3, p=1, q=1，答案 3）。下方演示的是判定函数 <b>check(week)</b> 的完整过程：
+菜按美味度<b>从大到小</b>排队 → 分批进<b>价格大根堆</b>（堆顶最贵）→ 挑剔的人从最挑剔到最不挑剔、每人吃最贵的 week 道 →
+穷人从最富到最穷、吃不起的甩给普通人 → 最后与普通人容量 <i>z·week</i> 比较。改 week 或改数据再点「载入」可看别的判定。</div>
+
+<div class="topbar">
+  <div>
+    <textarea id="src" spellcheck="false">2 3 1 1
+5 2
+5 3
+6 4
+5
+1</textarea>
+    <div class="lab">格式：n m p q ／ m 行「美味度 价格」／ p 个挑剔下限 ／ q 个贫穷上限（演示限制 n≤8, m≤12）</div>
+  </div>
+  <div>
+    <div>
+      <label class="lab" style="margin:0 6px 0 0">week =</label><input type="number" id="week" value="3" min="1">
+      <button id="load">载入</button>
+    </div>
+    <div style="margin-top:8px">
+      <button id="prev">◀ 上一步</button>
+      <button id="next">下一步 ▶</button>
+      <button id="play">▶ 自动播放</button>
+      <button id="jump">⏭ 跳到结尾</button>
+    </div>
+    <div class="err" id="errbox"></div>
+  </div>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="row">
+  <div style="flex:1.35 1 480px; min-width:0">
+    <div class="card">
+      <h2>① 菜的排队（美味度降序）＋ 指针 idx</h2>
+      <div class="dishrow" id="dishes"></div>
+      <div class="lab" id="idxlab"></div>
+    </div>
+    <div class="card">
+      <h2>② 价格大根堆（堆顶 = 最贵，弹出即被吃/被甩）</h2>
+      <div class="heaprow" id="heap"></div>
+    </div>
+    <div class="card">
+      <h2>③ 人与容量（谁吃到了什么）</h2>
+      <div id="people"></div>
+    </div>
+    <div class="card">
+      <h2>④ 判定结果 与 二分视野</h2>
+      <div class="verdict" id="verdict">点「下一步」开始执行 check(week)。</div>
+      <div class="wtable" id="wtable"></div>
+      <div class="lab">下排是 week = 1..m 每个 check 的真假——二分（或线性）找的就是第一个 ✅。</div>
+    </div>
+  </div>
+  <div style="flex:1 1 380px; min-width:0">
+    <div class="card">
+      <h2>⑤ check(week) 源码（当前行高亮）</h2>
+      <pre class="code" id="code"></pre>
+    </div>
+    <div class="card">
+      <h2>⑥ 变量状态</h2>
+      <table class="vars" id="vars"></table>
+    </div>
+    <div class="card">
+      <h2>⑦ 解说</h2>
+      <div class="note" id="note"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ---------- check() 源码（行号 → 高亮） ---------- */
+const CODE = [
+'bool check(ll week) {',
+'    priority_queue<ll> heap;            <span class="cm">// 价格大根堆：挑剔的人还能选的菜</span>',
+'    int idx = 0;                        <span class="cm">// 指向下道待进堆的菜（已按美味度降序）</span>',
+'    for (int i = 0; i < p; i++) {       <span class="cm">// 挑剔的人：最挑剔的先挑</span>',
+'        while (idx < m && dish[idx].del >= pickyMin[i])',
+'            heap.push(dish[idx++].pri); <span class="cm">// 刚够格的菜进堆</span>',
+'        for (ll t = 0; t < week && !heap.empty(); t++)',
+'            heap.pop();                 <span class="cm">// 吃最贵的 week 道，不足则全吃</span>',
+'    }',
+'    while (idx < m)                     <span class="cm">// 美味度低于一切下限的菜</span>',
+'        heap.push(dish[idx++].pri);     <span class="cm">// 只能给穷/普通人，也进堆</span>',
+'    ll forced = 0;',
+'    for (int j = 0; j < q; j++) {       <span class="cm">// 穷人：最富的先挑</span>',
+'        while (!heap.empty() && heap.top() > poorMax[j]) {',
+'            heap.pop(); forced++;       <span class="cm">// 吃不起 => 甩给普通人</span>',
+'        }',
+'        for (ll t = 0; t < week && !heap.empty(); t++)',
+'            heap.pop();                 <span class="cm">// 吃得起的最贵 week 道</span>',
+'    }',
+'    return forced + heap.size() <= z*week;  <span class="cm">// 普通人容量兜底</span>',
+'}'
+];
+
+/* ---------- 输入解析 ---------- */
+function parseInput(text) {
+  const tk = text.trim().split(/\s+/).map(Number);
+  if (tk.some(v => !Number.isInteger(v) || v < 0)) return { err: '所有数都必须是非负整数。' };
+  let ptr = 0;
+  const need = k => { if (ptr + k > tk.length) throw new Error('数据不够：请检查格式（n m p q / m 行菜 / p 个下限 / q 个上限）。'); const r = tk.slice(ptr, ptr + k); ptr += k; return r; };
+  try {
+    const [n, m, p, q] = need(4);
+    if (n < 1 || m < 1) return { err: 'n 和 m 至少为 1。' };
+    if (p + q > n) return { err: '题面要求 p + q ≤ n。' };
+    if (n > 8 || m > 12) return { err: '演示限制 n ≤ 8、m ≤ 12（想看大图请自己心算 :)）。' };
+    const raw = need(2 * m), lows = need(p), caps = need(q);
+    const dishes = [];
+    for (let j = 0; j < m; j++) dishes.push({ id: j, del: raw[2 * j], pri: raw[2 * j + 1], st: 'queued', owner: '' });
+    return { n, m, p, q, dishes, lows, caps };
+  } catch (e) { return { err: e.message }; }
+}
+
+/* ---------- 判定（与 solution.cpp 逐句对应） ---------- */
+function checkJS(week, d) {
+  const heap = []; let idx = 0;
+  const push = v => { heap.push(v); heap.sort((a, b) => b - a); };
+  for (let i = 0; i < d.p; i++) {
+    while (idx < d.m && d.dishes[idx].del >= d.lows[i]) push(d.dishes[idx++].pri);
+    for (let t = 0; t < week && heap.length; t++) heap.shift();
+  }
+  while (idx < d.m) push(d.dishes[idx++].pri);
+  let forced = 0;
+  for (let j = 0; j < d.q; j++) {
+    while (heap.length && heap[0] > d.caps[j]) { heap.shift(); forced++; }
+    for (let t = 0; t < week && heap.length; t++) heap.shift();
+  }
+  return forced + heap.length <= d.z * week;
+}
+function computeAnswer(d) {
+  for (let w = 1; w <= d.m; w++) if (checkJS(w, d)) return w;
+  return -1;
+}
+
+/* ---------- 步骤生成 ---------- */
+function buildSteps(d, week) {
+  const steps = [];
+  const S = { dishes: d.dishes.map(x => ({ ...x, st: 'queued', owner: '' })),
+              heap: [], pickyEaten: Array.from({ length: d.p }, () => []),
+              poorEaten: Array.from({ length: d.q }, () => []), forced: 0, leftover: [],
+              idx: 0, i: -1, j: -1, active: '', verdict: '' };
+  const snap = (code, note) => { steps.push({ code, note, st: JSON.parse(JSON.stringify(S)), week }); };
+  const push = v => { S.heap.push(v); S.heap.sort((a, b) => b - a); };
+  const pop = () => S.heap.shift();
+
+  snap(1, `数据已预处理：菜按美味度<b>降序</b>、挑剔下限降序、贫穷上限降序。开始执行 <b>check(${week})</b>。z = n − p − q = <i>${d.z}</i>（普通人数量），普通人容量 = z·week = <i>${d.z * week}</i> 道。`);
+  for (let i = 0; i < d.p; i++) {
+    S.i = i; S.active = 'P' + i;
+    snap(4, `轮到<b>挑剔的人 ${i + 1}</b>（下限 ${d.lows[i]}）。美味度 ≥ ${d.lows[i]} 的菜此刻才有资格进堆——他比后面所有挑剔的人都能挑。`);
+    while (S.idx < d.m && S.dishes[S.idx].del >= d.lows[i]) {
+      const dish = S.dishes[S.idx];
+      dish.st = 'inheap'; push(dish.pri); S.idx++;
+      snap(6, `菜#${dish.id}（美 ${dish.del} 价 ${dish.pri}）美味度 ≥ 下限 ${d.lows[i]} → <b>进堆</b>。堆按价格自动排，堆顶最贵。`);
+    }
+    let ate = 0;
+    for (let t = 0; t < week && S.heap.length; t++) {
+      const price = pop();
+      const dish = S.dishes.find(x => x.st === 'inheap' && x.pri === price);
+      if (dish) { dish.st = 'eaten'; dish.owner = '挑剔' + (i + 1); }
+      S.pickyEaten[i].push(price); ate++;
+      snap(8, `<b>挑剔的人 ${i + 1}</b> 第 ${t + 1}/${week} 道：吃堆顶最贵的 <i>${price}</i>。贵菜穷人吃不起，让最"高贵"的胃口把贵菜扛走，给穷人留下最便宜的。`);
+    }
+    if (ate < week)
+      snap(8, `堆空了，挑剔的人 ${i + 1} 只吃到 <i>${ate}</i> 道（不足则全取——"或不点"是合法的）。`);
+  }
+  if (S.idx < d.m) {
+    snap(10, `剩下美味度低于<b>所有</b>下限的菜：挑剔的人一口都不会碰，也丢进堆，只能指望穷/普通人。`);
+    while (S.idx < d.m) {
+      const dish = S.dishes[S.idx];
+      dish.st = 'inheap'; push(dish.pri); S.idx++;
+      snap(11, `菜#${dish.id}（美 ${dish.del} 价 ${dish.pri}）进堆（兜底池）。`);
+    }
+  }
+  for (let j = 0; j < d.q; j++) {
+    S.j = j; S.active = 'Q' + j;
+    snap(13, `轮到<b>贫穷的人 ${j + 1}</b>（上限 ${d.caps[j]}）。先看他吃不吃得起堆顶。`);
+    while (S.heap.length && S.heap[0] > d.caps[j]) {
+      const price = pop();
+      const dish = S.dishes.find(x => x.st === 'inheap' && x.pri === price);
+      if (dish) { dish.st = 'forced'; dish.owner = '甩普通'; }
+      S.forced++;
+      snap(15, `堆顶 <i>${price}</i> &gt; 上限 ${d.caps[j]}，他吃不起；<b>比他更穷的更吃不起</b> → 记一笔 <i>forced=${S.forced}</i>，只能普通人消化。`);
+    }
+    let ate = 0;
+    for (let t = 0; t < week && S.heap.length; t++) {
+      const price = pop();
+      const dish = S.dishes.find(x => x.st === 'inheap' && x.pri === price);
+      if (dish) { dish.st = 'eaten'; dish.owner = '穷' + (j + 1); }
+      S.poorEaten[j].push(price); ate++;
+      snap(18, `<b>贫穷的人 ${j + 1}</b> 第 ${t + 1}/${week} 道：吃得起的最贵 <i>${price}</i>。把难消化的扛走，便宜菜留给更穷的人。`);
+    }
+    if (ate < week)
+      snap(18, `堆空了，贫穷的人 ${j + 1} 只吃到 <i>${ate}</i> 道（不足则全取）。`);
+  }
+  while (S.heap.length) S.leftover.push(pop());
+  S.dishes.forEach(x => { if (x.st === 'inheap') { x.st = 'forced'; x.owner = '甩普通'; } });
+  const totalNormal = S.forced + S.leftover.length;
+  const ok = totalNormal <= d.z * week;
+  S.verdict = ok ? 'ok' : 'no';
+  snap(20, `普通人要消化 <i>${totalNormal}</i> 道（forced ${S.forced} + 堆剩 ${S.leftover.length}），容量 <i>${d.z}×${week} = ${d.z * week}</i> 道 → <b>${ok ? '装得下，week 周可行 ✅' : '装不下，week 周不可行 ❌'}</b>`);
+  return { steps, ok };
+}
+
+/* ---------- 渲染 ---------- */
+const $ = id => document.getElementById(id);
+let DATA = null, STEPS = [], POS = 0, TIMER = null, ANSWER = 0;
+
+function render() {
+  const s = STEPS[POS], st = s.st, d = DATA;
+  $('prog').textContent = `步骤 ${POS + 1} / ${STEPS.length}`;
+  $('prev').disabled = POS === 0;
+  $('next').disabled = POS >= STEPS.length - 1;
+  $('jump').disabled = POS >= STEPS.length - 1;
+  // ① 菜
+  $('dishes').innerHTML = st.dishes.map(x =>
+    `<div class="dish ${x.st}">${x.st === 'queued' ? '' : ''}
+      <span class="tag">菜#${x.id}</span>美${x.del} 价${x.pri}${x.owner ? `<span class="own">${x.owner}</span>` : ''}</div>`).join('');
+  const idxDish = st.idx < d.m ? st.dishes[st.idx] : null;
+  $('idxlab').textContent = st.idx >= d.m ? 'idx = m：全部菜都已处理过' :
+    `idx = ${st.idx}，指向 菜#${idxDish.id}（美 ${idxDish.del}）`;
+  // ② 堆
+  $('heap').innerHTML = st.heap.length
+    ? st.heap.map((v, k) => `<div class="dish inheap ${k === 0 ? 'top' : ''}"><span class="tag">${k === 0 ? '堆顶' : ''}</span>价 ${v}</div>`).join('')
+    : '<span class="heapempty">（堆空）</span>';
+  // ③ 人
+  let html = '';
+  for (let i = 0; i < d.p; i++)
+    html += prow(`挑剔的人 ${i + 1}`, `下限 ${d.lows[i]}`, st.pickyEaten[i], st.pickyEaten[i].length >= s.week, st.active === 'P' + i, s.week);
+  for (let j = 0; j < d.q; j++)
+    html += prow(`贫穷的人 ${j + 1}`, `上限 ${d.caps[j]}`, st.poorEaten[j], st.poorEaten[j].length >= s.week, st.active === 'Q' + j, s.week);
+  const normalPills = st.dishes.filter(x => x.st === 'forced').map(x => `<span class="mini f">价${x.pri}</span>`).join('');
+  const normalLoad = st.forced + st.leftover.length;
+  html += `<div class="prow ${st.active === 'Z' ? 'active' : ''}"><div class="pname">普通人 ×${d.z}<small>什么都能吃</small></div>
+           <div class="pills">${normalPills}</div><div class="cap">待消化 ${normalLoad} / 容量 ${d.z * s.week}</div></div>`;
+  $('people').innerHTML = html;
+  // ④ 判定 + 二分视野
+  if (st.verdict === 'ok') $('verdict').innerHTML = `<span class="badge ok">check(${s.week}) = 真 ✅</span> ${s.week} 周可行`;
+  else if (st.verdict === 'no') $('verdict').innerHTML = `<span class="badge no">check(${s.week}) = 假 ❌</span> ${s.week} 周不够`;
+  else $('verdict').textContent = '执行中……（最后一步给判定）';
+  $('wtable').innerHTML = Array.from({ length: d.m }, (_, w) => {
+    const okw = checkJS(w + 1, d), isAns = w + 1 === ANSWER;
+    return `<span class="wcell ${okw ? 'yes' : 'no'} ${isAns ? 'best' : ''}">w=${w + 1}:${okw ? '✅' : '❌'}${isAns ? ' ←最少' : ''}</span>`;
+  }).join('');
+  // ⑤ 代码
+  $('code').innerHTML = CODE.map((ln, k) =>
+    `<span class="ln ${k + 1 === s.code ? 'on' : ''}">${String(k + 1).padStart(2)} │ ${ln}</span>`).join('');
+  // ⑥ 变量
+  const rows = [
+    ['week（每人可吃几道）', s.week],
+    ['i / j（当前挑剔/穷人）', (st.i >= 0 ? st.i + 1 : '—') + ' / ' + (st.j >= 0 ? st.j + 1 : '—')],
+    ['idx（下道进堆的菜）', st.idx],
+    ['堆大小 / 堆顶', st.heap.length + (st.heap.length ? ' / ' + st.heap[0] : ' / —')],
+    ['forced（甩给普通人）', st.forced],
+    ['普通人待消化 / 容量', (st.forced + st.leftover.length) + ' / ' + d.z * s.week],
+    ['z = n − p − q', d.z],
+  ];
+  $('vars').innerHTML = rows.map(r => `<tr><td class="k">${r[0]}</td><td class="v">${r[1]}</td></tr>`).join('');
+  // ⑦ 解说
+  $('note').innerHTML = s.note;
+}
+function prow(name, sub, eaten, full, active, week) {
+  const pills = eaten.map(v => `<span class="mini">价${v}</span>`).join('');
+  return `<div class="prow ${active ? 'active' : ''}"><div class="pname">${name}<small>${sub}</small></div>
+          <div class="pills">${pills || '<span class="heapempty">还没吃到</span>'}</div>
+          <div class="cap ${full ? 'full' : ''}">${eaten.length} / ${week}</div></div>`;
+}
+
+/* ---------- 载入与控件 ---------- */
+function load() {
+  $('errbox').textContent = '';
+  const d = parseInput($('src').value);
+  if (d.err) { $('errbox').textContent = '输入有误：' + d.err; return; }
+  d.z = d.n - d.p - d.q;
+  d.dishes.sort((a, b) => b.del - a.del);   // 菜按美味度降序（与 solution.cpp 一致）
+  d.lows.sort((a, b) => b - a);             // 挑剔下限：大 → 小
+  d.caps.sort((a, b) => b - a);             // 贫穷上限：大 → 小
+  DATA = d; ANSWER = computeAnswer(d);
+  let week = parseInt($('week').value, 10);
+  if (!Number.isInteger(week) || week < 1 || week > d.m) {
+    week = ANSWER > 0 ? ANSWER : 1;
+    $('week').value = week;
+  }
+  const built = buildSteps(d, week);
+  STEPS = built.steps; POS = 0;
+  const tail = { code: null, note: ANSWER > 0
+      ? `对 week = 1..${d.m} 逐个判定（正解里是<b>二分</b>）：第一个真值是 <b>${ANSWER}</b> —— 本题答案。<br>` +
+        (ANSWER > Math.ceil(d.m / d.n) ? `注意答案 ${ANSWER} 大于 ⌈m/n⌉ = ${Math.ceil(d.m / d.n)}：容量不是唯一的瓶颈，<b>约束</b>才是——所以二分上界要取 m。` : '')
+      : `week = 1..${d.m} 全部判假 → 输出 <b>-1</b>：有菜谁都不接受（或普通人也救不回来）。`,
+    st: STEPS[STEPS.length - 1].st, week };
+  STEPS.push(tail);
+  stopPlay(); render();
+}
+function stopPlay() { if (TIMER) { clearInterval(TIMER); TIMER = null; $('play').textContent = '▶ 自动播放'; } }
+$('load').onclick = load;
+$('prev').onclick = () => { stopPlay(); if (POS > 0) { POS--; render(); } };
+$('next').onclick = () => { stopPlay(); if (POS < STEPS.length - 1) { POS++; render(); } };
+$('jump').onclick = () => { stopPlay(); POS = STEPS.length - 1; render(); };
+$('play').onclick = () => {
+  if (TIMER) { stopPlay(); return; }
+  $('play').textContent = '⏸ 暂停';
+  TIMER = setInterval(() => {
+    if (POS >= STEPS.length - 1) { stopPlay(); return; }
+    POS++; render();
+  }, 850);
+};
+load();
+</script>
+</body>
+</html>
