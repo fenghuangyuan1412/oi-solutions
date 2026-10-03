@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P3622 [APIO2007] 动物园 · 环形 5 位轮廓线状压 DP 分步演示</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:20px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI",system-ui,-apple-system,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:14px; margin-bottom:16px; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .card h2 { font-size:14px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 13px; font-size:14px; cursor:pointer; margin-right:6px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  textarea { background:#0d1020; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+             padding:8px 10px; font:14px/1.45 Consolas,monospace; width:270px; height:128px; }
+  .lab { font-size:14px; color:var(--dim); margin-top:6px; }
+  .prog { color:var(--dim); font-size:14px; margin-left:auto; white-space:nowrap; }
+  .topbar { display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; }
+  .row > .card { flex:1 1 340px; min-width:0; }
+  .fences { display:flex; gap:4px; flex-wrap:wrap; }
+  .fen { width:46px; height:44px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+         background:#232a4a; border:1px solid #333c66; border-radius:6px; font:13px Consolas,monospace; }
+  .fen .no { font-size:11px; color:#5a6288; }
+  .fen.seam { border-left:3px solid #7dd3fc; }
+  .fen.removed { background:#4a1c1c; border-color:var(--warn); color:var(--warn); }
+  .fen.kept { background:#1c2b24; border-color:#2f5d44; color:var(--ok); }
+  .fen.inwin { outline:2px solid var(--acc); outline-offset:-2px; }
+  .maskrow { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:8px; font:14px Consolas,monospace; }
+  .bit { width:40px; height:32px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+         background:#0d1020; border:1px solid #3d4778; border-radius:6px; color:var(--dim); font-size:11px; }
+  .bit b { color:var(--ink); font-size:14px; }
+  .bit.on { border-color:var(--warn); }
+  .bit.on b { color:var(--warn); }
+  .kid { display:flex; align-items:center; gap:8px; padding:4px 8px; border-radius:8px; margin-bottom:4px;
+         background:#141a33; border:1px solid #262c4a; font-size:14px; flex-wrap:wrap; }
+  .kid .ok { color:var(--ok); font-weight:700; }
+  .kid .no2 { color:#5a6288; }
+  .kid .why { color:var(--dim); font-size:13px; }
+  .dpstrip { display:flex; gap:2px; flex-wrap:wrap; }
+  .dpc { width:26px; height:24px; display:flex; align-items:center; justify-content:center;
+         background:#0d1020; border:1px solid #262c4a; font:11px Consolas,monospace; color:#5a6288; }
+  .dpc.reach { color:var(--ok); border-color:#2f5d44; }
+  .dpc.cur { outline:2px solid var(--acc); color:var(--ink); }
+  pre.code { margin:0 0 10px; background:#0d1020; border:1px solid #262c4a; border-radius:8px; overflow-x:auto;
+             padding:8px 10px; font:13px/1.6 Consolas,monospace; }
+  pre.code .ln { display:block; color:#7b84ab; border-radius:4px; padding:0 6px; white-space:pre-wrap; }
+  pre.code .ln.on { background:#1b3b4a; color:var(--ink); box-shadow:inset 3px 0 0 var(--acc); }
+  table.vars { border-collapse:collapse; width:100%; font-size:14px; }
+  table.vars td { border-bottom:1px solid #262c4a; padding:3px 6px; }
+  table.vars td.k { color:var(--dim); width:46%; }
+  table.vars td.v { font-family:Consolas,monospace; color:var(--acc); }
+  .note { font-size:14.5px; min-height:110px; }
+  .note b { color:var(--ink); }
+  .note i { color:#7dd3fc; font-style:normal; font-family:Consolas,monospace; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:14px; }
+  .badge.ok { background:#173a2a; color:var(--ok); }
+  .err { color:var(--warn); font-size:14px; min-height:20px; }
+  .cands { display:flex; gap:3px; flex-wrap:wrap; }
+  .cand { width:46px; padding:2px 0; text-align:center; border-radius:6px; background:#232a4a;
+          border:1px solid #333c66; font:12px Consolas,monospace; color:#5a6288; }
+  .cand.reach { color:var(--ok); border-color:#2f5d44; }
+  .cand.best { outline:2px solid var(--acc); font-weight:700; }
+</style>
+</head>
+<body>
+<h1>P3622 [APIO2007] 动物园 · 环形 5 位轮廓线状压 DP</h1>
+<div class="sub">默认数据 = <b>官方样例 1</b>（N=14, C=5，答案 5）。演示在选定开头模式 s 后，最优路径如何把
+<b>5 位 mask</b>（接下来 5 个围栏各移不移）沿窗口推一整圈：<span style="color:#f87171">红 = 移走</span>、<span style="color:#86efac">绿 = 保留</span>，
+每步结算当前窗口开心的小朋友；最后一窗绕回开头，mask 必须 = s 才是真实的一圈。改数据点「载入」可换例子。</div>
+
+<div class="topbar">
+  <div>
+    <textarea id="src" spellcheck="false">14 5
+2 1 2 4 2 6
+3 1 1 6 4
+6 1 2 9 6 8
+8 1 1 9 12
+12 3 0 12 13 2</textarea>
+    <div class="lab">格式：N C，每个小朋友「E F L + F 个怕的 + L 个喜欢的」（演示限制 N≤16, C≤12）</div>
+  </div>
+  <div>
+    <button id="load">载入</button>
+    <button id="prev">◀ 上一步</button>
+    <button id="next">下一步 ▶</button>
+    <button id="play">▶ 自动播放</button>
+    <button id="jump">⏭ 跳到结尾</button>
+    <div class="err" id="errbox"></div>
+  </div>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="row">
+  <div style="flex:1.3 1 470px; min-width:0">
+    <div class="card">
+      <h2>① 围栏圈（展平成一行，首格蓝缝 = 环的接口）＋ 当前窗口</h2>
+      <div class="fences" id="fences"></div>
+    </div>
+    <div class="card">
+      <h2>② 窗口 mask（bit k = 窗口内第 k 个围栏，1 = 移走）</h2>
+      <div class="maskrow" id="maskrow"></div>
+      <div class="lab" id="masklab"></div>
+    </div>
+    <div class="card">
+      <h2>③ 本窗口结算的小朋友（✓ = 开心）</h2>
+      <div id="kids"></div>
+    </div>
+    <div class="card">
+      <h2>④ 判定 与 32 个开头的候选</h2>
+      <div id="verdict" class="lab" style="margin:0">点「下一步」开始。</div>
+      <div class="cands" id="cands" style="margin-top:8px"></div>
+    </div>
+  </div>
+  <div style="flex:1 1 380px; min-width:0">
+    <div class="card">
+      <h2>⑤ dp 一行（32 个 mask 的当前值，· = 不可达）</h2>
+      <div class="dpstrip" id="dpstrip"></div>
+      <div class="lab">dp[t][mask] = 结算完窗口 1..t、窗口 t+1 模式为 mask 时的最多开心数。</div>
+    </div>
+    <div class="card">
+      <h2>⑥ DP 骨架（当前行高亮）</h2>
+      <pre class="code" id="code"></pre>
+    </div>
+    <div class="card">
+      <h2>⑦ 变量状态</h2>
+      <table class="vars" id="vars"></table>
+    </div>
+    <div class="card">
+      <h2>⑧ 解说</h2>
+      <div class="note" id="note"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const CODE = [
+'枚举开头模式 s = 0..31            # 围栏 1..5 各移不移',
+'  dp[0][s] = 0，其余 = -∞',
+'  for t = 1 .. n:                 # 第 t 步结算窗口起点 (t-1) mod n',
+'    for mask（上一窗口的 5 位模式）:',
+'      for b ∈ {保留, 移走}:        # 新露出的围栏',
+'        nm = (mask >> 1) | (b << 4)',
+'        dp[t][nm] = max(dp[t][nm], dp[t-1][mask] + cnt[t mod n][nm])',
+'  # 窗口 n 绕回窗口 0：nm 必须 == s',
+'  候选[s] = dp[n][s]',
+'答案 = max(候选[0..31])'
+];
+
+function parseInput(text) {
+  const tk = text.trim().split(/\s+/).map(Number);
+  if (tk.some(v => !Number.isInteger(v))) return { err: '所有数必须是整数。' };
+  let ptr = 0;
+  try {
+    const n = tk[ptr++], c = tk[ptr++];
+    if (!(n >= 10 && n <= 16)) return { err: '演示限制 10 ≤ N ≤ 16（保持环形趣味，又不至于画不下）。' };
+    if (!(c >= 1 && c <= 12)) return { err: '演示限制 1 ≤ C ≤ 12。' };
+    const kids = [];
+    for (let i = 0; i < c; i++) {
+      const E = tk[ptr++], F = tk[ptr++], L = tk[ptr++];
+      if (!(E >= 1 && E <= n)) return { err: '第 ' + (i + 1) + ' 个小朋友的 E 超出 1..N。' };
+      if (!(F >= 0 && L >= 0 && F + L <= 5)) return { err: '第 ' + (i + 1) + ' 个小朋友 F+L 必须在 0..5（怕的和喜欢的都在 5 连窗口内且两两不同）。' };
+      const win = Array.from({ length: 5 }, (_, k) => ((E - 1 + k) % n) + 1);
+      const X = [], Y = [];
+      for (let j = 0; j < F; j++) { const x = tk[ptr++]; if (!win.includes(x)) return { err: '第 ' + (i + 1) + ' 个小朋友怕的围栏 ' + x + ' 不在窗口内。' }; X.push(x); }
+      for (let j = 0; j < L; j++) { const y = tk[ptr++]; if (!win.includes(y)) return { err: '第 ' + (i + 1) + ' 个小朋友喜欢的围栏 ' + y + ' 不在窗口内。' }; Y.push(y); }
+      kids.push({ E, X, Y, win });
+    }
+    if (ptr !== tk.length) return { err: '数据多了或少了（检查 C 与行数是否对上）。' };
+    return { n, c, kids };
+  } catch (e) { return { err: '格式不对：' + e.message }; }
+}
+
+function buildModel(d) {
+  const n = d.n;
+  const cnt = Array.from({ length: n }, () => new Array(32).fill(0));
+  for (const kid of d.kids) {
+    const s0 = (kid.E - 1) % n;
+    let fear = 0, like = 0;
+    kid.X.forEach(x => fear |= 1 << ((x - 1 - s0 + n) % n));
+    kid.Y.forEach(y => like |= 1 << ((y - 1 - s0 + n) % n));
+    for (let mask = 0; mask < 32; mask++)
+      if ((fear & mask) || (like & ~mask)) cnt[s0][mask]++;
+  }
+  const NEG = -1e9;
+  const dpAll = [], parAll = [];
+  let bestS = 0, bestV = -1;
+  for (let s = 0; s < 32; s++) {
+    const dp = Array.from({ length: n + 1 }, () => new Array(32).fill(NEG));
+    const par = Array.from({ length: n + 1 }, () => new Array(32).fill(-1));
+    dp[0][s] = 0;
+    for (let t = 0; t < n; t++) {
+      const tn = (t + 1) % n;
+      for (let m = 0; m < 32; m++) {
+        if (dp[t][m] === NEG) continue;
+        for (let b = 0; b < 2; b++) {
+          const nm = (m >> 1) | (b << 4);
+          const v = dp[t][m] + cnt[tn][nm];
+          if (v > dp[t + 1][nm]) { dp[t + 1][nm] = v; par[t + 1][nm] = m; }
+        }
+      }
+    }
+    dpAll.push(dp); parAll.push(par);
+    if (dp[n][s] > bestV) { bestV = dp[n][s]; bestS = s; }
+  }
+  const masks = new Array(n + 1).fill(0);
+  masks[n] = bestS;
+  for (let t = n; t >= 1; t--) masks[t - 1] = parAll[bestS][t][masks[t]];
+  return { cnt, bestS, bestV, masks, dpAll };
+}
+
+const $ = id => document.getElementById(id);
+let DATA = null, MODEL = null, STEPS = [], POS = 0, TIMER = null;
+
+function buildSteps(d, M) {
+  const n = d.n, steps = [];
+  const fence = new Array(n).fill(null);
+  for (let k = 0; k < 5; k++) fence[k] = (M.masks[0] >> k) & 1;
+  const snap = (t, dpRow, code, note, winKids, extra) =>
+    steps.push(Object.assign({ code, note, t, mask: M.masks[t], dpRow: dpRow.slice(), s: M.bestS,
+      fence: fence.slice(), winKids }, extra || {}));
+
+  snap(0, M.dpAll[M.bestS][0], 2,
+    '最优开头模式 <b>s = ' + M.bestS + '</b>（二进制 <i>' + M.bestS.toString(2).padStart(5, '0') +
+    '</i>）：围栏 1..5 的去留已定（见①）。<br>dp[0][s] = <i>0</i> —— 窗口 0 的小朋友<b>现在不结算</b>，要等最后一窗绕回来（本题最容易错的一步）。',
+    kidsOf(0, M.masks[0]));
+
+  for (let w = 1; w < n; w++) {
+    const nm = M.masks[w], b = (nm >> 4) & 1;
+    const fn = (w + 4) % n;
+    if (fence[fn] === null) fence[fn] = b;
+    const add = M.cnt[w % n][nm];
+    snap(w, M.dpAll[M.bestS][w], 7,
+      '窗口 ' + (w + 1) + '（围栏 ' + winLabels(w).join('、') + '）：低 4 位继承上一窗口的高 4 位，新露出的围栏 <b>' + (fn + 1) +
+      '</b> 取 <b>' + (b ? '移走' : '保留') + '</b>。结算本窗口：开心 <i>' + add + '</i> 人 → dp[' + w + '][' + nm + '] = <i>' + M.dpAll[M.bestS][w][nm] + '</i>。',
+      kidsOf(w, nm));
+  }
+  {
+    const nm = M.masks[n], ok = nm === M.bestS, add = M.cnt[0][nm];
+    snap(n, M.dpAll[M.bestS][n], 9,
+      '第 ' + n + ' 步的窗口绕回<b>窗口 0</b>：站在开头的小朋友<b>在这里才结算</b>（+' + add + '）。' +
+      '<br>绕回检查：nm = ' + nm + (ok ? ' == s ✅，是一圈真实方案' : ' ≠ s ❌，此路不通') +
+      '。候选答案 = dp[' + n + '][' + M.bestS + '] = <i>' + M.dpAll[M.bestS][n][M.bestS] + '</i>。',
+      kidsOf(0, nm), { final: { cand: M.dpAll[M.bestS][n][M.bestS] } });
+  }
+  const perS = [];
+  for (let s = 0; s < 32; s++) perS.push(M.dpAll[s][n][s]);
+  snap(n, M.dpAll[M.bestS][n], 10,
+    '对 32 个开头模式各跑一遍 DP，取可达候选的最大值：<b>答案 = ' + M.bestV + '</b>（来自 s = ' + M.bestS + '）。',
+    null, { final: { cand: M.bestV }, perS });
+
+  function winLabels(w) { return Array.from({ length: 5 }, (_, k) => ((w + k) % n) + 1); }
+  function kidsOf(w, mask) {
+    const s0 = w % n;
+    return d.kids.filter(kd => (kd.E - 1) % n === s0).map(kd => {
+      let fear = 0, like = 0;
+      kd.X.forEach(x => fear |= 1 << ((x - 1 - s0 + n) % n));
+      kd.Y.forEach(y => like |= 1 << ((y - 1 - s0 + n) % n));
+      const ok = ((fear & mask) !== 0) || ((like & ~mask) !== 0);
+      const why = ok ? ((fear & mask) !== 0 ? '怕的有被移走' : '喜欢的有留下') : '怕的都在、喜欢的全被移走';
+      return { E: kd.E, X: kd.X, Y: kd.Y, ok, why };
+    });
+  }
+  return steps;
+}
+
+function render() {
+  const st = STEPS[POS], d = DATA;
+  const n = d.n;
+  const w0 = st.t % n;
+  $('prog').textContent = '步骤 ' + (POS + 1) + ' / ' + STEPS.length;
+  $('prev').disabled = POS === 0;
+  $('next').disabled = POS >= STEPS.length - 1;
+  $('jump').disabled = POS >= STEPS.length - 1;
+  // ① 围栏
+  $('fences').innerHTML = Array.from({ length: d.n }, (_, f) => {
+    const stt = st.fence[f];
+    const cls = stt === null ? '' : (stt ? 'removed' : 'kept');
+    const inwin = Array.from({ length: 5 }, (_, k) => (w0 + k) % n).includes(f);
+    return '<div class="fen ' + cls + ' ' + (inwin ? 'inwin' : '') + ' ' + (f === 0 ? 'seam' : '') + '">' +
+      '<span class="no">围栏' + (f + 1) + '</span>' + (stt === null ? '待定' : (stt ? '移走' : '保留')) + '</div>';
+  }).join('');
+  // ② mask
+  $('maskrow').innerHTML = 'mask = <b>' + st.mask + '</b>（' + st.mask.toString(2).padStart(5, '0') + '）' +
+    Array.from({ length: 5 }, (_, k) => ((w0 + k) % n) + 1)
+      .map((fno, k) => '<span class="bit ' + ((st.mask >> k) & 1 ? 'on' : '') + '"><span>bit' + k + '</span><b>' +
+        ((st.mask >> k) & 1) + '</b><span>栏' + fno + '</span></span>').join('');
+  $('masklab').textContent = '当前窗口起点 = 围栏 ' + (w0 + 1) + (st.t === 0 ? '（初始窗口，dp 还没开始）' : '，已结算 ' + st.t + ' 个窗口');
+  // ③ 小朋友
+  $('kids').innerHTML = (st.winKids && st.winKids.length)
+    ? st.winKids.map(k => '<div class="kid"><span class="' + (k.ok ? 'ok' : 'no2') + '">' + (k.ok ? '✓ 开心' : '✗ 不开心') +
+        '</span><span>E=' + k.E + '</span><span>怕 [' + (k.X.join(',') || '—') + ']</span><span>喜欢 [' + (k.Y.join(',') || '—') +
+        ']</span><span class="why">' + k.why + '</span></div>').join('')
+    : '<span class="lab">本步骤没有正在结算的窗口。</span>';
+  // ④ 判定 + 候选
+  const perS = STEPS[STEPS.length - 1].perS;
+  const mx = Math.max.apply(null, perS.filter(v => v >= 0));
+  if (st.final) $('verdict').innerHTML = '<span class="badge ok">候选 = ' + st.final.cand + (st.perS ? '，答案 = ' + mx : '') + '</span>';
+  else $('verdict').textContent = '执行中：已结算 ' + st.t + ' 个窗口，当前 mask = ' + st.mask;
+  $('cands').innerHTML = perS.map((v, s) =>
+    '<span class="cand ' + (v >= 0 ? 'reach' : '') + (v >= 0 && v === mx ? ' best' : '') + '">s' + s + ':' + (v < 0 ? '·' : v) + '</span>').join('');
+  // ⑤ dp 行
+  $('dpstrip').innerHTML = st.dpRow.map((v, m) =>
+    '<span class="dpc ' + (v >= 0 ? 'reach' : '') + (m === st.mask ? ' cur' : '') + '" title="mask=' + m + '">' + (v < 0 ? '·' : v) + '</span>').join('');
+  // ⑥ 代码
+  $('code').innerHTML = CODE.map((ln, k) =>
+    '<span class="ln ' + (k + 1 === st.code ? 'on' : '') + '">' + String(k + 1).padStart(2) + ' │ ' + ln + '</span>').join('');
+  // ⑦ 变量
+  $('vars').innerHTML = [
+    ['s（开头模式）', st.s + '（' + st.s.toString(2).padStart(5, '0') + '）'],
+    ['t（已结算窗口数）', st.t],
+    ['mask（当前 5 位）', st.mask + '（' + st.mask.toString(2).padStart(5, '0') + '）'],
+    ['dp[t][mask]', st.dpRow[st.mask] >= 0 ? st.dpRow[st.mask] : '-∞'],
+    ['N / C', d.n + ' / ' + d.c],
+  ].map(r => '<tr><td class="k">' + r[0] + '</td><td class="v">' + r[1] + '</td></tr>').join('');
+  // ⑧ 解说
+  $('note').innerHTML = st.note;
+}
+
+function stopPlay() { if (TIMER) { clearInterval(TIMER); TIMER = null; $('play').textContent = '▶ 自动播放'; } }
+function doLoad() {
+  $('errbox').textContent = '';
+  const d = parseInput($('src').value);
+  if (d.err) { $('errbox').textContent = '输入有误：' + d.err; return; }
+  DATA = d; MODEL = buildModel(d);
+  STEPS = buildSteps(d, MODEL); POS = 0; stopPlay(); render();
+}
+$('load').onclick = doLoad;
+$('prev').onclick = () => { stopPlay(); if (POS > 0) { POS--; render(); } };
+$('next').onclick = () => { stopPlay(); if (POS < STEPS.length - 1) { POS++; render(); } };
+$('jump').onclick = () => { stopPlay(); POS = STEPS.length - 1; render(); };
+$('play').onclick = () => {
+  if (TIMER) { stopPlay(); return; }
+  $('play').textContent = '⏸ 暂停';
+  TIMER = setInterval(() => { if (POS >= STEPS.length - 1) { stopPlay(); return; } POS++; render(); }, 900);
+};
+doLoad();
+</script>
+</body>
+</html>

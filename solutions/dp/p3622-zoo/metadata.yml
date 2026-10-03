@@ -1,0 +1,50 @@
+id: P3622
+title: "[APIO2007] 动物园"
+source: luogu
+url: https://www.luogu.com.cn/problem/P3622
+topics: [dp/bitmask, dp/circular]
+difficulty: 提高+/省选−（洛谷 difficulty=6，APIO 2007）
+tags: [状压DP, 轮廓线, 滑动窗口, 环形处理, 枚举开头绕回]
+complexity:
+  time: O(32^2*N + 32*C)（满约束 N=1e4/C=5e4 实测 0.163 s，时限 1.00 s）
+  space: O(32*N)（cnt 表约 1.3 MB，开静态区）
+status: 未本地评测（无洛谷登录，仅本地自测）；对拍验证（与独立子集枚举暴力 1400 组随机 0 不一致）；官方样例 1/2 本地输出 5/6
+visualization: true
+limits: 10 <= N <= 10^4, 1 <= C <= 5*10^4；时间 1.00 s，内存 125.00MB（洛谷页面）
+samples:
+  - in: |
+      14 5
+      2 1 2 4 2 6
+      3 1 1 6 4
+      6 1 2 9 6 8
+      8 1 1 9 12
+      12 3 0 12 13 2
+    out: |
+      5
+  - in: |
+      12 7
+      1 1 1 1 5
+      5 1 1 5 7
+      5 0 3 5 7 9
+      7 1 1 7 9
+      9 1 1 9 11
+      9 3 0 9 11 1
+      11 1 1 11 1
+    out: |
+      6
+sample_note: 官方样例（洛谷题目页，真浏览器读取）；sol 与 verify/brute.cpp 均输出 5 / 6
+verify:
+  compile: g++ -static -O2 -std=c++14 solution.cpp -o sol.exe
+  stress: node verify/stress.js ./sol.exe ./verify/brute.exe 1200 12 8   # 另有 200 组(14/20)
+  extra: |
+    sol vs 2^N 子集枚举暴力：1200 组（n<=12,c<=8）+ 200 组（n<=14,c<=20）= 1400 组，0 不一致
+    生成器保证题面约束：X/Y 两两不同且都在 5 连窗口内（f+l<=5，第一版生成器漏了这条被自己抓出）
+    满约束 n=10000/c=50000：输出 44847，0.163 s
+    官方样例 2 抓出环形收口重复结算 bug（初值 cnt[0][s] 得 7，正确 6），详见 README 易错点 1
+notes: |
+  环形 + 5 位滑动窗口轮廓线 DP：每个小朋友只看连续 5 围栏，窗口滑动只露出 1 个新围栏。
+  cnt[s][mask] 预处理"起点 s 的 32 种模式下开心人数"；枚举开头 5 围栏模式 s（32 种），
+  dp 走 n 步（第 t 步结算窗口 (t+1)%n，n 个窗口各恰一次），绕回要求 mask==s。
+  坑：初值必须是 0 不是 cnt[0][s]（否则窗口 0 被结算两次，样例 2 得 7 应得 6）；
+  相对位 (x-1-s+n)%n 别漏 +n；开心条件 (fear&mask)||(like&~mask)。
+authoring_note: 代码一律 C++14；verify/ 下的 brute.cpp（2^N 子集枚举暴力）、stress.js 仅用于验证，非讲解代码
