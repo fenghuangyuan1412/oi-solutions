@@ -1,0 +1,35 @@
+id: P1182
+title: 数列分段 Section II
+source: luogu
+url: https://www.luogu.com.cn/problem/P1182
+topics: [greedy/binary-search-answer, greedy/partition]
+difficulty: 普及（洛谷 difficulty=3）
+tags: [二分答案, 贪心, 最小化最大值, 数列分段]
+complexity:
+  time: O(N log(sum))，sum <= 1e13 约 44 次 check，每次 O(N)；N=1e5 实测 0.02 s 级
+  space: O(N)
+status: 未本地评测（无洛谷登录，仅本地自测）；对拍验证（与 O(N^2 M) 区间 DP 暴力随机对拍共 3100 组 = JS 双实现 3000 组 + 编译后 solution.exe 100 组，0 不一致）；官方样例本地输出 6
+visualization: true
+limits: 20% N<=10；40% N<=1000；100%：1<=N<=1e5，M<=N，0<=A_i<1e8，答案不超过 1e9；时间 1000 ms，内存 128 MB
+samples:
+  - in: |
+      5 3
+      4 2 4 5 1
+    out: |
+      6
+sample_note: 官方样例。答案 6 对应切法 [4 2][4][5 1]；X=5 时最少要切 5 段（>3）不可行
+verify:
+  compile: g++ -static -O2 -std=c++14 solution.cpp -o solution.exe
+  stress: node verify.js --rounds=3000   # JS 双实现，共 3000 组，不一致 0 组
+  extra: |
+    JS 二分+贪心 vs O(N^2 M) 区间 DP 暴力：3000 组（N<=9，A_i 含 0），0 不一致
+    编译后的 solution.exe vs 同一暴力：另 100 组，0 不一致
+    官方样例 6 逐字正确
+    错版"收口写成 >=" 在同一批数据上与正解不同的组数已在 verify.js 输出中统计（答案系统性 +1）
+notes: |
+  二分答案"最小化最大值"模板题。check(X) = 贪心分段，能塞就塞，cnt <= M 即可行
+  （段数不够可以再拆细，拆只会让最大段和更小 ⇒ "<=M 段"与"恰好 M 段"等价）。
+  下界 lo = max(A_i) 是理论最紧下界（每段至少含一个数）；上界 hi = sum。
+  坑：A_i 可达 1e8、N 可达 1e5，sum 到 1e13，前缀和/上界必须 long long；
+  收口条件写 >= 会让答案系统性 +1（样例上从 6 变 7）。
+authoring_note: 代码一律 C++14；verify.js 仅用于验证，非讲解代码

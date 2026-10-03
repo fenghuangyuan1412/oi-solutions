@@ -1,0 +1,39 @@
+id: P1616
+title: 疯狂的采药
+source: luogu
+url: https://www.luogu.com.cn/problem/P1616
+alias: 蓝桥杯考前复习冲刺
+topics: [dp/knapsack]
+difficulty: 普及−（洛谷 difficulty=2）
+tags: [动态规划, 完全背包, 正序枚举, 一维滚动数组]
+complexity:
+  time: O(m*t)（题面保证 m*t <= 1e7，实测满约束 0.03~0.05 s，时限 1000 ms）
+  space: O(t)（long long dp[1e7+5] 约 80 MB，须开全局；时限 1000 ms / 内存 128 MB）
+status: 未本地评测（无洛谷登录，仅本地自测）；对拍验证（与 DFS 枚举株数的独立暴力随机对拍共 2100 组 = JS 双实现 2000 组 + 编译后 solution.exe 100 组，0 不一致）；官方样例本地输出 140；满约束 t=1e7 实测输出 100000000000
+visualization: false
+limits: 1 <= m <= 1e4, 1 <= t <= 1e7, 且 1 <= m*t <= 1e7；1 <= a_i, b_i <= 1e4；时间 1000 ms，内存 128 MB
+samples:
+  - in: |
+      70 3
+      71 100
+      69 1
+      1 2
+    out: |
+      140
+sample_note: 官方样例。这组输入与 P1048 采药【逐字相同】，但答案从 3 变成 140 —— 第三种草药 (1,2) 可以采 70 次。而 140 恰好等于 P1048 里把内层写成正序时得到的错值，那题的 bug 在本题就是正解
+verify:
+  compile: g++ -static -O2 -std=c++14 solution.cpp -o solution.exe
+  stress: node verify.js --rounds=2000   # JS 双实现，共 2000 组，不一致 0 组
+  extra: |
+    JS 正序完全背包 vs DFS 枚举株数暴力：2000 组（T<=60, M<=6，a_i<=12, b_i<=20），0 不一致
+    编译后的 solution.exe vs 同一暴力：另 100 组，0 不一致（本机沙箱内 node spawn 新编译 exe 报 EBUSY，故改用 bash 驱动 exe 完成）
+    官方样例 140 逐字正确
+    倒序（01 背包）在 2000 组里有 1745 组结果严格小于正解 —— 方向写反是系统性偏小
+    满约束 t=1e7、m=1、a=1、b=1e4：输出 100000000000（10^11），实测 0.21 s
+notes: |
+  本题是 P1048 的"改一个字"版本：唯一区别是每种草药无限次 ⇒ 内层容量枚举由倒序改成正序。
+  正序时 dp[j-a] 是本轮新值，已含第 i 种草药，+b 即再采一株；归纳展开得
+  dp[j] = max_{k>=0}(dp_上一轮[j-k*a] + k*b)，k 就是采摘株数。
+  坑：答案上界 1e7*1e4 = 1e11 必须 long long；dp 数组 80 MB 必须开全局（放 main 会爆栈）；
+  输入顺序是先 t 后 m。题面里 m*t <= 1e7 这个乘积约束是朴素 O(mt) 能过的关键，读题时要看到。
+authoring_note: 代码一律 C++14；verify.js 仅用于验证，非讲解代码

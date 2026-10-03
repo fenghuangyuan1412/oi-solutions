@@ -1,0 +1,48 @@
+id: P1352
+title: 没有上司的舞会
+source: luogu
+url: https://www.luogu.com.cn/problem/P1352
+topics: [dp/tree]
+difficulty: 普及（洛谷 difficulty=3）
+tags: [动态规划, 树形DP, 树上最大权独立集, 后序遍历]
+complexity:
+  time: O(N)，每个节点访问一次
+  space: O(N)（孩子表 + f[N][2]）
+status: 未本地评测（无洛谷登录，仅本地自测）；对拍验证（与 2^N 枚举出席集合暴力随机对拍共 530 组 = JS 双实现 500 组 + 编译后 solution.exe 30 组，0 不一致）；官方样例本地输出 5
+visualization: false
+limits: 1 <= N <= 6000，-128 <= r_i <= 127，给出的关系保证是一棵树；时间 1000 ms，内存 128 MB
+samples:
+  - in: |
+      7
+      1
+      1
+      1
+      1
+      1
+      1
+      1
+      1 3
+      2 3
+      6 4
+      7 4
+      4 5
+      3 5
+    out: |
+      5
+sample_note: 官方样例。树以 5 为根：5 的孩子是 4、3；4 的孩子是 6、7；3 的孩子是 1、2。最优方案请 {5,6,7,1,2}，快乐值 5
+verify:
+  compile: g++ -static -O2 -std=c++14 solution.cpp -o solution.exe
+  stress: node verify.js --rounds=500   # JS 双实现，共 500 组，不一致 0 组
+  extra: |
+    JS 树形 DP vs 2^N 枚举出席集合暴力：500 组（N<=11，r_i 取 -5..10 含负数），0 不一致
+    编译后的 solution.exe vs 同一暴力：另 30 组，0 不一致
+    官方样例 5 逐字正确
+    错版"f[u][0] 漏写 max"在同一批数据上与正解不同的组数已在 verify.js 输出中统计
+    深链压力：N=6000 的一条链，递归深度 6000，实测不爆栈
+notes: |
+  树形 DP 入门第一题（树上最大权独立集）。每个节点两种状态：来 / 不来。
+  f[u][1] = r_u + Σ f[v][0]；f[u][0] = Σ max(f[v][0], f[v][1])。答案 max(f[root][0], f[root][1])。
+  必须后序遍历；根是唯一没有父亲的节点（用 hasParent[] 找）。
+  坑：f[u][0] 漏写 max（以为上司不来孩子也不来）会严重偏小；r_i 可为负，f[u][0] 恒 >= 0
+  所以"一个人都不请"是合法方案，答案不会是负数；深链 N=6000 时递归深度也是 6000，本机实测不爆栈。
+authoring_note: 代码一律 C++14；verify.js 仅用于验证，非讲解代码。按用户要求本题不做 visualization.html，改用 README 内的板书表格

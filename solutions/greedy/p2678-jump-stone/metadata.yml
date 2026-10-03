@@ -1,0 +1,42 @@
+id: P2678
+title: "[NOIP 2015 提高组] 跳石头"
+source: luogu
+url: https://www.luogu.com.cn/problem/P2678
+topics: [greedy/binary-search-answer, greedy/remove-greedy]
+difficulty: 普及（洛谷 difficulty=3，NOIP 2015 提高组 Day2 T1）
+tags: [二分答案, 贪心, 最大化最小值, NOIP真题]
+complexity:
+  time: O(N log L)，log L <= 30，N <= 5e4，约 1.5e6 次操作
+  space: O(N)
+status: 未本地评测（无洛谷登录，仅本地自测）；对拍验证（与 2^N 枚举保留集合暴力随机对拍共 3100 组 = JS 双实现 3000 组 + 编译后 solution.exe 100 组，0 不一致）+ 5 项定向边界/hack 全通过；官方样例本地输出 4
+visualization: true
+limits: 1 <= L <= 1e9，0 <= M <= N <= 50000，0 < D_i < L 且严格递增；时间 1000 ms，内存 128 MB
+samples:
+  - in: |
+      25 5 2
+      2
+      11
+      14
+      17
+      21
+    out: |
+      4
+sample_note: 官方样例。移走距离为 2 和 14 的两块石头后，落点序列 0,11,17,21,25，相邻距离 11,6,4,4，最小值为 4
+verify:
+  compile: g++ -static -O2 -std=c++14 solution.cpp -o solution.exe
+  stress: node verify.js --rounds=3000   # JS 双实现，共 3000 组，不一致 0 组
+  extra: |
+    JS 二分+贪心 vs 2^N 枚举保留集合暴力：3000 组（L<=25, N<=10），0 不一致
+    编译后的 solution.exe vs 同一暴力：另 100 组，0 不一致
+    定向边界 5 项全过：Hack1 "4 1 1 / 2"->4、Hack2 "10 2 1 / 4 7"->4、N=0 "1 0 0"->1、M=N "100 3 3 ..."->100、M=0 "10 3 0 / 3 6 9"->1
+    官方样例 4 逐字正确
+    错版"太近写成 <=" 在同一批数据上与正解不同的组数已在 verify.js 输出中统计（答案系统性 −1）
+notes: |
+  二分答案"最大化最小值"模板题，与 P1182 数列分段是同一框架的两个方向。
+  check(X) 单趟贪心：离上一落脚点 < X 就移走这块石头，否则保留。
+  终点处理是本题唯一的证明难点：扫描完若 L - last < X，只需再移走 last 一块，
+  因为 L - 前一块 = (L-last) + (last-前一块) > X，不会连锁。
+  坑：多趟扫描（起点侧一趟、终点侧一趟、中间一趟）会给同一块石头重复计数，
+  官方数据抓不到，Hack "4 1 1 / 2"（正解 4、错解 2）与 "10 2 1 / 4 7"（正解 4、错解 3）可触发。
+  另：lo+hi 最大约 2e9 贴着 int 上限，建议写 lo+(hi-lo)/2。
+authoring_note: 代码一律 C++14；verify.js 仅用于验证，非讲解代码

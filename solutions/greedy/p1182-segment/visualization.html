@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1182 数列分段 · 二分答案 + 贪心分段</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --fresh:#c084fc; --mid:#fbbf24; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:4px; }
+  .sub b { color:var(--ink); }
+  .legend { font-size:12px; color:var(--dim); margin:4px 0 14px; }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:3px; margin:0 4px 0 12px; vertical-align:middle; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 14px; font-size:14px; cursor:pointer; margin-right:8px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  textarea { background:#0d1020; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+             padding:8px 10px; font:13px/1.5 Consolas,monospace; width:280px; height:88px; vertical-align:top; }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .prog { color:var(--acc); font-size:14px; margin-left:auto; font-weight:700; }
+
+  .track { position:relative; height:44px; background:#0d1020; border:1px solid #2b3358; border-radius:8px; margin:6px 0 4px; }
+  .win { position:absolute; top:0; bottom:0; background:#1d3a55; border-left:2px solid var(--acc); border-right:2px solid var(--acc); }
+  .mk { position:absolute; top:-2px; bottom:-2px; width:3px; background:var(--mid); }
+  .mk span { position:absolute; top:-20px; left:50%; transform:translateX(-50%); font:12px Consolas,monospace; color:var(--mid); white-space:nowrap; }
+  .lo, .hi { position:absolute; bottom:-20px; font:12px Consolas,monospace; color:var(--acc); transform:translateX(-50%); }
+  .scale { display:flex; justify-content:space-between; font:11px Consolas,monospace; color:#6b7396; margin-top:22px; }
+
+  .arr { display:flex; gap:6px; flex-wrap:wrap; }
+  .el { position:relative; min-width:46px; padding:10px 8px; border-radius:8px; text-align:center;
+        font:14px Consolas,monospace; border:2px solid transparent; background:#232a4a; }
+  .el .ix { display:block; font-size:11px; color:#6b7396; margin-top:2px; }
+  .el.cur { border-color:var(--acc); box-shadow:0 0 0 2px rgba(94,234,212,.25); }
+  .el.newseg { border-left:4px solid var(--ok); }
+  .el.s0 { background:#1f3b5c; } .el.s1 { background:#3b2f5c; } .el.s2 { background:#1f4a3b; }
+  .el.s3 { background:#5c3b1f; } .el.s4 { background:#4a1f3b; } .el.s5 { background:#2f4a5c; }
+  .el.neg { background:#232a4a; }
+
+  .wrap { display:flex; gap:14px; flex-wrap:wrap; }
+  .wrap > div { flex:1; min-width:320px; }
+  pre.code { margin:0; font:13px/1.8 Consolas,monospace; }
+  pre.code .ln { display:block; padding:0 8px; border-left:3px solid transparent; white-space:pre; }
+  pre.code .ln.on { background:#173a4a; border-left-color:var(--acc); color:var(--acc); }
+  table.vars { border-collapse:collapse; width:100%; font:13px Consolas,monospace; }
+  table.vars td { border:1px solid #2b3358; padding:4px 8px; }
+  table.vars td.k { color:var(--dim); }
+  table.vars td.v { color:var(--acc); font-weight:700; }
+  .note { font-size:14px; min-height:104px; }
+  .note b { color:var(--acc); }
+  .note .bad { color:var(--warn); } .note .good { color:var(--ok); } .note .pu { color:var(--fresh); }
+  .note .mid { color:var(--mid); }
+  .ans { margin-top:12px; text-align:center; font:15px/1.5 Consolas,monospace; color:var(--dim); }
+  .ans b { color:var(--ok); font-size:22px; }
+  .err { color:var(--warn); font-size:13px; }
+  .chip { display:inline-block; padding:2px 8px; border-radius:999px; background:#232a4a; border:1px solid #333c66; font:12px Consolas,monospace; margin-right:6px; }
+  .chip.good { color:var(--ok); border-color:#2f6b4a; }
+  .chip.bad { color:var(--warn); border-color:#6b2f2f; }
+</style>
+</head>
+<body>
+<h1>P1182 数列分段 Section II · 二分答案 + 贪心分段</h1>
+<div class="sub">求「每段和的最大值」的最小值。二分那个最大值 <b>X</b>，判定就是一趟贪心：
+<b>能塞就塞，塞不下（cur + a[i] &gt; X）才开新段</b>；段数 cnt ≤ M 就算可行。</div>
+<div class="legend">图例：<i style="background:#1d3a55;border:1px solid #5eead4"></i>当前二分的 [lo, hi] 窗口 <i style="background:#fbbf24"></i>mid <i style="background:#173a4a;border:1px solid #5eead4"></i>正在处理的元素 <i style="background:#1f4a3b;border-left:4px solid #86efac"></i>新开一段的位置</div>
+
+<div class="topbar">
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到结尾</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="card">
+  <h2>输入（第一行 N M，第二行 N 个数；默认就是官方样例，演示限 N ≤ 18）</h2>
+  <textarea id="src" spellcheck="false">5 3
+4 2 4 5 1</textarea>
+  <button id="load" style="margin-left:14px">载入并重新演示</button> <span class="err" id="err"></span>
+</div>
+
+<div class="card">
+  <h2>二分区间 [lo, hi] 与 mid</h2>
+  <div class="track" id="track"></div>
+  <div class="scale"><span>0</span><span id="scaleMax"></span></div>
+</div>
+
+<div class="card">
+  <h2>数组与分段（同一颜色 = 同一段）</h2>
+  <div class="arr" id="arr"></div>
+  <div class="ans" id="ans"></div>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <h2>代码执行位置</h2>
+    <pre class="code" id="code"></pre>
+  </div>
+  <div>
+    <div class="card">
+      <h2>变量状态</h2>
+      <table class="vars" id="vars"></table>
+    </div>
+    <div class="card">
+      <h2>这一步在做什么</h2>
+      <div class="note" id="note"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CODE = [
+  'long long lo = max(a), hi = sum(a), ans = hi;',
+  'while (lo <= hi) {',
+  '    long long mid = lo + (hi - lo) / 2;',
+  '    long long cur = 0;  int cnt = 1;',
+  '    for (int i = 1; i <= n; ++i) {',
+  '        if (cur + a[i] > mid) { ++cnt; cur = a[i]; }',
+  '        else                  { cur += a[i]; }',
+  '    }',
+  '    if (cnt <= m) { ans = mid; hi = mid - 1; }',
+  '    else          { lo = mid + 1; }',
+  '}',
+  'printf("%lld", ans);',
+];
+
+let n = 5, m = 3, a = [4, 2, 4, 5, 1];
+let steps = [], cur = 0, timer = null, spanMax = 16;
+
+function build() {
+  steps = [];
+  const S = a.reduce((x, y) => x + y, 0);
+  spanMax = S;
+  let lo = Math.max.apply(null, a), hi = S, ans = hi;
+  const blank = new Array(n).fill(-1);
+
+  steps.push({ kind:'init', line:0, lo, hi, mid:null, ans, cnt:0, cur:0, i:-1, seg:blank.slice(),
+    note:'下界 <b>lo = max(a) = ' + lo + '</b>（每段至少含一个数，答案不可能更小）；上界 <b>hi = sum(a) = ' + hi + '</b>（只切一段）。我们要找<b>最小的可行 X</b>，所以 mid 可行时要往<b>更小</b>探。' });
+
+  let guard = 0;
+  while (lo <= hi && guard++ < 80) {
+    const mid = lo + Math.floor((hi - lo) / 2);
+    steps.push({ kind:'mid', line:2, lo, hi, mid, ans, cnt:0, cur:0, i:-1, seg:blank.slice(),
+      note:'取 <span class="mid">mid = ' + mid + '</span>，接下来判定「每段和都不超过 ' + mid + '」能不能用 ≤ ' + m + ' 段做到。' });
+
+    let cnt = 1, c = 0;
+    const sg = new Array(n).fill(-1);
+    for (let i = 0; i < n; i++) {
+      const prevC = c;            // 先存旧值：note 里要讲"加之前已有多少"
+      let act;
+      if (prevC + a[i] > mid) { cnt++; c = a[i]; act = 'new'; }
+      else { c = prevC + a[i]; act = 'add'; }
+      sg[i] = cnt - 1;
+      steps.push({ kind:'cell', line: act === 'new' ? 5 : 6, lo, hi, mid, ans, cnt, cur:c, prevC, i, act, seg:sg.slice(),
+        note: act === 'new'
+          ? 'a[' + (i+1) + ']=' + a[i] + '：当前段已有 ' + prevC + '，再加就超过 ' + mid + ' ⇒ <span class="good">开新段</span>，cnt 变成 ' + cnt + '，新段从 ' + a[i] + ' 起。'
+          : 'a[' + (i+1) + ']=' + a[i] + '：' + prevC + ' + ' + a[i] + ' = ' + c + ' ≤ ' + mid + ' ⇒ 塞进去。贪心让当前段尽量长，段数才会尽量少。' });
+    }
+    const ok = cnt <= m;
+    if (ok) ans = mid;
+    steps.push({ kind:'verdict', line: ok ? 8 : 9, lo, hi, mid, ans, cnt, cur:c, i:-1, seg:sg.slice(),
+      note:'扫完得到 <b>cnt = ' + cnt + '</b> 段，' + (ok
+        ? '≤ M = ' + m + ' ⇒ <span class="good">可行</span>。记下 ans = ' + mid + '，然后把 hi 降到 ' + (mid - 1) + '，继续找<b>更小</b>的可行值。'
+        : '&gt; M = ' + m + ' ⇒ <span class="bad">不可行</span>。这个 X 太小了，只能把 lo 提到 ' + (mid + 1) + '。') });
+    if (ok) hi = mid - 1; else lo = mid + 1;
+  }
+
+  steps.push({ kind:'end', line:11, lo, hi, mid:null, ans, cnt:0, cur:0, i:-1, seg:blank.slice(),
+    note:'lo &gt; hi，二分结束。答案是 <b>' + ans + '</b> —— 最小的、能让段数 ≤ ' + m + ' 的「段和上限」。它同时也是「最优分段里最大的那段和」。' });
+}
+
+function render() {
+  const s = steps[cur];
+
+  // 二分区间条
+  const p = (v) => (spanMax ? Math.max(0, Math.min(100, v / spanMax * 100)) : 0);
+  let tk = '';
+  if (s.mid !== null) {
+    tk += '<div class="win" style="left:' + p(s.lo) + '%;width:' + (p(s.hi) - p(s.lo)) + '%"></div>';
+    tk += '<div class="mk" style="left:' + p(s.mid) + '%"><span>mid=' + s.mid + '</span></div>';
+  }
+  tk += '<div class="lo" style="left:' + p(s.lo) + '%">lo=' + s.lo + '</div>';
+  tk += '<div class="hi" style="left:' + p(s.hi) + '%">hi=' + s.hi + '</div>';
+  document.getElementById('track').innerHTML = tk;
+  document.getElementById('scaleMax').textContent = 'sum = ' + spanMax;
+
+  // 数组
+  let h = '';
+  for (let i = 0; i < n; i++) {
+    const cls = ['el'];
+    cls.push(s.seg[i] >= 0 ? 's' + (s.seg[i] % 6) : 'neg');
+    if (s.kind === 'cell' && i === s.i) cls.push('cur');
+    if (s.kind === 'cell' && i === s.i && s.act === 'new') cls.push('newseg');
+    h += '<div class="' + cls.join(' ') + '">' + a[i] + '<span class="ix">a[' + (i + 1) + ']</span></div>';
+  }
+  document.getElementById('arr').innerHTML = h;
+
+  document.getElementById('ans').innerHTML = s.kind === 'end'
+    ? '答案 <b>' + s.ans + '</b>'
+    : (s.kind === 'cell' || s.kind === 'verdict'
+        ? '<span class="chip' + (s.cnt <= m ? ' good' : ' bad') + '">cnt = ' + s.cnt + ' / M = ' + m + '</span>'
+          + '<span class="chip">当前段和 cur = ' + s.cur + '</span>'
+        : '');
+
+  document.getElementById('code').innerHTML = CODE.map((x, i) =>
+    '<span class="ln' + (i === s.line ? ' on' : '') + '">' + x.replace(/</g, '&lt;') + '</span>').join('');
+
+  const v = [['n', n], ['m', m], ['lo', s.lo], ['hi', s.hi], ['mid', s.mid === null ? '—' : s.mid], ['ans（已记录的最优可行值）', s.ans]];
+  if (s.kind === 'cell') v.push(['i', s.i + 1], ['a[i]', a[s.i]], ['cur（当前段和）', s.cur], ['cnt（段数）', s.cnt]);
+  if (s.kind === 'verdict') v.push(['cnt（段数）', s.cnt]);
+  document.getElementById('vars').innerHTML = v.map((x) =>
+    '<tr><td class="k">' + x[0] + '</td><td class="v">' + x[1] + '</td></tr>').join('');
+
+  document.getElementById('note').innerHTML = s.note;
+  document.getElementById('prog').textContent = (cur + 1) + ' / ' + steps.length;
+  document.getElementById('prev').disabled = cur === 0;
+  document.getElementById('next').disabled = cur === steps.length - 1;
+}
+
+function load() {
+  const t = document.getElementById('src').value.trim().split(/\s+/).map(Number);
+  if (t.length < 2 || t.some(Number.isNaN)) { bad('至少要两个整数 N 和 M'); return; }
+  const NN = t[0], MM = t[1];
+  if (NN < 1 || NN > 18 || MM < 1 || MM > NN || t.length !== 2 + NN) {
+    bad('格式不对：N 需 1..18（演示用），M 需 1..N，且后面要有 N 个数。当前 N=' + NN + ' M=' + MM + '，后面 ' + (t.length - 2) + ' 个数。');
+    return;
+  }
+  const arr = t.slice(2);
+  if (arr.some((x) => x < 0)) { bad('元素必须非负'); return; }
+  document.getElementById('err').textContent = '';
+  n = NN; m = MM; a = arr; cur = 0; build(); render();
+}
+function bad(msg) { document.getElementById('err').textContent = msg; }
+
+document.getElementById('next').onclick = () => { if (cur < steps.length - 1) { cur++; render(); } };
+document.getElementById('prev').onclick = () => { if (cur > 0) { cur--; render(); } };
+document.getElementById('jump').onclick = () => { stop(); cur = steps.length - 1; render(); };
+document.getElementById('load').onclick = load;
+function stop() { if (timer) { clearInterval(timer); timer = null; document.getElementById('play').textContent = '▶ 自动播放'; } }
+document.getElementById('play').onclick = () => {
+  if (timer) return stop();
+  document.getElementById('play').textContent = '⏸ 暂停';
+  timer = setInterval(() => { if (cur >= steps.length - 1) return stop(); cur++; render(); }, 380);
+};
+
+build(); render();
+</script>
+</body>
+</html>

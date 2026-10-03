@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P2678 跳石头 · 二分答案 + 贪心移石</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --mid:#fbbf24; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:4px; }
+  .sub b { color:var(--ink); }
+  .legend { font-size:12px; color:var(--dim); margin:4px 0 14px; }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:3px; margin:0 4px 0 12px; vertical-align:middle; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 14px; font-size:14px; cursor:pointer; margin-right:8px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  textarea { background:#0d1020; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+             padding:8px 10px; font:13px/1.5 Consolas,monospace; width:280px; height:88px; vertical-align:top; }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .prog { color:var(--acc); font-size:14px; margin-left:auto; font-weight:700; }
+
+  .track { position:relative; height:44px; background:#0d1020; border:1px solid #2b3358; border-radius:8px; margin:6px 0 4px; }
+  .win { position:absolute; top:0; bottom:0; background:#1d3a55; border-left:2px solid var(--acc); border-right:2px solid var(--acc); }
+  .mk { position:absolute; top:-2px; bottom:-2px; width:3px; background:var(--mid); }
+  .mk span { position:absolute; top:-20px; left:50%; transform:translateX(-50%); font:12px Consolas,monospace; color:var(--mid); white-space:nowrap; }
+  .lo, .hi { position:absolute; bottom:-20px; font:12px Consolas,monospace; color:var(--acc); transform:translateX(-50%); }
+  .scale { display:flex; justify-content:space-between; font:11px Consolas,monospace; color:#6b7396; margin-top:22px; }
+
+  .row { display:flex; align-items:flex-end; flex-wrap:wrap; gap:0; padding-top:8px; }
+  .node { min-width:44px; text-align:center; padding:8px 6px; border-radius:8px; background:#232a4a;
+          border:2px solid transparent; font:13px Consolas,monospace; }
+  .node .ix { display:block; font-size:11px; color:#6b7396; margin-top:2px; }
+  .node.kept { background:#1f4a3b; border-color:var(--ok); }
+  .node.drop { background:#3a1f2a; border-color:var(--warn); color:#fca5a5; text-decoration:line-through; }
+  .node.cur  { box-shadow:0 0 0 3px rgba(94,234,212,.3); border-color:var(--acc); }
+  .node.fix  { background:#4a3a1f; border-color:var(--mid); }
+  .node.edge { background:#2b3358; }
+  .gap { min-width:30px; text-align:center; font:12px Consolas,monospace; color:var(--dim); padding-bottom:16px; }
+  .gap.ok { color:var(--ok); }
+  .gap.no { color:var(--warn); font-weight:700; }
+
+  .wrap { display:flex; gap:14px; flex-wrap:wrap; }
+  .wrap > div { flex:1; min-width:320px; }
+  pre.code { margin:0; font:13px/1.8 Consolas,monospace; }
+  pre.code .ln { display:block; padding:0 8px; border-left:3px solid transparent; white-space:pre; }
+  pre.code .ln.on { background:#173a4a; border-left-color:var(--acc); color:var(--acc); }
+  table.vars { border-collapse:collapse; width:100%; font:13px Consolas,monospace; }
+  table.vars td { border:1px solid #2b3358; padding:4px 8px; }
+  table.vars td.k { color:var(--dim); }
+  table.vars td.v { color:var(--acc); font-weight:700; }
+  .note { font-size:14px; min-height:104px; }
+  .note b { color:var(--acc); }
+  .note .bad { color:var(--warn); } .note .good { color:var(--ok); } .note .mid { color:var(--mid); }
+  .ans { margin-top:12px; text-align:center; font:15px/1.5 Consolas,monospace; color:var(--dim); }
+  .ans b { color:var(--ok); font-size:22px; }
+  .err { color:var(--warn); font-size:13px; }
+  .chip { display:inline-block; padding:2px 8px; border-radius:999px; background:#232a4a; border:1px solid #333c66; font:12px Consolas,monospace; margin-right:6px; }
+  .chip.good { color:var(--ok); border-color:#2f6b4a; }
+  .chip.bad { color:var(--warn); border-color:#6b2f2f; }
+</style>
+</head>
+<body>
+<h1>P2678 跳石头 · 二分答案 + 贪心移石</h1>
+<div class="sub">求「最短跳跃距离」的最大值。二分那个最小值 <b>X</b>，判定就是一趟贪心：
+<b>离上一落脚点 &lt; X 就移走这块石头</b>，否则保留；扫完再看终点前那一段。</div>
+<div class="legend">图例：<i style="background:#1f4a3b;border:1px solid #86efac"></i>保留的落点 <i style="background:#3a1f2a;border:1px solid #f87171"></i>被移走 <i style="background:#4a3a1f;border:1px solid #fbbf24"></i>终点前补移的那一块 <i style="background:#1d3a55;border:1px solid #5eead4"></i>当前二分的 [lo, hi] 窗口</div>
+
+<div class="topbar">
+  <button id="prev">◀ 上一步</button>
+  <button id="next">下一步 ▶</button>
+  <button id="play">▶ 自动播放</button>
+  <button id="jump">跳到结尾</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="card">
+  <h2>输入（第一行 L N M，下面 N 行石头位置；默认就是官方样例，演示限 N ≤ 10）</h2>
+  <textarea id="src" spellcheck="false">25 5 2
+2
+11
+14
+17
+21</textarea>
+  <button id="load" style="margin-left:14px">载入并重新演示</button> <span class="err" id="err"></span>
+</div>
+
+<div class="card">
+  <h2>二分区间 [lo, hi] 与 mid</h2>
+  <div class="track" id="track"></div>
+  <div class="scale"><span>0</span><span id="scaleMax"></span></div>
+</div>
+
+<div class="card">
+  <h2>河道与落点（数字是原始间距；绿 = 够 X，红 = 不够）</h2>
+  <div class="row" id="river"></div>
+  <div class="ans" id="ans"></div>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <h2>代码执行位置</h2>
+    <pre class="code" id="code"></pre>
+  </div>
+  <div>
+    <div class="card">
+      <h2>变量状态</h2>
+      <table class="vars" id="vars"></table>
+    </div>
+    <div class="card">
+      <h2>这一步在做什么</h2>
+      <div class="note" id="note"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CODE = [
+  'int lo = 0, hi = L, ans = 0;',
+  'while (lo <= hi) {',
+  '    int mid = lo + (hi - lo) / 2;',
+  '    int cnt = 0, last = 0;',
+  '    for (int i = 1; i <= n; ++i) {',
+  '        if (a[i] - a[last] < mid) ++cnt;   // 太近 -> 移走',
+  '        else                      last = i;// 够远 -> 保留',
+  '    }',
+  '    if (L - a[last] < mid) ++cnt;          // 终点前补一刀',
+  '    if (cnt <= m) { ans = mid; lo = mid + 1; }',
+  '    else          { hi = mid - 1; }',
+  '}',
+  'printf("%d", ans);',
+];
+
+let L = 25, n = 5, m = 2, d = [2, 11, 14, 17, 21];
+let pos = [0].concat(d, [L]);
+let steps = [], cur = 0, timer = null, spanMax = 25;
+
+function build() {
+  steps = [];
+  pos = [0].concat(d, [L]);
+  spanMax = L;
+  let lo = 0, hi = L, ans = 0;
+  const blank = new Array(n + 2).fill(-1);
+  blank[0] = 1; blank[n + 1] = 1;   // 起点、终点恒保留
+
+  steps.push({ kind:'init', line:0, lo, hi, mid:null, ans, cnt:0, last:0, i:-1, st:blank.slice(),
+    note:'二分 <b>X = 最短跳跃距离的下界</b>。lo = 0（一块不移也总有 X=0 可行），hi = L（把石头全移走，一步从起点跳到终点）。要找<b>最大的可行 X</b>，所以 mid 可行时要往<b>更大</b>探。' });
+
+  let guard = 0;
+  while (lo <= hi && guard++ < 80) {
+    const mid = lo + Math.floor((hi - lo) / 2);
+    steps.push({ kind:'mid', line:2, lo, hi, mid, ans, cnt:0, last:0, i:-1, st:blank.slice(),
+      note:'取 <span class="mid">mid = ' + mid + '</span>，判定「能不能让所有相邻落点距离都 ≥ ' + mid + '」。' });
+
+    let cnt = 0, last = 0;
+    const st = blank.slice();
+    for (let i = 1; i <= n; i++) {
+      const prevLast = last;      // 先存旧落脚点：note 与变量表都要显示"离谁多远"
+      const g = pos[i] - pos[prevLast];
+      let act;
+      if (g < mid) { cnt++; st[i] = 0; act = 'drop'; }
+      else { last = i; st[i] = 1; act = 'keep'; }
+      steps.push({ kind:'cell', line: act === 'drop' ? 5 : 6, lo, hi, mid, ans, cnt, last, prevLast, i, st:st.slice(),
+        note: 'a[' + i + ']=' + pos[i] + '，离上一落脚点 a[' + prevLast + ']=' + pos[prevLast] + ' 的距离是 <b>' + g + '</b>，' +
+          (act === 'drop'
+            ? '&lt; ' + mid + ' ⇒ <span class="bad">太近，这块必须移走</span>，cnt = ' + cnt + '。移走它会把这段距离并给后面，所以后续更好安排。'
+            : '≥ ' + mid + ' ⇒ <span class="good">保留</span>，落脚点前移到 a[' + i + ']=' + pos[i] + '。') });
+    }
+    const fin = L - pos[last];
+    let fixed = false;
+    if (fin < mid) { cnt++; st[last] = 2; fixed = true; }
+    steps.push({ kind:'tail', line:8, lo, hi, mid, ans, cnt, last, i:-1, st:st.slice(),
+      note: '扫描结束，最后落脚点是 a[' + last + ']=' + pos[last] + '，终点前的距离是 <b>' + fin + '</b>。' +
+        (fixed
+          ? '&lt; ' + mid + ' ⇒ <span class="bad">还得再移走一块</span>。移走的其实是刚保留的 a[' + last + ']，不是终点！因为 ' +
+            'L − a[前一块] = (' + fin + ') + (a[' + last + '] − a[前一块]) &gt; ' + mid + '，移走它一定够，不会连锁。cnt = ' + cnt + '。'
+          : '≥ ' + mid + ' ⇒ 不用再移了。') });
+
+    const ok = cnt <= m;
+    if (ok) ans = mid;
+    steps.push({ kind:'verdict', line: ok ? 9 : 10, lo, hi, mid, ans, cnt, last, i:-1, st:st.slice(),
+      note: '一共要移走 <b>' + cnt + '</b> 块，' + (ok
+        ? '≤ M = ' + m + ' ⇒ <span class="good">可行</span>。记下 ans = ' + mid + '，把 lo 提到 ' + (mid + 1) + '，继续找<b>更大</b>的可行值。'
+        : '&gt; M = ' + m + ' ⇒ <span class="bad">不可行</span>。X 太大了，把 hi 降到 ' + (mid - 1) + '。') });
+    if (ok) lo = mid + 1; else hi = mid - 1;
+  }
+
+  steps.push({ kind:'end', line:12, lo, hi, mid:null, ans, cnt:0, last:0, i:-1, st:blank.slice(),
+    note:'lo &gt; hi，二分结束。答案是 <b>' + ans + '</b> —— 在「至多移走 ' + m + ' 块」的前提下，能让最短跳跃距离达到的最大值。' });
+}
+
+function render() {
+  const s = steps[cur];
+
+  const p = (v) => (spanMax ? Math.max(0, Math.min(100, v / spanMax * 100)) : 0);
+  let tk = '';
+  if (s.mid !== null) {
+    tk += '<div class="win" style="left:' + p(s.lo) + '%;width:' + (p(s.hi) - p(s.lo)) + '%"></div>';
+    tk += '<div class="mk" style="left:' + p(s.mid) + '%"><span>mid=' + s.mid + '</span></div>';
+  }
+  tk += '<div class="lo" style="left:' + p(s.lo) + '%">lo=' + s.lo + '</div>';
+  tk += '<div class="hi" style="left:' + p(s.hi) + '%">hi=' + s.hi + '</div>';
+  document.getElementById('track').innerHTML = tk;
+  document.getElementById('scaleMax').textContent = 'L = ' + spanMax;
+
+  let h = '';
+  for (let j = 0; j <= n + 1; j++) {
+    const cls = ['node'];
+    if (j === 0 || j === n + 1) cls.push('edge');
+    else if (s.st[j] === 1) cls.push('kept');
+    else if (s.st[j] === 0) cls.push('drop');
+    else if (s.st[j] === 2) cls.push('fix');
+    if (s.i === j || (s.kind === 'tail' && s.last === j)) cls.push('cur');
+    const label = (j === 0 ? '起点' : j === n + 1 ? '终点' : 'a' + j);
+    h += '<div class="' + cls.join(' ') + '">' + pos[j] + '<span class="ix">' + label + '</span></div>';
+    if (j <= n) {
+      const g = pos[j + 1] - pos[j];
+      const gc = s.mid === null ? '' : (g >= s.mid ? ' ok' : ' no');
+      h += '<div class="gap' + gc + '">' + g + '</div>';
+    }
+  }
+  document.getElementById('river').innerHTML = h;
+
+  document.getElementById('ans').innerHTML = s.kind === 'end'
+    ? '答案 <b>' + s.ans + '</b>'
+    : (s.kind === 'cell' || s.kind === 'tail' || s.kind === 'verdict'
+        ? '<span class="chip' + (s.cnt <= m ? ' good' : ' bad') + '">已移走 cnt = ' + s.cnt + ' / M = ' + m + '</span>'
+          + '<span class="chip">落脚点 last = a[' + s.last + '] = ' + pos[s.last] + '</span>'
+        : '');
+
+  document.getElementById('code').innerHTML = CODE.map((x, i) =>
+    '<span class="ln' + (i === s.line ? ' on' : '') + '">' + x.replace(/</g, '&lt;') + '</span>').join('');
+
+  const v = [['L', L], ['n', n], ['m', m], ['lo', s.lo], ['hi', s.hi], ['mid', s.mid === null ? '—' : s.mid], ['ans（已记录的最优可行值）', s.ans]];
+  if (s.kind === 'cell') v.push(['i', s.i], ['a[i]', pos[s.i]], ['上一落脚点 a[last]', 'a[' + s.prevLast + '] = ' + pos[s.prevLast]], ['间距 a[i] − a[last]', pos[s.i] - pos[s.prevLast]], ['cnt（已移走）', s.cnt]);
+  if (s.kind === 'tail' || s.kind === 'verdict') v.push(['last', 'a[' + s.last + '] = ' + pos[s.last]], ['终点前距离', L - pos[s.last]], ['cnt', s.cnt]);
+  document.getElementById('vars').innerHTML = v.map((x) =>
+    '<tr><td class="k">' + x[0] + '</td><td class="v">' + x[1] + '</td></tr>').join('');
+
+  document.getElementById('note').innerHTML = s.note;
+  document.getElementById('prog').textContent = (cur + 1) + ' / ' + steps.length;
+  document.getElementById('prev').disabled = cur === 0;
+  document.getElementById('next').disabled = cur === steps.length - 1;
+}
+
+function load() {
+  const t = document.getElementById('src').value.trim().split(/\s+/).map(Number);
+  if (t.length < 3 || t.some(Number.isNaN)) { bad('至少要三个整数 L N M'); return; }
+  const LL = t[0], NN = t[1], MM = t[2];
+  if (LL < 1 || LL > 200 || NN < 0 || NN > 10 || MM < 0 || MM > NN || t.length !== 3 + NN) {
+    bad('格式不对：L 需 1..200（演示用），N 需 0..10，M 需 0..N，且后面要有 N 个石头位置。当前 L=' + LL + ' N=' + NN + ' M=' + MM + '，后面 ' + (t.length - 3) + ' 个数。');
+    return;
+  }
+  const dd = t.slice(3);
+  for (let i = 0; i < dd.length; i++) {
+    if (dd[i] <= 0 || dd[i] >= LL) { bad('每个石头位置必须满足 0 < D_i < L'); return; }
+    if (i && dd[i] <= dd[i - 1]) { bad('石头位置必须严格递增且互不相同'); return; }
+  }
+  document.getElementById('err').textContent = '';
+  L = LL; n = NN; m = MM; d = dd; cur = 0; build(); render();
+}
+function bad(msg) { document.getElementById('err').textContent = msg; }
+
+document.getElementById('next').onclick = () => { if (cur < steps.length - 1) { cur++; render(); } };
+document.getElementById('prev').onclick = () => { if (cur > 0) { cur--; render(); } };
+document.getElementById('jump').onclick = () => { stop(); cur = steps.length - 1; render(); };
+document.getElementById('load').onclick = load;
+function stop() { if (timer) { clearInterval(timer); timer = null; document.getElementById('play').textContent = '▶ 自动播放'; } }
+document.getElementById('play').onclick = () => {
+  if (timer) return stop();
+  document.getElementById('play').textContent = '⏸ 暂停';
+  timer = setInterval(() => { if (cur >= steps.length - 1) return stop(); cur++; render(); }, 380);
+};
+
+build(); render();
+</script>
+</body>
+</html>

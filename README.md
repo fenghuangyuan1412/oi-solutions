@@ -12,16 +12,16 @@
 | 主题 | 题数 | 目录 |
 | --- | --- | --- |
 | 基础 | 10 | [solutions/basic](solutions/basic) |
-| 动态规划 | 15 | [solutions/dp](solutions/dp) |
+| 动态规划 | 19 | [solutions/dp](solutions/dp) |
 | 数据结构 | 8 | [solutions/ds](solutions/ds) |
 | 图论 | 0 | [solutions/graph](solutions/graph) |
 | 搜索 | 10 | [solutions/search](solutions/search) |
-| 贪心 | 5 | [solutions/greedy](solutions/greedy) |
+| 贪心 | 7 | [solutions/greedy](solutions/greedy) |
 | 数学 | 0 | [solutions/math](solutions/math) |
 | 字符串 | 0 | [solutions/string](solutions/string) |
 | 计算几何 | 0 | [solutions/geometry](solutions/geometry) |
 
-共 48 题（按"有 README.md 的目录"统计，本机 `find solutions -mindepth 3 -name README.md | wc -l` 实得 48；含 [solutions/search](solutions/search) 的 10 道搜索入门题，已在下表逐行列出）。全部题目来自训练单与洛谷/NOIP 真题，暂无半成品目录。
+共 54 题（按"有 README.md 的目录"统计，本机 `find solutions -mindepth 3 -name README.md | wc -l` 实得 54；含 [solutions/search](solutions/search) 的 10 道搜索入门题，已在下表逐行列出）。全部题目来自训练单与洛谷/NOIP 真题，暂无半成品目录。
 
 **怎么用这张表全局浏览**：
 
@@ -64,6 +64,10 @@
 | [P1049](https://www.luogu.com.cn/problem/P1049) | [[NOIP 2001 普及组] 装箱问题](solutions/dp/p1049-box-packing/README.md) | 动态规划 / 入门·背包·体积当价值 | `f[j]=max(f[j],f[j-v]+v)`，问的是剩余空间 ⇒ 必须输出 $V-f[V]$，直接印 `f[V]` 样例从 0 变 24 | —— |
 | [P1164](https://www.luogu.com.cn/problem/P1164) | [小 A 点菜](solutions/dp/p1164-order-dishes/README.md) | 动态规划 / 入门·背包计数 | "恰好花光"让 $\max$ 变成 $+$：$f[j]+=f[j-a]$ 且 $f[0]=1$；官方数据弱，但自造数据能把 `long long` 也打爆 | —— |
 | [P1435](https://www.luogu.com.cn/problem/P1435) | [[IOI 2000] 回文字串](solutions/dp/p1435-palindrome-string/README.md) | 动态规划 / 入门·区间 DP | 两端相等白捡 $f[i+1][j-1]$，不等才 $\min+1$；填表必须先短后长，$1005^2$ 数组必须开全局 | —— |
+| [P1616](https://www.luogu.com.cn/problem/P1616) | [疯狂的采药](solutions/dp/p1616-crazy-herbs/README.md) | 动态规划 / 入门·**完全背包** | 与 P1048 **样例逐字相同**、答案从 3 变 140：内层由**倒序改成正序**，$dp[j-a]$ 读到本轮新值 ⇒ 同一株可无限采；倒序版在 2000 组对拍里 1745 组偏小 | —— |
+| [P1880](https://www.luogu.com.cn/problem/P1880) | [[NOI1995] 石子合并](solutions/dp/p1880-stone-merge/README.md) | 动态规划 / **环形区间 DP** | 最后一次合并得分恒为 $\text{sum}(i,j)$（与分割点无关）⇒ 转移干净；环形用**断环成链**（复制一倍 + 枚举剪开位置），忘了这一步 2000 组里 1098 组出错 | —— |
+| [P1352](https://www.luogu.com.cn/problem/P1352) | [没有上司的舞会](solutions/dp/p1352-prom-without-boss/README.md) | 动态规划 / **树形 DP** | 每个节点两状态：$f[u][1]=r_u+\sum f[v][0]$、$f[u][0]=\sum\max(f[v][0],f[v][1])$，后序遍历；$f[u][0]$ 漏写 $\max$ 在 500 组里 415 组出错 | —— |
+| [P3622](https://www.luogu.com.cn/problem/P3622) | [[APIO2007] 动物园](solutions/dp/p3622-zoo/README.md) | 动态规划 / 状压·轮廓线 | 窗口只滑一格 ⇒ 历史只剩 4 位，把"接下来 5 个围栏移不移"压成 5 位 mask；圈的问题枚举开头模式、走完一圈绕回原模式 | —— |
 | [P1160](https://www.luogu.com.cn/problem/P1160) | [队列安排](solutions/ds/p1160-queue-arrangement/README.md) | 数据结构 / 双向链表 | 编号本身就是节点号 ⇒ 定位 $O(1)$，0 号哨兵把链接成环免特判；**重复删除必须用 `gone[]` 挡住（样例查不出来）** | —— |
 | [P1241](https://www.luogu.com.cn/problem/P1241) | [括号序列](solutions/ds/p1241-bracket-sequence/README.md) | 数据结构 / 栈 | 右括号类型不符时右括号作废，栈顶左括号**不弹出** | [html](solutions/ds/p1241-bracket-sequence/visualization.html) |
 | [P1540](https://www.luogu.com.cn/problem/P1540) | [[NOIP 2010 提高组] 机器翻译（队列版）](solutions/ds/p1540-machine-translation/README.md) | 数据结构 / 队列·FIFO缓存 | 与上面"基础 / 模拟"那行是**同一道题的两份实现**：这版只用 `queue` + `bool in[]`，命中时什么都不做（FIFO 不是 LRU） | —— |
@@ -73,6 +77,8 @@
 | [P3613](https://www.luogu.com.cn/problem/P3613) | [【深基15.例2】寄包柜](solutions/ds/p3613-locker/README.md) | 数据结构 / 稀疏存储·键编码 | $a_i$ 未知就是提示：别开二维表，只存被点名的 $(i,j)$；乘数要**严格**大于格子号上界（取 100001） | —— |
 | [P4387](https://www.luogu.com.cn/problem/P4387) | [【深基15.习9】验证栈序列](solutions/ds/p4387-validate-stack-sequences/README.md) | 数据结构 / 栈·模拟 | 入栈序列是任意排列；一次压入后要连续弹出，判据是"全部弹出"而非"栈空" | [html](solutions/ds/p4387-validate-stack-sequences/visualization.html) |
 | [P1752](https://www.luogu.com.cn/problem/P1752) | [点菜](solutions/greedy/p1752-ordering/README.md) | 贪心 / 二分答案·堆 | 改编自 IOI 2013 D2T2。时间轴塌缩成容量：最挑剔的先吃"够格里最贵的"（价格大根堆），穷人从最富的吃吃得起的最贵的，吃不起的甩给普通人兜底；二分上界是 $m$ 不是 $\lceil m/n\rceil$ | [html](solutions/greedy/p1752-ordering/visualization.html) |
+| [P1182](https://www.luogu.com.cn/problem/P1182) | [数列分段 Section II](solutions/greedy/p1182-segment/README.md) | 贪心 / **二分答案·最小化最大值** | 判定"每段和 $\le X$ 能否用 $\le M$ 段"⇒ 贪心能塞就塞、$cnt\le M$ 即可行（段数不够可再拆细）；收口写成 `>=` 在 3000 组里 1128 组答案偏大 +1 | [html](solutions/greedy/p1182-segment/visualization.html) |
+| [P2678](https://www.luogu.com.cn/problem/P2678) | [[NOIP 2015 提高组] 跳石头](solutions/greedy/p2678-jump-stone/README.md) | 贪心 / **二分答案·最大化最小值** | 判定"所有间距 $\ge X$"⇒ 太近就移走这块；终点前那一段要单独补一刀（移走刚保留的那块，不是终点），本题唯一的证明难点；附两组专打"多趟扫描重复计数"的 hack | [html](solutions/greedy/p2678-jump-stone/visualization.html) |
 | [P1095](https://www.luogu.com.cn/problem/P1095) | [[NOIP 2005 提高组] 守望者的逃离](solutions/greedy/p1095-escape/README.md) | 贪心 / 枚举·DP | **骗分练习 ③**：三条规则漏一条就掉一半分（反面教材实测只对该 21%~25%）；无魔法上限 ⇒ 枚举闪光次数 $k$ | —— |
 | [P14357](https://www.luogu.com.cn/problem/P14357) | [[CSP-J 2025] 拼数](solutions/greedy/p14357-number/README.md) | 贪心 / 计数排序 | 位数用满 + 降序交换论证 | [html](solutions/greedy/p14357-number/visualization.html) |
 | [P14359](https://www.luogu.com.cn/problem/P14359) | [[CSP-J 2025] 异或和](solutions/greedy/p14359-xor/README.md) | 贪心 / 前缀异或 | 前缀异或配对 + 最多不相交区间最早结束贪心 | [html](solutions/greedy/p14359-xor/visualization.html) |
@@ -112,6 +118,7 @@ GitHub 原生渲染 Markdown 中的 Mermaid 流程图与 `$$...$$` 公式，因�
 | --- | --- | --- |
 | ★ [notes/partial-score-handbook.md](notes/partial-score-handbook.md) | **骗分 / 部分分技术手册**：①把数据范围翻译成"允许的复杂度"（附本机实测换算尺）②10 个技术点，每个都指向库里一道题 + 一组实测数字 ③考场 3.5 小时时间预算表与红线 ④10 题实测汇总 ⑤已核实的备选题池 | 本批 10 题**不做 html 动画**，改用各 README 里的「板书演示」表格（可当堂投影 + 让学生手抄） |
 | ★ [notes/cspj-trend-2021-2025.md](notes/cspj-trend-2021-2025.md) | **CSP-J 第二轮考情趋势分析（2021—2025）**：五年逐题表 + 算法考核清单（带优先级）+ T1—T4 位置指纹 + 16 课时排课建议。重点核对 2023/2024/2025 | —— |
+| ★ [notes/dp-binary-answer-selection.md](notes/dp-binary-answer-selection.md) | **DP 与二分答案 · 典型题选题讲义（分层递进）**：DP 与二分答案各 24 道典型题，按 L1 入门 / L2 提高 / L3 拔高三层排布，每题给出「教学切入点」一句话；含与库内已有题的对照表、两套各 6 课时的排课表、后续批次生成优先级 | 本批 5 道新题里 P1182 / P2678 配分步动画，其余 3 道用题解内的「板书演示」表格 |
 | ★ [notes/mock-cspj-round2/](notes/mock-cspj-round2) | **自编 CSP-J 第二轮模拟卷 4 套 × 4 题（不是任何一年真题）**，按上面的趋势逐题仿出：`paper.html` 是可截图的仿真题面，每题另有题解 + 分步可视化，答案在 `answer-key.md` | 16 个（每题一个 `visualization.html`），题面排版另有 `sheetshots.js` 逐页截图核对 |
 | ★ [notes/ccf-zhenti-2026-j1/](notes/ccf-zhenti-2026-j1) | **CCF 官方 2026 CSP-J 第一轮真题卷**（2026-09-19 考试，12 页 / 100 分），全 43 题零基础讲评：单选 15 + 阅读程序 3 篇 16—33 + 完善程序 2 篇 34—43。题面逐字录入在 `problem.txt`，好读版在 `paper.md`；原卷第 9 页缺失、39—43 题选项未印，已在文档里标出来没有补写 | BFS 入队顺序（题 8）、二进制位统计、高精度加法竖式、逐位扩展质数 dfs、进制减半"移位×m + 按 n 进位"、平衡分割递归树 + 平均值柱状图（共 6 个，见讲义 §0.1） |
 | [notes/luogu-2026-j1/](notes/luogu-2026-j1) | **2026 第一轮 · 洛谷 SCP-J1 卷（洛谷命制，不是 CCF 真题）**，42 题零基础讲评，题面全文见 `paper.md` | 孪生素数、二维 dp 填表、九连环 dfs、二分第 k 小、分层 BFS 迷宫（共 5 个，见讲义 §0.1） |

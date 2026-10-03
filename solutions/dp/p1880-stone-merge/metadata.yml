@@ -1,0 +1,37 @@
+id: P1880
+title: "[NOI1995] 石子合并"
+source: luogu
+url: https://www.luogu.com.cn/problem/P1880
+topics: [dp/interval, dp/circular]
+difficulty: 普及+/提高−（洛谷 difficulty=4）
+tags: [动态规划, 区间DP, 断环成链, 环形DP, 最小化与最大化双DP]
+complexity:
+  time: O(N^3) = 100^3 = 1e6，双 DP（min+max）也只有 2e6；N=100 实测 0.20 s（含读入）
+  space: O(N^2)（int fmin_[205][205] + fmax_[205][205] 共约 336 KB，内存 125 MB）
+status: 未本地评测（无洛谷登录，仅本地自测）；对拍验证（与「枚举所有合并顺序」的独立暴力随机对拍共 2050 组 = JS 双实现 2000 组 + 编译后 solution.exe 50 组，0 不一致）；官方样例本地输出 43 / 54
+visualization: false
+limits: 1 <= N <= 100，1 <= a_i <= 20；时间 1000 ms，内存 125 MB
+samples:
+  - in: |
+      4
+      4 5 9 4
+    out: |
+      43
+      54
+sample_note: 官方样例。最小 43：先并相邻的两个 4 得 8，再 8+5=13，再 13+9=22，总分 8+13+22=43；最大 54：先 5+9=14，再 4+14=18，再 18+4=22，总分 14+18+22=54
+verify:
+  compile: g++ -static -O2 -std=c++14 solution.cpp -o solution.exe
+  stress: node verify.js --rounds=2000   # JS 双实现，共 2000 组，不一致 0 组
+  extra: |
+    JS 断环成链区间 DP vs 枚举所有合并顺序的暴力：2000 组（N<=7, 1<=a_i<=20），0 不一致
+    编译后的 solution.exe vs 同一暴力：另 50 组，0 不一致
+    官方样例 43 / 54 逐字正确
+    错版"忘了断环成链"（直接在原数组上做直线区间 DP）在 2000 组里有 1098 组结果与正解不同
+    满约束 N=100：输出 7137 / 59209，实测 0.20 s
+notes: |
+  区间 DP 的教科书例题，难点只在"环形"。最后一次合并的得分恒为 sum(i..j)，与分割点 k 无关，
+  所以转移是 f[i][j] = min_{k}(f[i][k]+f[k+1][j]) + sum(i..j)。
+  环形用【断环成链】：数组复制一倍，在长度 2N 上做同样的 DP，答案取 min/max over i=1..N of f[i][i+N-1]。
+  坑：填表必须【先短后长】（长度 len 从 2 到 N）；忘了断环成链会漏掉跨越首尾边界的方案（2000 组里 1098 组出错）；
+  答案上界 99 次合并 × 总和 2000 ≈ 2e5，int 够用。
+authoring_note: 代码一律 C++14；verify.js 仅用于验证，非讲解代码。按用户要求本题不做 visualization.html，改用 README 内的板书表格
