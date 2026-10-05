@@ -1,0 +1,12 @@
+id: P11855
+title: "[CSP-J 2022 山东] 部署"
+source: luogu
+url: https://www.luogu.com.cn/problem/P11855
+topics: [graph/tree-difference]
+difficulty: 普及+/提高-
+complexity:
+  time: O(n + m + q)
+  space: O(n)
+status: 未本地评测（洛谷提交需登录）；本地 g++ -static -O2 -std=c++14 编译，样例 1 输出 6/7/9/9、样例 2 输出 2/2 逐字一致；与"逐操作暴力 DFS"独立实现对拍 500 组 0 不一致
+visualization: false
+notes: 唯二的坑是①crop 掉"操作 2 覆盖父亲"那一项就会差 A[parent(u)]；②n,m,q 到 1e6，递归 DFS 会爆栈、int 会溢出（delta1/childSum 可达 1e13）

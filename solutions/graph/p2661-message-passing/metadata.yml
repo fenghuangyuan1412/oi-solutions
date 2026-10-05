@@ -1,0 +1,12 @@
+id: P2661
+title: "[NOIP 2015 提高组] 信息传递"
+source: luogu
+url: https://www.luogu.com.cn/problem/P2661
+topics: [graph/smallest-cycle]
+difficulty: 普及
+complexity:
+  time: O(n)
+  space: O(n)
+status: 未本地评测（洛谷提交需登录）；本地 g++ -static -O2 -std=c++14 编译，样例输出 3 逐字一致；与"逐轮模拟整个游戏"独立实现对拍 500 组 0 不一致
+visualization: false
+notes: 唯一的坑是把"当前这条链上的点"和"已完结的点"混为一谈——不区分 state 1/2 就会把长链误当成环，或漏掉真正的最小环；自环 a_i=i 时答案是 1

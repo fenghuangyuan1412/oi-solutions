@@ -14,14 +14,14 @@
 | 基础 | 10 | [solutions/basic](solutions/basic) |
 | 动态规划 | 19 | [solutions/dp](solutions/dp) |
 | 数据结构 | 8 | [solutions/ds](solutions/ds) |
-| 图论 | 0 | [solutions/graph](solutions/graph) |
+| 图论 | 2 | [solutions/graph](solutions/graph) |
 | 搜索 | 10 | [solutions/search](solutions/search) |
 | 贪心 | 7 | [solutions/greedy](solutions/greedy) |
 | 数学 | 0 | [solutions/math](solutions/math) |
 | 字符串 | 0 | [solutions/string](solutions/string) |
 | 计算几何 | 0 | [solutions/geometry](solutions/geometry) |
 
-共 54 题（按"有 README.md 的目录"统计，本机 `find solutions -mindepth 3 -name README.md | wc -l` 实得 54；含 [solutions/search](solutions/search) 的 10 道搜索入门题，已在下表逐行列出）。全部题目来自训练单与洛谷/NOIP 真题，暂无半成品目录。
+共 56 题（按"有 README.md 的目录"统计，本机 `find solutions -mindepth 3 -name README.md | wc -l` 实得 56；含 [solutions/search](solutions/search) 的 10 道搜索入门题，已在下表逐行列出）。全部题目来自训练单与洛谷/NOIP 真题，暂无半成品目录。
 
 **怎么用这张表全局浏览**：
 
@@ -68,6 +68,8 @@
 | [P1880](https://www.luogu.com.cn/problem/P1880) | [[NOI1995] 石子合并](solutions/dp/p1880-stone-merge/README.md) | 动态规划 / **环形区间 DP** | 最后一次合并得分恒为 $\text{sum}(i,j)$（与分割点无关）⇒ 转移干净；环形用**断环成链**（复制一倍 + 枚举剪开位置），忘了这一步 2000 组里 1098 组出错 | —— |
 | [P1352](https://www.luogu.com.cn/problem/P1352) | [没有上司的舞会](solutions/dp/p1352-prom-without-boss/README.md) | 动态规划 / **树形 DP** | 每个节点两状态：$f[u][1]=r_u+\sum f[v][0]$、$f[u][0]=\sum\max(f[v][0],f[v][1])$，后序遍历；$f[u][0]$ 漏写 $\max$ 在 500 组里 415 组出错 | —— |
 | [P3622](https://www.luogu.com.cn/problem/P3622) | [[APIO2007] 动物园](solutions/dp/p3622-zoo/README.md) | 动态规划 / 状压·轮廓线 | 窗口只滑一格 ⇒ 历史只剩 4 位，把"接下来 5 个围栏移不移"压成 5 位 mask；圈的问题枚举开头模式、走完一圈绕回原模式（初值必须是 0，样例 2 抓的重复结算坑） | [html](solutions/dp/p3622-zoo/visualization.html) |
+| [P11855](https://www.luogu.com.cn/problem/P11855) | [\[CSP-J 2022 山东\] 部署](solutions/graph/p11855-deploy/README.md) | 图论 / 树·离线差分 | "子树"与"点到根的路径"对偶：$m$ 次子树加/邻域加，离线后一次前缀和 + 一次子→父累加全消化；$n,m,q$ 到 $10^6$ 须迭代 BFS + 链式前向星 | —— |
+| [P2661](https://www.luogu.com.cn/problem/P2661) | [\[NOIP 2015 提高组\] 信息传递](solutions/graph/p2661-message-passing/README.md) | 图论 / 函数图·最小环 | 每人只告诉一个人 ⇒ 出度全 1 的函数图，每连通块恰有一环；游戏轮数 = 最短环长，三态标记 $O(n)$ 求环（不区分在链/已完结会误把长尾当环） | —— |
 | [P1160](https://www.luogu.com.cn/problem/P1160) | [队列安排](solutions/ds/p1160-queue-arrangement/README.md) | 数据结构 / 双向链表 | 编号本身就是节点号 ⇒ 定位 $O(1)$，0 号哨兵把链接成环免特判；**重复删除必须用 `gone[]` 挡住（样例查不出来）** | —— |
 | [P1241](https://www.luogu.com.cn/problem/P1241) | [括号序列](solutions/ds/p1241-bracket-sequence/README.md) | 数据结构 / 栈 | 右括号类型不符时右括号作废，栈顶左括号**不弹出** | [html](solutions/ds/p1241-bracket-sequence/visualization.html) |
 | [P1540](https://www.luogu.com.cn/problem/P1540) | [[NOIP 2010 提高组] 机器翻译（队列版）](solutions/ds/p1540-machine-translation/README.md) | 数据结构 / 队列·FIFO缓存 | 与上面"基础 / 模拟"那行是**同一道题的两份实现**：这版只用 `queue` + `bool in[]`，命中时什么都不做（FIFO 不是 LRU） | —— |
