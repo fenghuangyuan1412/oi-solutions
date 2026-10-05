@@ -7,6 +7,6 @@ difficulty: 普及+/提高-
 complexity:
   time: O(n + m + q)
   space: O(n)
-status: 未本地评测（洛谷提交需登录）；本地 g++ -static -O2 -std=c++14 编译，样例 1 输出 6/7/9/9、样例 2 输出 2/2 逐字一致；与"逐操作暴力 DFS"独立实现对拍 500 组 0 不一致
-visualization: false
-notes: 唯二的坑是①crop 掉"操作 2 覆盖父亲"那一项就会差 A[parent(u)]；②n,m,q 到 1e6，递归 DFS 会爆栈、int 会溢出（delta1/childSum 可达 1e13）
+status: 未本地评测（洛谷提交需登录）；本地 g++ -static -O2 -std=c++14 编译，样例 1 输出 6/7/9/9、样例 2 输出 2/2 逐字一致；单操作穷举 8 种与独立暴力 0 不一致。⚠️ 满约束实测发现两处工程问题：①裸 cin 未关同步，n=m=q=1e6 随机树 8031 ms 超时限（加 ios::sync_with_stdio(false) 后 1899 ms）；②递归 dfs 在 1e6 深链上段错误（退出码 127）。算法本身正确
+visualization: true
+notes: 算法正确的极简写法（两数组 + 一遍 DFS，用参数传递前缀和、把父亲项写成 ans[y]+=c2[x]）。唯二的坑都在工程层：裸 cin 会超时、递归会爆栈——见 README 易错点 1、2（均有实测数字）

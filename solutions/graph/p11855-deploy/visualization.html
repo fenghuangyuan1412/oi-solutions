@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P11855 部署 · 离线差分 + 一遍 DFS</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --fresh:#c084fc; --mid:#fbbf24; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:4px; }
+  .sub b { color:var(--ink); }
+  .legend { font-size:12px; color:var(--dim); margin:4px 0 14px; }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:3px; margin:0 4px 0 12px; vertical-align:middle; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 14px; font-size:14px; cursor:pointer; margin-right:8px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .prog { color:var(--acc); font-size:14px; margin-left:auto; font-weight:700; }
+  .wrap { display:flex; gap:14px; flex-wrap:wrap; }
+  .wrap > div { flex:1; min-width:330px; }
+  pre.code { margin:0; font:13px/1.8 Consolas,monospace; }
+  pre.code .ln { display:block; padding:0 8px; border-left:3px solid transparent; white-space:pre; }
+  pre.code .ln.on { background:#173a4a; border-left-color:var(--acc); color:var(--acc); }
+  .note { font-size:14px; min-height:120px; }
+  .note b { color:var(--acc); } .note .bad { color:var(--warn); } .note .good { color:var(--ok); }
+  .note .pu { color:var(--fresh); } .note .mid { color:var(--mid); }
+  .ans { margin-top:12px; text-align:center; font:15px/1.5 Consolas,monospace; color:var(--dim); }
+  .ans b { color:var(--ok); font-size:22px; }
+  .err { color:var(--warn); font-size:13px; }
+  svg.tree { width:100%; height:310px; display:block; }
+  .nd { stroke-width:2; stroke:#5a6389; }
+  .ndcur { stroke:var(--acc); stroke-width:3.5; }
+  .nddone { opacity:.5; }
+  .lbl { font:13px Consolas,monospace; fill:var(--ink); }
+  .lblsm { font:11px Consolas,monospace; fill:var(--dim); }
+  .edge { stroke:#3d4778; stroke-width:2; fill:none; }
+  .edgetrav { stroke:var(--acc); stroke-width:3; }
+  table.vars { border-collapse:collapse; width:100%; font:13px Consolas,monospace; }
+  table.vars td,table.vars th { border:1px solid #2b3358; padding:4px 8px; text-align:center; }
+  table.vars th { color:var(--dim); font-weight:400; }
+  table.vars td.k { color:var(--dim); text-align:left; }
+  table.vars td.v { color:var(--acc); font-weight:700; }
+  table.vars td.hit { background:#173a4a; }
+  table.vars td.pu { color:var(--fresh); }
+  .pill { display:inline-block; padding:1px 7px; border-radius:6px; background:#232a4a; font:12px Consolas,monospace; }
+  .pill.c1 { background:#1f3b5c; color:#93c5fd; }
+  .pill.c2 { background:#3b2f5c; color:#d8b4fe; }
+</style>
+</head>
+<body>
+<h1>P11855 [CSP-J 2022 山东] 部署</h1>
+<div class="sub">子树加 / 邻域加 → <b>离线归并两个桶</b>，再用<b>一遍 DFS</b> 把三类贡献全部结算</div>
+<div class="legend">
+  <i style="background:#93c5fd"></i>c1 = 操作 1 的中心（子树加）
+  <i style="background:#d8b4fe"></i>c2 = 操作 2 的中心（邻域加）
+  <i style="background:#5eead4"></i>当前访问
+  <i style="background:#8b93b5"></i>已完结
+</div>
+
+<div class="topbar">
+  <button id="prev">← 上一步</button>
+  <button id="next">下一步 →</button>
+  <button id="play">自动播放</button>
+  <button id="last">跳到结尾</button>
+  <button id="reset">重置</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="wrap">
+  <div>
+    <div class="card">
+      <h2>树结构（根 = 1）· 邻接表顺序即遍历顺序</h2>
+      <svg class="tree" id="tree" viewBox="0 0 380 310"></svg>
+    </div>
+    <div class="card">
+      <h2>讲解代码</h2>
+      <pre class="code" id="code"></pre>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>状态表</h2>
+      <table class="vars" id="vars"></table>
+    </div>
+    <div class="card">
+      <h2>这一步在做什么</h2>
+      <div class="note" id="note"></div>
+    </div>
+    <div class="card">
+      <h2>输出（a[u] + ans[u]）</h2>
+      <table class="vars" id="out"></table>
+      <div class="ans" id="ansline"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>输入</h2>
+  <div id="inputDesc" style="font:13px/1.7 Consolas,monospace;color:var(--dim)"></div>
+</div>
+
+<div class="err" id="err"></div>
+
+<script>
+const A = [0, 1, 2, 3, 4, 5];
+const EDGES = [[1,2],[1,3],[2,4],[3,5]];
+const OPS = [[1,1,2],[2,2,3],[1,3,3],[2,5,1]];
+const QUERIES = [1,2,3,4];
+const NODES = [1,2,3,4,5];
+const POS = {1:[190,50],2:[105,150],3:[275,150],4:[60,250],5:[320,250]};
+
+const CODE = [
+  'void dfs(int x, int fa) {',
+  '    ans[x] += (c1[x] + c2[x]);',
+  '    for (int i = 0; i < q[x].size(); i++) {',
+  '        int y = q[x][i];',
+  '        ans[y] += c2[x];',
+  '        if (y == fa) continue;',
+  '        c1[y] += c1[x];',
+  '        dfs(y, x);',
+  '    }',
+  '}'
+];
+
+// 与 _trace.cpp 逐行一致的真实执行轨迹
+const TRAJ = [
+  {line:1, x:1, op:'self',  say:'进入 1（fa=0）。<b>ans[1] += c1[1]+c2[1] = 2+0 = 2</b>。<br>两笔一起加：<span class="pill c1">c1[1]=2</span> 是"操作 1 的路径前缀和"，<span class="pill c2">c2[1]=0</span> 是"我是中心"。'},
+  {line:4, x:1, y:2, op:'pay', say:'1 的邻接表第一个是 y=2。<b>ans[2] += c2[1] = 0</b>。<br>这一句写给儿子：<span class="pu">"我的父亲是中心"</span>。此处 c2[1]=0，白付。'},
+  {line:6, x:1, y:2, op:'pfx', say:'<b>c1[2] += c1[1]</b> ⇒ c1[2] = 0+2 = <b>2</b>。<br>前缀和顺传：c1[2] 现在含义是"根→2 路径上所有 c1 之和"。'},
+  {line:1, x:2, op:'self',  say:'进入 2（fa=1）。<b>ans[2] += c1[2]+c2[2] = 2+3</b>，ans[2] 由 0 变 <b>5</b>。<br>c2[2]=3 来自命令 <code>2 2 3</code>。'},
+  {line:4, x:2, y:1, op:'pay', say:'2 的邻接表第一个是 y=1（它的父亲！）。<b>ans[1] += c2[2] = 3</b> ⇒ ans[1] 由 2 变 <b>5</b>。<br><b>这是本算法最精妙的一句</b>：1 是中心 2 的父亲 ⇒ 1 的邻域被 2 的操作覆盖 ⇒ 1 本来就该加这 3！'},
+  {line:5, x:2, y:1, op:'cont', say:'y == fa（1 是 2 的父亲），<b>continue</b>：不往下递归，避免走回父亲。<br>注意此时 ans[1] 已经正确地加上了 3。'},
+  {line:4, x:2, y:4, op:'pay', say:'2 的邻接表第二个是 y=4。<b>ans[4] += c2[2] = 3</b>。<br>4 是中心 2 的儿子，同样被覆盖。'},
+  {line:6, x:2, y:4, op:'pfx', say:'<b>c1[4] += c1[2]</b> ⇒ c1[4] = 0+2 = <b>2</b>。'},
+  {line:1, x:4, op:'self',  say:'进入 4（fa=2）。<b>ans[4] += c1[4]+c2[4] = 2+0</b>，ans[4] = 3+2 = <b>5</b>。'},
+  {line:4, x:4, y:2, op:'pay', say:'4 的邻接表只有 y=2（父亲）。<b>ans[2] += c2[4] = 0</b>（c2[4]=0，白付）。'},
+  {line:5, x:4, y:2, op:'cont', say:'y == fa，continue。dfs(4) 的循环结束，返回。'},
+  {line:4, x:1, y:3, op:'pay', say:'回到 dfs(1)，邻接表下一个 y=3。<b>ans[3] += c2[1] = 0</b>（白付）。'},
+  {line:6, x:1, y:3, op:'pfx', say:'<b>c1[3] += c1[1]</b> ⇒ c1[3] = 3+2 = <b>5</b>。<br>桶里原本是 3（命令 <code>1 3 3</code>），叠上路径前缀 2 变成 5。'},
+  {line:1, x:3, op:'self',  say:'进入 3（fa=1）。<b>ans[3] += c1[3]+c2[3] = 5+0</b>，ans[3] = <b>5</b>。'},
+  {line:4, x:3, y:1, op:'pay', say:'3 的邻接表第一个是 y=1（父亲）。<b>ans[1] += c2[3] = 0</b>（c2[3]=0，白付）。'},
+  {line:5, x:3, y:1, op:'cont', say:'y == fa，continue。'},
+  {line:4, x:3, y:5, op:'pay', say:'3 的下一个 y=5。<b>ans[5] += c2[3] = 0</b>（白付）。'},
+  {line:6, x:3, y:5, op:'pfx', say:'<b>c1[5] += c1[3]</b> ⇒ c1[5] = 0+5 = <b>5</b>。'},
+  {line:1, x:5, op:'self',  say:'进入 5（fa=3）。<b>ans[5] += c1[5]+c2[5] = 5+1</b>，ans[5] = 0+6 = <b>6</b>。<br>c2[5]=1 来自命令 <code>2 5 1</code>。'},
+  {line:4, x:5, y:3, op:'pay', say:'5 的邻接表只有 y=3（父亲）。<b>ans[3] += c2[5] = 1</b> ⇒ ans[3] 由 5 变 <b>6</b>。<br>3 是中心 5 的父亲 ⇒ 3 确实该加这 1！'},
+  {line:5, x:5, y:3, op:'cont', say:'y == fa，continue。dfs(5) 结束 → dfs(3) 结束 → dfs(1) 结束。'},
+];
+
+function buildSteps() {
+  const S = [];
+  const c1 = [0,2,0,3,0,0];
+  const c2 = [0,0,3,0,0,1];
+  const ans = [0,0,0,0,0,0];
+  const done = new Set();
+  const stackSet = new Set();
+
+  S.push({line:-1, x:null, y:null, kind:'snapshot',
+    c1:c1.slice(), c2:c2.slice(), ans:ans.slice(), done:new Set(), stackSet:new Set(),
+    text:'<b>第一步：离线归并。</b>读入 4 条命令，一个加法都还没做，只把 y 累进两个桶：<br>' +
+         '<span class="pill c1">c1[1]=2</span>（<code>1 1 2</code>）　<span class="pill c1">c1[3]=3</span>（<code>1 3 3</code>）<br>' +
+         '<span class="pill c2">c2[2]=3</span>（<code>2 2 3</code>）　<span class="pill c2">c2[5]=1</span>（<code>2 5 1</code>）<br>' +
+         'ans 全为 0。下面开始 dfs(1,0)。'});
+
+  for (const t of TRAJ) {
+    if (t.op === 'pay')  ans[t.y] += c2[t.x];
+    if (t.op === 'pfx')  c1[t.y] += c1[t.x];
+    if (t.op === 'self') { ans[t.x] += c1[t.x] + c2[t.x]; stackSet.add(t.x); }
+    if (t.op === 'cont') { /* nothing */ }
+    if (t.line === 1 && t.x === 5) { stackSet.delete(5); }
+    if (t.say.includes('dfs(4) 的循环结束')) stackSet.delete(4);
+    if (t.say.includes('dfs(4) 的循环结束')) done.add(4);
+    S.push({line:t.line, x:t.x, y:t.y == null ? null : t.y, kind:t.op,
+      c1:c1.slice(), c2:c2.slice(), ans:ans.slice(),
+      done:new Set(done), stackSet:new Set(stackSet), text:t.say});
+  }
+
+  for (const u of NODES) done.add(u);
+  S.push({line:-1, x:null, y:null, kind:'final',
+    c1:c1.slice(), c2:c2.slice(), ans:ans.slice(), done:new Set(done), stackSet:new Set(),
+    text:'<b>DFS 结束。</b>ans[] 已含全部 4 条操作的贡献。逐条输出 <code>a[p] + ans[p]</code>：<br>' +
+         '6, 7, 9, 9 —— 与官方样例一致 ✓'});
+  return S;
+}
+
+const STEPS = buildSteps();
+let cur = 0, timer = null;
+const $ = (id) => document.getElementById(id);
+
+function renderCode(activeLine) {
+  $('code').innerHTML = CODE.map((l, i) =>
+    '<span class="ln' + (i === activeLine ? ' on' : '') + '">' +
+    l.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</span>').join('');
+}
+
+function renderTree(st) {
+  let h = '';
+  for (const [u,v] of EDGES) {
+    const a = POS[u], b = POS[v];
+    const on = (st.x === u && st.y === v) || (st.x === v && st.y === u);
+    h += '<line class="edge ' + (on ? 'edgetrav' : '') + '" x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'"/>';
+  }
+  for (const u of NODES) {
+    const p = POS[u];
+    let cls = 'nd';
+    if (st.done && st.done.has(u)) cls += ' nddone';
+    if (st.x === u) cls += ' ndcur';
+    else if (st.stackSet && st.stackSet.has(u)) cls += ' ndcur';
+    let fill = '#232a4a';
+    const hasC1 = st.c1 && st.c1[u] > 0, hasC2 = st.c2 && st.c2[u] > 0;
+    if (hasC1 && hasC2) fill = '#33406b';
+    else if (hasC1) fill = '#1f3b5c';
+    else if (hasC2) fill = '#3b2f5c';
+    h += '<circle class="'+cls+'" cx="'+p[0]+'" cy="'+p[1]+'" r="24" fill="'+fill+'"/>';
+    h += '<text class="lbl" x="'+p[0]+'" y="'+(p[1]+5)+'" text-anchor="middle">'+u+'</text>';
+    const tags = [];
+    if (st.c1 && st.c1[u] > 0) tags.push('c1='+st.c1[u]);
+    if (st.c2 && st.c2[u] > 0) tags.push('c2='+st.c2[u]);
+    if (tags.length) h += '<text class="lblsm" x="'+p[0]+'" y="'+(p[1]+41)+'" text-anchor="middle">'+tags.join(' ')+'</text>';
+  }
+  if (st.y != null) {
+    const b = POS[st.y];
+    h += '<text x="'+(b[0]+30)+'" y="'+(b[1]-26)+'" text-anchor="middle" fill="#5eead4" style="font:11px Consolas,monospace">y</text>';
+  }
+  $('tree').innerHTML = h;
+}
+
+function renderVars(st) {
+  let h = '<tr><th>节点</th>' + NODES.map(u=>'<th>'+u+'</th>').join('') + '</tr>';
+  const row = (name, arr, cls) => {
+    h += '<tr><td class="k">'+name+'</td>' + NODES.map(u => {
+      const hit = st.x === u;
+      return '<td class="'+(cls||'')+(hit?' hit':'')+'">'+arr[u]+'</td>';
+    }).join('') + '</tr>';
+  };
+  row('c1[x]', st.c1, '');
+  row('c2[x]', st.c2, 'pu');
+  row('ans[x]', st.ans, 'v');
+  h += '<tr><td class="k">状态</td>' + NODES.map(u => {
+    let s = '待访问', c = '#8b93b5';
+    if (st.done && st.done.has(u)) { s = '已完结'; c = '#86efac'; }
+    else if (st.x === u) { s = '访问中'; c = '#5eead4'; }
+    else if (st.stackSet && st.stackSet.has(u)) { s = '在栈上'; c = '#5eead4'; }
+    return '<td style="color:'+c+'">'+s+'</td>';
+  }).join('') + '</tr>';
+  $('vars').innerHTML = h;
+}
+
+function renderOut(st) {
+  let h = '<tr><th>u</th>' + QUERIES.map(q=>'<th>'+q+'</th>').join('') + '</tr>';
+  h += '<tr><td class="k">a[u]</td>' + QUERIES.map(q=>'<td>'+A[q]+'</td>').join('') + '</tr>';
+  h += '<tr><td class="k">ans[u]</td>' + QUERIES.map(q=>'<td class="v">'+st.ans[q]+'</td>').join('') + '</tr>';
+  h += '<tr><td class="k">结果</td>' + QUERIES.map(q=>'<td class="v">'+(A[q]+st.ans[q])+'</td>').join('') + '</tr>';
+  $('out').innerHTML = h;
+  if (st.kind === 'final') {
+    const vals = QUERIES.map(q => A[q]+st.ans[q]);
+    const okAll = vals.join(',') === '6,7,9,9';
+    $('ansline').innerHTML = '输出：<b>' + vals.join(' ') + '</b>' +
+      (okAll ? ' <span style="color:#86efac">✓ 与官方样例一致</span>' : ' <span style="color:#f87171">✗ 不一致</span>');
+  } else {
+    $('ansline').textContent = '（ans 正在累加，点「跳到结尾」看最终输出）';
+  }
+}
+
+function render() {
+  const st = STEPS[cur];
+  renderCode(st.line);
+  renderTree(st);
+  renderVars(st);
+  renderOut(st);
+  $('note').innerHTML = st.text;
+  $('prog').textContent = (cur + 1) + ' / ' + STEPS.length;
+  $('prev').disabled = (cur === 0);
+  $('next').disabled = (cur === STEPS.length - 1);
+}
+
+function stopPlay() { if (timer) { clearInterval(timer); timer = null; $('play').textContent = '自动播放'; } }
+$('prev').onclick = () => { stopPlay(); if (cur > 0) { --cur; render(); } };
+$('next').onclick = () => { stopPlay(); if (cur < STEPS.length - 1) { ++cur; render(); } };
+$('last').onclick = () => { stopPlay(); cur = STEPS.length - 1; render(); };
+$('reset').onclick = () => { stopPlay(); cur = 0; render(); };
+$('play').onclick = () => {
+  if (timer) { stopPlay(); return; }
+  $('play').textContent = '暂停';
+  timer = setInterval(() => {
+    if (cur < STEPS.length - 1) { ++cur; render(); } else stopPlay();
+  }, 1000);
+};
+
+$('inputDesc').innerHTML =
+  'n = 5　a = [1, 2, 3, 4, 5]<br>' +
+  '边：' + EDGES.map(e=>'('+e[0]+','+e[1]+')').join(' ') + '<br>' +
+  '命令：' + OPS.map(o=>'<code>'+o.join(' ')+'</code>').join('　') + '<br>' +
+  '询问：' + QUERIES.join(' ') + '（样例只问前 4 个点）';
+
+if (typeof window !== 'undefined') render();
+</script>
+</body>
+</html>
