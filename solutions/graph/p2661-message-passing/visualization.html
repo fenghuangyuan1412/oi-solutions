@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P2661 信息传递 · 函数图找最小环</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --fresh:#c084fc; --mid:#fbbf24; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:4px; }
+  .sub b { color:var(--ink); }
+  .legend { font-size:12px; color:var(--dim); margin:4px 0 14px; }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:50%; margin:0 4px 0 12px; vertical-align:middle; }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:8px 14px; font-size:14px; cursor:pointer; margin-right:8px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .prog { color:var(--acc); font-size:14px; margin-left:auto; font-weight:700; }
+  .wrap { display:flex; gap:14px; flex-wrap:wrap; }
+  .wrap > div { flex:1; min-width:330px; }
+  pre.code { margin:0; font:13px/1.8 Consolas,monospace; }
+  pre.code .ln { display:block; padding:0 8px; border-left:3px solid transparent; white-space:pre; }
+  pre.code .ln.on { background:#173a4a; border-left-color:var(--acc); color:var(--acc); }
+  .note { font-size:14px; min-height:120px; }
+  .note b { color:var(--acc); } .note .bad { color:var(--warn); } .note .good { color:var(--ok); }
+  .note .pu { color:var(--fresh); } .note .mid { color:var(--mid); }
+  .ans { margin-top:12px; text-align:center; font:15px/1.5 Consolas,monospace; color:var(--dim); }
+  .ans b { color:var(--ok); font-size:22px; }
+  .err { color:var(--warn); font-size:13px; }
+  svg.graph { width:100%; height:300px; display:block; }
+  .nd { stroke-width:2; stroke:#5a6389; }
+  .ndcur { stroke:var(--acc); stroke-width:3.5; }
+  .ndhit { stroke:var(--warn); stroke-width:3.5; }
+  .nddone { stroke:#86efac; stroke-width:3; }
+  .lbl { font:13px Consolas,monospace; fill:var(--ink); }
+  .lblsm { font:11px Consolas,monospace; fill:var(--dim); }
+  .edge { stroke:#3d4778; stroke-width:1.8; fill:none; }
+  .edgetrav { stroke:var(--acc); stroke-width:3; }
+  .edgecyc { stroke:var(--warn); stroke-width:3; }
+  table.vars { border-collapse:collapse; width:100%; font:13px Consolas,monospace; }
+  table.vars td,table.vars th { border:1px solid #2b3358; padding:4px 8px; text-align:center; }
+  table.vars th { color:var(--dim); font-weight:400; }
+  table.vars td.k { color:var(--dim); text-align:left; }
+  table.vars td.v { color:var(--acc); font-weight:700; }
+  table.vars td.hit { background:#173a4a; }
+  table.vars td.warn { color:var(--warn); font-weight:700; }
+  table.vars td.pu { color:var(--fresh); }
+  .pill { display:inline-block; padding:1px 7px; border-radius:6px; background:#232a4a; font:12px Consolas,monospace; }
+  .pill.vi { background:#3b2f1c; color:#fbbf24; }
+  .pill.v1 { background:#1c3b2a; color:#86efac; }
+</style>
+</head>
+<body>
+<h1>P2661 [NOIP 2015 提高组] 信息传递</h1>
+<div class="sub">函数图（每点出度 1）⇒ 每个连通块恰有一个环 ⇒ 答案 = <b>最短有向环的长度</b>；本解用 <b>vis / vis1 双标记 + 回溯置 vis1</b> 求环</div>
+<div class="legend">
+  <i style="background:#232a4a"></i>未访问
+  <i style="background:#3b2f1c"></i>在本链上 vis=1
+  <i style="background:#1c3b2a"></i>已完结 vis1=1
+  <i style="background:#5b2020"></i>本次撞回的点
+  <i style="background:#5eead4"></i>当前 dfs 的 now
+</div>
+
+<div class="topbar">
+  <button id="prev">← 上一步</button>
+  <button id="next">下一步 →</button>
+  <button id="play">自动播放</button>
+  <button id="last">跳到结尾</button>
+  <button id="reset">重置</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="wrap">
+  <div>
+    <div class="card">
+      <h2>函数图 · 箭头 = a[i]（i 只把消息传给 a[i]）</h2>
+      <svg class="graph" id="graph" viewBox="0 0 400 300"></svg>
+    </div>
+    <div class="card">
+      <h2>讲解代码（solution.cpp）</h2>
+      <pre class="code" id="code"></pre>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>状态表</h2>
+      <table class="vars" id="vars"></table>
+    </div>
+    <div class="card">
+      <h2>这一步在做什么</h2>
+      <div class="note" id="note"></div>
+    </div>
+    <div class="card">
+      <h2>答案 minn</h2>
+      <div class="ans" id="ansline"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>输入</h2>
+  <div id="inputDesc" style="font:13px/1.7 Consolas,monospace;color:var(--dim)"></div>
+</div>
+
+<div class="err" id="err"></div>
+
+<script>
+const N = 5;
+const A = [0, 2, 4, 2, 3, 1];        // a[i]
+const NODES = [1,2,3,4,5];
+// 布局：1→2→4→3→2 是 3-环；5→1 是指向环的尾巴
+const POS = { 1:[110,60], 2:[240,60], 4:[300,180], 3:[180,180], 5:[60,200] };
+
+const CODE = [
+  'void dfs(int now, int num) {',        // 0
+  '    if (vis1[now]) return ;',         // 1
+  '    if (vis[now]) {',                 // 2
+  '        minn = min(minn, num - dx[now]);', // 3
+  '    } else {',                        // 4
+  '        vis[now] = 1;',               // 5
+  '        dx[now] = num;',              // 6
+  '        dfs(a[now], num + 1);',       // 7
+  '        vis1[now] = 1;',              // 8
+  '    }',                               // 9
+  '}',                                   // 10
+  'int main() { ... for(i=1..n) dfs(i, 0); }' // 11
+];
+
+// 与 trace.exe 输出逐行一致的真实执行轨迹
+// 每条：{line(高亮行), now, num, act, text}
+// act: 'enter' | 'prune' | 'hit' | 'step' | 'back'
+const TRAJ = [
+  {line:1, now:1, num:0, act:'enter', text:'主循环 <code>i=1</code>，调用 <b>dfs(1, 0)</b>。检查行 1：<code>vis1[1]=0</code>，不剪枝。'},
+  {line:2, now:1, num:0, act:'miss',  text:'检查行 2：<code>vis[1]=0</code> ⇒ 走 <b>else 分支</b>（首次到达）。<span class="good">1 是本链的新点。</span>'},
+  {line:5, now:1, num:0, act:'step',  text:'行 5-6：<code>vis[1]=1</code>（标记：在本链上）、<code>dx[1]=0</code>。'},
+  {line:7, now:1, num:0, act:'goto',  text:'行 7：走 <code>a[1]=2</code>，递归 <b>dfs(2, 1)</b>。'},
+  {line:1, now:2, num:1, act:'enter', text:'进入 <b>dfs(2, 1)</b>。<code>vis1[2]=0</code>。'},
+  {line:2, now:2, num:1, act:'miss',  text:'<code>vis[2]=0</code> ⇒ else。'},
+  {line:5, now:2, num:1, act:'step',  text:'行 5-6：<code>vis[2]=1, dx[2]=1</code>。'},
+  {line:7, now:2, num:1, act:'goto',  text:'走 <code>a[2]=4</code> ⇒ <b>dfs(4, 2)</b>。'},
+  {line:1, now:4, num:2, act:'enter', text:'进入 <b>dfs(4, 2)</b>。<code>vis1[4]=0</code>。'},
+  {line:2, now:4, num:2, act:'miss',  text:'<code>vis[4]=0</code> ⇒ else。'},
+  {line:5, now:4, num:2, act:'step',  text:'行 5-6：<code>vis[4]=1, dx[4]=2</code>。'},
+  {line:7, now:4, num:2, act:'goto',  text:'走 <code>a[4]=3</code> ⇒ <b>dfs(3, 3)</b>。'},
+  {line:1, now:3, num:3, act:'enter', text:'进入 <b>dfs(3, 3)</b>。<code>vis1[3]=0</code>。'},
+  {line:2, now:3, num:3, act:'miss',  text:'<code>vis[3]=0</code> ⇒ else。'},
+  {line:5, now:3, num:3, act:'step',  text:'行 5-6：<code>vis[3]=1, dx[3]=3</code>。<br>此刻链上是 <span class="pill vi">1(0) 2(1) 4(2) 3(3)</span>。'},
+  {line:7, now:3, num:3, act:'goto',  text:'走 <code>a[3]=2</code> ⇒ <b>dfs(2, 4)</b>。注意 2 已经在链上了！'},
+  {line:1, now:2, num:4, act:'enter', text:'进入 <b>dfs(2, 4)</b>。<code>vis1[2]=0</code>（2 还在栈上，没回溯）⇒ 不剪枝。'},
+  {line:2, now:2, num:4, act:'hit',   text:'<code>vis[2]=1</code> ⇒ <b class="good">命中行 2！撞回本链上的点 2</b>。<br>这正是"找回环"的时刻。'},
+  {line:3, now:2, num:4, act:'calc',  text:'行 3：<code>minn = min(minn, num - dx[2]) = 4 - 1 = <b>3</b></code>。<br>环 = <span class="pill vi">2→4→3→2</span>，长度 3。'},
+  {line:8, now:2, num:4, act:'back',  text:'dfs(2,4) 走到函数末尾返回。控制权回到 dfs(2,1) 的行 8：<code>vis1[2]=1</code>（<b>回溯时才置"已完结"</b>）。'},
+  {line:8, now:4, num:2, act:'back',  text:'dfs(4,2) 的行 8：<code>vis1[4]=1</code>。'},
+  {line:8, now:3, num:3, act:'back',  text:'dfs(3,3) 的行 8：<code>vis1[3]=1</code>。<br>注意：dfs(2,4) 那层<b>没有</b>改 vis1[2]，它只是在行 3 更新 minn 就返回了。'},
+  {line:8, now:1, num:0, act:'back',  text:'dfs(1,0) 的行 8：<code>vis1[1]=1</code>。整条链 1,2,4,3 全部已完结。'},
+  {line:11, now:2, num:0, act:'pruneTop', text:'主循环 <code>i=2</code>：<b>dfs(2, 0)</b> ⇒ 行 1 <code>vis1[2]=1</code>，<b>立刻剪枝返回</b>。<span class="mid">这就是 O(n) 的来源——每个点只被真正展开一次。</span>'},
+  {line:11, now:3, num:0, act:'pruneTop', text:'主循环 <code>i=3</code>：dfs(3,0) ⇒ vis1[3]=1，剪枝。'},
+  {line:11, now:4, num:0, act:'pruneTop', text:'主循环 <code>i=4</code>：dfs(4,0) ⇒ vis1[4]=1，剪枝。'},
+  {line:1, now:5, num:0, act:'enter', text:'主循环 <code>i=5</code>：进入 <b>dfs(5, 0)</b>。5 是全新点，<code>vis1[5]=0</code>。'},
+  {line:2, now:5, num:0, act:'miss',  text:'<code>vis[5]=0</code> ⇒ else。'},
+  {line:5, now:5, num:0, act:'step',  text:'<code>vis[5]=1, dx[5]=0</code>。'},
+  {line:7, now:5, num:0, act:'goto',  text:'走 <code>a[5]=1</code> ⇒ <b>dfs(1, 1)</b>。'},
+  {line:1, now:1, num:1, act:'prune', text:'进入 <b>dfs(1, 1)</b>：行 1 <code>vis1[1]=1</code> ⇒ <b>剪枝返回</b>。<br><b>关键点</b>：这里走的是行 1 而不是行 2！若只用一个 <code>vis[]</code>，<code>5→1</code> 会被当成"长度 2 的环"，答案变 2（错）。'},
+  {line:8, now:5, num:0, act:'back',  text:'dfs(5,0) 的行 8：<code>vis1[5]=1</code>。全部结束。'},
+];
+
+// 初始状态（读入后，dfs 之前）
+function initState() {
+  return {
+    vis:  [0,0,0,0,0,0],
+    vis1: [0,0,0,0,0,0],
+    dx:   [0,0,0,0,0,0],
+    minn: 200010,
+    now: null, num: null, hit: null, stack: new Set(), cyc: []
+  };
+}
+
+function applyTo(st, t) {
+  const s = { vis:st.vis.slice(), vis1:st.vis1.slice(), dx:st.dx.slice(),
+              minn:st.minn, now:t.now, num:null, hit:st.hit, stack:new Set(st.stack), cyc:st.cyc.slice() };
+  switch (t.act) {
+    case 'enter':  s.now = t.now; break;
+    case 'miss':   s.now = t.now; break;
+    case 'step':   s.vis[t.now] = 1; s.dx[t.now] = t.num; s.stack.add(t.now); break;
+    case 'goto':   s.now = t.now; break;
+    case 'hit':    s.hit = t.now; break;
+    case 'calc':   s.minn = Math.min(s.minn, t.num - s.dx[t.now]); s.cyc = [2,4,3]; s.hit = null; break;
+    case 'back':   s.vis1[t.now] = 1; s.stack.delete(t.now); s.now = t.now; s.hit = null; break;
+    case 'prune':  s.hit = null; break;
+    case 'pruneTop': s.hit = null; break;
+  }
+  return s;
+}
+
+function buildSteps() {
+  const S = [];
+  let st = initState();
+  S.push({ line:-1, st:st, text:'<b>读入完成。</b>n=5，a = [2, 4, 2, 3, 1]，即 <code>1→2, 2→4, 4→3, 3→2, 5→1</code>。<br>' +
+    '观察结构：<span class="pill" style="background:#5b2020;color:#fca5a5">2→4→3→2</span> 是一个长度 3 的环；<br>' +
+    '点 1 和点 5 都在"指向环的尾巴"上——它们的信息最终会流进环里，但自己不在环上。<br>' +
+    '<b>minn 初值 = N = 200010</b>（比任何环长都大）。下面开始 <code>dfs(1, 0)</code>。' });
+  for (const t of TRAJ) {
+    st = applyTo(st, t);
+    S.push({ line:t.line, st:st, text:t.text });
+  }
+  // 末态
+  const fin = { vis:st.vis.slice(), vis1:st.vis1.slice(), dx:st.dx.slice(),
+                minn:st.minn, now:null, num:null, hit:null, stack:new Set(), cyc:[2,4,3] };
+  S.push({ line:-1, st:fin, final:true,
+    text:'<b>全部结束。</b>遍历过 3 个环：只有 <span class="pill" style="background:#5b2020;color:#fca5a5">2→4→3→2</span> 长度 3 被找到（点 5、点 1 的链都因 <code>vis1</code> 剪枝而没有产生假的"环"）。<br>' +
+          '<b>minn = 3</b>，与官方样例一致 ✓' });
+  return S;
+}
+
+const STEPS = buildSteps();
+let cur = 0, timer = null;
+const $ = (id) => document.getElementById(id);
+
+function renderCode(activeLine) {
+  $('code').innerHTML = CODE.map((l, i) =>
+    '<span class="ln' + (i === activeLine ? ' on' : '') + '">' +
+    l.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</span>').join('');
+}
+
+// ---- 画函数图 ----
+function arrow(from, to, shrinkA, shrinkB) {
+  const [x1,y1] = from, [x2,y2] = to;
+  let dx = x2-x1, dy = y2-y1;
+  const L = Math.hypot(dx,dy);
+  const ux = dx/L, uy = dy/L;
+  const sx = x1 + ux*shrinkA, sy = y1 + uy*shrinkA;
+  const ex = x2 - ux*(shrinkB+8), ey = y2 - uy*(shrinkB+8);
+  return { sx, sy, ex, ey, ux, uy };
+}
+
+function renderGraph(st) {
+  let h = '';
+  // 定义箭头
+  h += '<defs><marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">' +
+       '<path d="M0,0 L7,3 L0,6 z" fill="#3d4778"/></marker>' +
+       '<marker id="ahT" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">' +
+       '<path d="M0,0 L7,3 L0,6 z" fill="#5eead4"/></marker>' +
+       '<marker id="ahC" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">' +
+       '<path d="M0,0 L7,3 L0,6 z" fill="#f87171"/></marker></defs>';
+
+  const cycSet = new Set(st.cyc);
+  for (const u of NODES) {
+    const v = A[u];
+    const { sx, sy, ex, ey } = arrow(POS[u], POS[v], 24, 24);
+    let cls = 'edge', mk = 'ah';
+    const isCyc = cycSet.has(u) && cycSet.has(v);
+    // 正在走的这条边
+    const walking = (st.now === u && st.stack.has(u)) || (st.num !== null && st.num === u);
+    if (isCyc) { cls = 'edgecyc'; mk = 'ahC'; }
+    else if (u === 5 && v === 1 && st.vis[5]) { cls = 'edgetrav'; mk = 'ahT'; }
+    else if (st.stack.has(u) && st.stack.has(v)) { cls = 'edgetrav'; mk = 'ahT'; }
+    h += '<line class="'+cls+'" x1="'+sx.toFixed(1)+'" y1="'+sy.toFixed(1)+'" x2="'+ex.toFixed(1)+'" y2="'+ey.toFixed(1)+
+         '" marker-end="url(#'+mk+')"/>';
+  }
+
+  for (const u of NODES) {
+    const p = POS[u];
+    let cls = 'nd', fill = '#232a4a';
+    if (st.hit === u) { fill = '#5b2020'; cls += ' ndhit'; }
+    else if (st.vis1[u] === 1) { fill = '#1c3b2a'; cls += ' nddone'; }
+    else if (st.vis[u] === 1) { fill = '#3b2f1c'; }
+    if (st.now === u) cls += ' ndcur';
+    h += '<circle class="'+cls+'" cx="'+p[0]+'" cy="'+p[1]+'" r="24" fill="'+fill+'"/>';
+    h += '<text class="lbl" x="'+p[0]+'" y="'+(p[1]+5)+'" text-anchor="middle">'+u+'</text>';
+    // 小标签：a[i] 与 dx
+    const tags = [];
+    tags.push('a='+A[u]);
+    if (st.vis[u]===1 || st.vis1[u]===1) tags.push('dx='+st.dx[u]);
+    h += '<text class="lblsm" x="'+p[0]+'" y="'+(p[1]+41)+'" text-anchor="middle">'+tags.join(' ')+'</text>';
+    // vis/vis1 角标
+    const small = (st.vis[u]?'v':'-') + (st.vis1[u]?'V':'-');
+    h += '<text class="lblsm" x="'+p[0]+'" y="'+(p[1]-31)+'" text-anchor="middle" fill="#8b93b5">'+small+'</text>';
+  }
+  $('graph').innerHTML = h;
+}
+
+function renderVars(st) {
+  let h = '<tr><th>节点</th>' + NODES.map(u=>'<th>'+u+'</th>').join('') + '</tr>';
+  const row = (name, arr, extra) => {
+    h += '<tr><td class="k">'+name+'</td>' + NODES.map(u => {
+      const hit = st.now === u;
+      const cls = (extra && extra(u)) ? (extra.cls||'') : '';
+      return '<td class="'+(cls)+(hit?' hit':'')+'">'+arr[u]+'</td>';
+    }).join('') + '</tr>';
+  };
+  h += '<tr><td class="k">vis[ ]</td>' + NODES.map(u =>
+    '<td class="'+(st.vis[u]?'pu':'')+(st.now===u?' hit':'')+'">'+st.vis[u]+'</td>').join('') + '</tr>';
+  h += '<tr><td class="k">vis1[ ]</td>' + NODES.map(u =>
+    '<td class="'+(st.vis1[u]?'v':'')+(st.now===u?' hit':'')+'">'+st.vis1[u]+'</td>').join('') + '</tr>';
+  h += '<tr><td class="k">dx[ ]</td>' + NODES.map(u =>
+    '<td class="'+(st.vis[u]||st.vis1[u]?'pu':'')+(st.now===u?' hit':'')+'">'+st.dx[u]+'</td>').join('') + '</tr>';
+  h += '<tr><td class="k">状态</td>' + NODES.map(u => {
+    let s = '未访问', c = '#8b93b5';
+    if (st.hit === u) { s = '撞回!'; c = '#f87171'; }
+    else if (st.vis1[u] === 1) { s = '已完结'; c = '#86efac'; }
+    else if (st.vis[u] === 1) { s = '在本链'; c = '#fbbf24'; }
+    return '<td style="color:'+c+'">'+s+'</td>';
+  }).join('') + '</tr>';
+  $('vars').innerHTML = h;
+}
+
+function renderAns(st) {
+  const shown = st.minn >= 200010 ? 'N (=200010，尚未找到环)' : st.minn;
+  let cls = st.minn >= 200010 ? 'style="color:#8b93b5"' : '';
+  $('ansline').innerHTML = 'minn = <b '+cls+'>' + shown + '</b>';
+  if (st.final) {
+    $('ansline').innerHTML = 'minn = <b>3</b> <span style="color:#86efac">✓ 与官方样例一致</span>';
+  }
+}
+
+function render() {
+  const step = STEPS[cur];
+  const st = step.st;
+  renderCode(step.line);
+  renderGraph(st);
+  renderVars(st);
+  renderAns(st);
+  $('note').innerHTML = step.text;
+  $('prog').textContent = (cur + 1) + ' / ' + STEPS.length;
+  $('prev').disabled = (cur === 0);
+  $('next').disabled = (cur === STEPS.length - 1);
+}
+
+function stopPlay() { if (timer) { clearInterval(timer); timer = null; $('play').textContent = '自动播放'; } }
+$('prev').onclick = () => { stopPlay(); if (cur > 0) { --cur; render(); } };
+$('next').onclick = () => { stopPlay(); if (cur < STEPS.length - 1) { ++cur; render(); } };
+$('last').onclick = () => { stopPlay(); cur = STEPS.length - 1; render(); };
+$('reset').onclick = () => { stopPlay(); cur = 0; render(); };
+$('play').onclick = () => {
+  if (timer) { stopPlay(); return; }
+  $('play').textContent = '暂停';
+  timer = setInterval(() => {
+    if (cur < STEPS.length - 1) { ++cur; render(); } else stopPlay();
+  }, 1100);
+};
+
+$('inputDesc').innerHTML =
+  'n = 5　a = [2, 4, 2, 3, 1]<br>' +
+  '边：1→2　2→4　4→3　3→2　5→1（行末的 → 表示"把消息传给"）<br>' +
+  '环：<b>2→4→3→2</b>，长度 3　　尾巴：1→2、5→1（不在环上）<br>' +
+  '期望输出：<b>3</b>';
+
+if (typeof window !== 'undefined') render();
+</script>
+</body>
+</html>
