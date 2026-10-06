@@ -60,7 +60,7 @@ int main() {
     basicSz["int"]  = 4; basicSz["long"]  = 8;
 
     int Q; cin >> Q;
-    while (Q--) {
+    while (Q-- > 0) {                               // 写成 > 0，Q 异常时也能退出
         int op; cin >> op;
 
         if (op == 1) {                                  // 定义结构体类型

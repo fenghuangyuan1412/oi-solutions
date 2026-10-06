@@ -32,11 +32,11 @@ int main() {
 
     /* ② 编号为 n 的苹果第几天被拿走 */
     long long pos = n, day = 0;
-    while (true) {
+    while (pos > 1 && (pos - 1) % 3 != 0) {   // 还没命中就继续前移
         ++day;
-        if ((pos - 1) % 3 == 0) break;   // 它正好落在「第 1、4、7…」这些位置上
-        pos -= (pos + 1) / 3;            // 否则前面被拿走 (pos+1)/3 个，位置前移
+        pos -= (pos + 1) / 3;                 // 前面被拿走 (pos+1)/3 个
     }
+    ++day;                                    // 命中那一天（pos == 1 也在这里收口）
 
     cout << days << " " << day << "\n";
     return 0;
