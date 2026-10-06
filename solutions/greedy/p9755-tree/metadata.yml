@@ -1,0 +1,12 @@
+id: P9755
+title: "[CSP-S 2023] 种树"
+source: luogu
+url: https://www.luogu.com.cn/problem/P9755
+topics: [greedy/binary-answer]
+difficulty: 提高+/省选-
+complexity:
+  time: O(n! · n log T) 骗分版 / O(n log T log n) 正解
+  space: O(n)
+status: 未本地评测（洛谷提交需登录）；本地 g++ -static -O2 -std=c++14 编译，样例 1 输出 5 逐字正确。本目录为骗分版：n≤8 时 DFS 枚举全部合法种树顺序得精确解，n>8 退化为 BFS 顺序近似（答案可能偏大），未实现正解
+visualization: false
+notes: 只讲骗分、不实现正解（正解是省选级"二分答案 + 按最晚种树时间贪心"，细节极多不适合本轮教学）。骗分三条路：①二分答案（答案单调是本题唯一的救命稻草）+ 一个凑合的顺序；②链上种树顺序唯一，直接贪心；③菊花上贪心失效但二分有效，是"贪心排不出顺序就看单调性"的活例。数值坑：高度累计可达 1e23 必须 __int128；c_i<0 时"不足 1 按 1 算"要把求和区间拆成两段；种下的当天就开始长（样例 1 答案是 5 而不是 4，就靠这一点）

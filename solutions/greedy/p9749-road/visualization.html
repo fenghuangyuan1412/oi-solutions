@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P9749 公路 · 历史最低价 + 预买</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --fresh:#c084fc; --mid:#fbbf24; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:22px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:12px; }
+  .sub b { color:var(--ink); }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:12px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 10px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:7px 13px; font-size:14px; cursor:pointer; margin-right:6px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .prog { color:var(--acc); font-size:14px; margin-left:auto; font-weight:700; }
+  .wrap { display:flex; gap:12px; flex-wrap:wrap; }
+  .wrap > div { flex:1; min-width:330px; }
+  pre.code { margin:0; font:13px/1.75 Consolas,monospace; }
+  pre.code .ln { display:block; padding:0 8px; border-left:3px solid transparent; white-space:pre; }
+  pre.code .ln.on { background:#173a4a; border-left-color:var(--acc); color:var(--acc); }
+  .note { font-size:14px; min-height:96px; }
+  .note b { color:var(--acc); } .note .bad { color:var(--warn); } .note .good { color:var(--ok); }
+  .note .mid { color:var(--mid); } .note .pu { color:var(--fresh); }
+  svg.road { width:100%; height:200px; display:block; }
+  .row { font:14px Consolas,monospace; margin:5px 0; }
+  .row .lbl { color:var(--dim); display:inline-block; width:82px; }
+  .row .val { color:var(--acc); font-weight:700; }
+  .ans { margin-top:10px; text-align:center; font:15px Consolas,monospace; color:var(--dim); }
+  .ans b { color:var(--ok); font-size:22px; }
+  .err { color:var(--warn); font-size:13px; }
+</style>
+</head>
+<body>
+<h1>P9749 [CSP-J 2023] 公路</h1>
+<div class="sub">油箱无限大 ⇒ 可以在<b>最便宜的那个站提前买油</b>；维护 <b>minp</b>（历史最低价）+ <b>rest</b>（还能跑多远）</div>
+
+<div class="topbar">
+  <button id="prev">← 上一步</button>
+  <button id="next">下一步 →</button>
+  <button id="play">自动播放</button>
+  <button id="last">跳到结尾</button>
+  <button id="reset">重置</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="wrap">
+  <div>
+    <div class="card">
+      <h2>公路示意（站点油价 · 段长 · 油箱剩余）</h2>
+      <svg class="road" id="road" viewBox="0 0 560 190"></svg>
+      <div class="row"><span class="lbl">rest（公里）</span><span class="val" id="vrest"></span></div>
+      <div class="row"><span class="lbl">minp（元/升）</span><span class="val" id="vminp"></span></div>
+      <div class="row"><span class="lbl">ans（元）</span><span class="val" id="vans"></span></div>
+      <div class="ans" id="ansline"></div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>讲解代码</h2>
+      <pre class="code" id="code"></pre>
+    </div>
+    <div class="card">
+      <h2>这一步在做什么</h2>
+      <div class="note" id="note"></div>
+    </div>
+  </div>
+</div>
+
+<div class="err" id="err"></div>
+
+<script>
+const N = 5, V = 4;
+const D = [0, 10, 10, 10, 10];      // D[i]：站点 i → i+1
+const A = [0, 9, 8, 9, 6, 5];       // A[i]：站点 i 油价
+const CODE = [
+  'long long ans = 0, rest = 0, minp = LLONG_MAX;',   // 0
+  'for (int i = 1; i < n; ++i) {',                    // 1
+  '    minp = min(minp, a[i]);',                      // 2
+  '    if (rest >= d[i]) { rest -= d[i]; continue; }',// 3
+  '    long long need = d[i] - rest;',                // 4
+  '    long long buy = (need + v - 1) / v;',          // 5
+  '    ans += buy * minp;',                           // 6
+  '    rest += buy * v - d[i];',                      // 7
+  '}',                                                // 8
+  'cout << ans << "\\n";'                             // 9
+];
+
+// 真实执行轨迹（与 solution.cpp 一致）
+const STEPS = [
+  { line:0, i:0, rest:0, minp:null, ans:0, buy:0, text:'初始：<code>ans = 0, rest = 0, minp = ∞</code>。<br>车停在站点 1，油箱空。<code>v = 4</code>（每升跑 4 公里）。' },
+  { line:2, i:1, rest:0, minp:9, ans:0, buy:0, text:'<b>i = 1（站点 1）。</b><code>minp = min(∞, 9) = 9</code>。<br>这是目前见过的最低油价。' },
+  { line:3, i:1, rest:0, minp:9, ans:0, buy:0, text:'<code>rest = 0 &lt; d[1] = 10</code> ⇒ 油不够，要走第 3 行之后的买油分支。' },
+  { line:5, i:1, rest:0, minp:9, ans:0, buy:3, text:'缺 <code>need = 10 − 0 = 10</code> 公里 ⇒ 至少要买 <code>ceil(10/4) = 3</code> 升。<br><span class="mid">整数升必须向上取整，写 <code>10/4 = 2</code> 就买少了。</span>' },
+  { line:6, i:1, rest:0, minp:9, ans:27, buy:3, text:'<code>ans += 3 × 9 = 27</code>。<br>这 3 升按 <b>minp = 9</b> 结算。' },
+  { line:7, i:1, rest:2, minp:9, ans:27, buy:3, text:'<code>rest += 3×4 − 10 = 2</code> ⇒ 走完第 1 段后油箱还剩 <b>2 公里</b>的油。<br>（等价说法：买多了 0.5 升，留在油箱里。）' },
+  { line:2, i:2, rest:2, minp:8, ans:27, buy:0, text:'<b>i = 2（站点 2）。</b><code>minp = min(9, 8) = 8</code> —— <b>出现更便宜的油了</b>。<br><span class="good">之后买的油都按 8 元算，等价于"在站点 2 多买一些带过来"。</span>' },
+  { line:3, i:2, rest:2, minp:8, ans:27, buy:0, text:'<code>rest = 2 &lt; 10</code> ⇒ 还要买。' },
+  { line:5, i:2, rest:2, minp:8, ans:27, buy:2, text:'<code>need = 10 − 2 = 8</code> ⇒ 买 <code>ceil(8/4) = 2</code> 升。' },
+  { line:6, i:2, rest:2, minp:8, ans:43, buy:2, text:'<code>ans += 2 × 8 = 16</code> ⇒ <code>ans = 43</code>。' },
+  { line:7, i:2, rest:0, minp:8, ans:43, buy:2, text:'<code>rest = 2 + 2×4 − 10 = 0</code>。' },
+  { line:2, i:3, rest:0, minp:8, ans:43, buy:0, text:'<b>i = 3（站点 3）。</b>油价 9，比 minp = 8 贵 ⇒ <code>minp</code> 不变。<br><span class="pu">这就是关键：站点 3 的油虽然贵，但这里买的油仍按 8 元算 —— 因为可以真的在站点 2 买好带过来。</span>' },
+  { line:5, i:3, rest:0, minp:8, ans:43, buy:3, text:'<code>need = 10 − 0 = 10</code> ⇒ 买 <code>ceil(10/4) = 3</code> 升。' },
+  { line:6, i:3, rest:0, minp:8, ans:67, buy:3, text:'<code>ans += 3 × 8 = 24</code> ⇒ <code>ans = 67</code>。<br><span class="mid">如果按"随用随买"（用站点 3 的 9 元），这里就要多花 3 元。</span>' },
+  { line:7, i:3, rest:2, minp:8, ans:67, buy:3, text:'<code>rest = 0 + 3×4 − 10 = 2</code>。' },
+  { line:2, i:4, rest:2, minp:6, ans:67, buy:0, text:'<b>i = 4（站点 4）。</b><code>minp = min(8, 6) = 6</code> —— 又更便宜了。' },
+  { line:5, i:4, rest:2, minp:6, ans:67, buy:2, text:'<code>need = 10 − 2 = 8</code> ⇒ 买 <code>ceil(8/4) = 2</code> 升。' },
+  { line:6, i:4, rest:2, minp:6, ans:79, buy:2, text:'<code>ans += 2 × 6 = 12</code> ⇒ <code>ans = 79</code>。' },
+  { line:7, i:4, rest:0, minp:6, ans:79, buy:2, text:'<code>rest = 2 + 2×4 − 10 = 0</code>。' },
+  { line:8, i:4, rest:0, minp:6, ans:79, buy:0, text:'<code>i</code> 到 <code>n−1 = 4</code>，循环结束（最后一段已走完）。' },
+  { line:9, i:4, rest:0, minp:6, ans:79, buy:0, final:true, text:'<b>输出 79</b> —— 与官方样例一致 ✓<br><br>三笔花费：站点 1 买 3 升（27）、站点 2 买 5 升（40）、站点 4 买 2 升（12），合计 <b>79</b>。' }
+];
+
+let cur = 0, timer = null;
+const $ = (id) => document.getElementById(id);
+
+function renderCode(activeLine) {
+  $('code').innerHTML = CODE.map((l, i) =>
+    '<span class="ln' + (i === activeLine ? ' on' : '') + '">' +
+    l.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</span>').join('');
+}
+
+function renderRoad(st) {
+  const X0 = 40, X1 = 520, Y = 95;
+  const step = (X1 - X0) / (N - 1);
+  let h = '';
+  h += '<line x1="' + X0 + '" y1="' + Y + '" x2="' + X1 + '" y2="' + Y + '" stroke="#3d4778" stroke-width="3"/>';
+  for (let i = 1; i < N; ++i) {
+    const xa = X0 + step * (i - 1), xb = X0 + step * i;
+    h += '<line x1="' + xa + '" y1="' + Y + '" x2="' + xb + '" y2="' + Y + '" stroke="' +
+         (st.i === i ? '#5eead4' : '#3d4778') + '" stroke-width="4"/>';
+    h += '<text x="' + ((xa + xb) / 2) + '" y="' + (Y + 24) + '" text-anchor="middle" fill="#8b93b5" style="font:12px Consolas">' + D[i] + 'km</text>';
+  }
+  for (let i = 1; i <= N; ++i) {
+    const x = X0 + step * (i - 1);
+    const active = (st.i === i);
+    const isMin = (st.minp !== null && A[i] === st.minp);
+    const fill = active ? '#1f3b5c' : (isMin ? '#1c3b2a' : '#232a4a');
+    const stroke = active ? '#5eead4' : (isMin ? '#86efac' : '#5a6389');
+    h += '<circle cx="' + x + '" cy="' + Y + '" r="20" fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + (active || isMin ? 3 : 2) + '"/>';
+    h += '<text x="' + x + '" y="' + (Y + 5) + '" text-anchor="middle" fill="#e8ecff" style="font:13px Consolas">' + i + '</text>';
+    h += '<text x="' + x + '" y="' + (Y - 30) + '" text-anchor="middle" fill="' + (isMin ? '#86efac' : '#e8ecff') + '" style="font:13px Consolas">' + A[i] + '元</text>';
+    if (isMin) h += '<text x="' + x + '" y="' + (Y - 46) + '" text-anchor="middle" fill="#86efac" style="font:11px Consolas">最低价</text>';
+    if (active) h += '<text x="' + x + '" y="' + (Y + 44) + '" text-anchor="middle" fill="#5eead4" style="font:11px Consolas">当前</text>';
+  }
+  // 油箱剩余条
+  const barW = Math.min(st.rest / 40 * (X1 - X0), X1 - X0);
+  h += '<rect x="' + X0 + '" y="' + (Y + 62) + '" width="' + (X1 - X0) + '" height="10" rx="5" fill="#232a4a"/>';
+  h += '<rect x="' + X0 + '" y="' + (Y + 62) + '" width="' + barW + '" height="10" rx="5" fill="#5eead4"/>';
+  h += '<text x="' + X0 + '" y="' + (Y + 88) + '" fill="#8b93b5" style="font:11px Consolas">油箱剩余（公里）：' + st.rest + '</text>';
+  $('road').innerHTML = h;
+}
+
+function render() {
+  const st = STEPS[cur];
+  renderCode(st.line);
+  renderRoad(st);
+  $('vrest').textContent = st.rest;
+  $('vminp').textContent = (st.minp === null) ? '∞' : st.minp;
+  $('vans').textContent = st.ans;
+  if (st.final) $('ansline').innerHTML = '总花费 <b>79</b> <span style="color:var(--ok)">✓</span>';
+  else $('ansline').textContent = '（ans 正在累加）';
+  $('note').innerHTML = st.text;
+  $('prog').textContent = (cur + 1) + ' / ' + STEPS.length;
+  $('prev').disabled = (cur === 0);
+  $('next').disabled = (cur === STEPS.length - 1);
+}
+
+function stopPlay() { if (timer) { clearInterval(timer); timer = null; $('play').textContent = '自动播放'; } }
+$('prev').onclick = () => { stopPlay(); if (cur > 0) { --cur; render(); } };
+$('next').onclick = () => { stopPlay(); if (cur < STEPS.length - 1) { ++cur; render(); } };
+$('last').onclick = () => { stopPlay(); cur = STEPS.length - 1; render(); };
+$('reset').onclick = () => { stopPlay(); cur = 0; render(); };
+$('play').onclick = () => {
+  if (timer) { stopPlay(); return; }
+  $('play').textContent = '暂停';
+  timer = setInterval(() => {
+    if (cur < STEPS.length - 1) { ++cur; render(); } else stopPlay();
+  }, 1200);
+};
+
+if (typeof window !== 'undefined') render();
+</script>
+</body>
+</html>

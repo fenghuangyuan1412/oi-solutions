@@ -1,0 +1,12 @@
+id: P9754
+title: "[CSP-S 2023] 结构体"
+source: luogu
+url: https://www.luogu.com.cn/problem/P9754
+topics: [basic/simulation]
+difficulty: 提高+/省选-
+complexity:
+  time: O(Q · 路径长)
+  space: O(定义总量)
+status: 未本地评测（洛谷提交需登录）；本地 g++ -static -O2 -std=c++14 编译，样例 1 输出 "8 4 / 16 8 / 0 / 4 / x.bb" 逐字正确
+visualization: false
+notes: 大模拟，不考算法只考"把规格说明一字不差翻译成代码"；核心四句=先对齐 off、再记偏移、最后 off+=size、整体大小补齐到对齐整数倍。骗分价值极高：四个特殊性质各砍一块实现量（A 无操作 4、B 只有一个操作 2、C 成员全基本类型免递归、D 只有 long 对齐恒为 8），先交"操作 1/2/3"一版即可覆盖 A 档。操作 4 必须递归到基本类型，落在结构体"洞"里要输出 ERR；地址可达 1e18，必须 long long

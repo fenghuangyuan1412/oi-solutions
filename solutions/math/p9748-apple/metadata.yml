@@ -1,0 +1,12 @@
+id: P9748
+title: "[CSP-J 2023] 小苹果"
+source: luogu
+url: https://www.luogu.com.cn/problem/P9748
+topics: [math/recursion]
+difficulty: 普及-
+complexity:
+  time: O(log n)
+  space: O(1)
+status: 未本地评测（洛谷提交需登录）；本地 g++ -static -O2 -std=c++14 编译，样例 8 ⇒ "5 5" 逐字正确；正解与 O(n) 模拟骗分版对拍 200 组 0 不一致；n=10^9 实测 352 ms（含进程启动）
+visualization: true
+notes: 骗分只有 O(n) 模拟一条路（n≤1e9 直接逼出正解）；题面特殊性质"第一天就取走编号 n"可把第二问写死为 1，是特殊性质分档的典型；正解盯住"剩余数量 cnt"和"目标位置 pos"两个量做 O(log n) 递推，两问同型

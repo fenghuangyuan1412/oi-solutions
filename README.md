@@ -21,7 +21,7 @@
 | 字符串 | 0 | [solutions/string](solutions/string) |
 | 计算几何 | 0 | [solutions/geometry](solutions/geometry) |
 
-共 56 题（按"有 README.md 的目录"统计，本机 `find solutions -mindepth 3 -name README.md | wc -l` 实得 56；含 [solutions/search](solutions/search) 的 10 道搜索入门题，已在下表逐行列出）。全部题目来自训练单与洛谷/NOIP 真题，暂无半成品目录。
+共 61 题（按"有 README.md 的目录"统计，本机 `find solutions -mindepth 3 -name README.md | wc -l` 实得 61；含 [solutions/search](solutions/search) 的 10 道搜索入门题，已在下表逐行列出）。全部题目来自训练单与洛谷/NOIP 真题，暂无半成品目录。
 
 **怎么用这张表全局浏览**：
 
@@ -48,6 +48,7 @@
 | [P2670](https://www.luogu.com.cn/problem/P2670) | [[NOIP 2015 普及组] 扫雷游戏](solutions/basic/p2670-minesweeper/README.md) | 基础 / 网格模拟 | 8 个方向写成偏移数组；雷格原样输出 `*`；行内无分隔符 | —— |
 | [P3156](https://www.luogu.com.cn/problem/P3156) | [【深基15.例1】询问学号](solutions/basic/p3156-student-id/README.md) | 基础 / 数组·随机访问 | 问"第几个"就是问下标，值域 $10^9$ 也不需要查找结构；$2\times10^6$ 的数组必须开全局 | [html](solutions/basic/p3156-student-id/visualization.html) |
 | [P9750](https://www.luogu.com.cn/problem/P9750) | [[CSP-J 2023] 一元二次方程](solutions/basic/p9750-quadratic/README.md) | 基础 / 数学·输出格式 | **骗分练习 ⑤**：特殊性质 ⇒ $\Delta$ 必为完全平方 ⇒ 只写有理分支稳过 6 个测试点；满分要根式化简 + 5 条格式逐字 | —— |
+| [P9754](https://www.luogu.com.cn/problem/P9754) | [[CSP-S 2023] 结构体](solutions/basic/p9754-struct/README.md) | 基础 / **大模拟**·内存对齐 | 不考算法、只考"把规格说明一字不差翻译成代码"：先对齐 `off`、再记偏移、最后 `off += size`，整体大小再补齐到对齐整数倍。**骗分价值极高**——四个特殊性质各砍一块实现量（A 无操作 4、B 只有一个操作 2、C 成员全基本类型免递归、D 只有 `long`） | —— |
 | [U397952](https://www.luogu.com.cn/problem/U397952) | [L1-006 AC数](solutions/basic/u397952-ac-count/README.md) | 基础 / 计数·前缀和 | 按右端点分类：遇 C 就加"左边 A 的个数"，O(n²) → O(n) | —— |
 | [P1005](https://www.luogu.com.cn/problem/P1005) | [[NOIP 2007 提高组] 矩阵取数游戏](solutions/dp/p1005-matrix-game/README.md) | 动态规划 / 区间·高精度 | **骗分练习 ②**：60% 档承诺答案 $\le10^{16}$ ⇒ `long long` 白送 60 分；行与行完全独立 | —— |
 | [P1499](https://www.luogu.com.cn/problem/P1499) | [[CTSC2000] 公路巡逻](solutions/dp/p1499-patrol/README.md) | 动态规划 / 时间轴·差分桶 | 两个整秒时刻定住一段直线 ⇒ 相遇判据三分支（$b=X$ 算、$a=T$ 不算），每辆车的限制是一个半区间，半区间能差分，转移从 $O(m)$ 降到 $O(1)$ | —— |
@@ -84,6 +85,9 @@
 | [P1095](https://www.luogu.com.cn/problem/P1095) | [[NOIP 2005 提高组] 守望者的逃离](solutions/greedy/p1095-escape/README.md) | 贪心 / 枚举·DP | **骗分练习 ③**：三条规则漏一条就掉一半分（反面教材实测只对该 21%~25%）；无魔法上限 ⇒ 枚举闪光次数 $k$ | —— |
 | [P14357](https://www.luogu.com.cn/problem/P14357) | [[CSP-J 2025] 拼数](solutions/greedy/p14357-number/README.md) | 贪心 / 计数排序 | 位数用满 + 降序交换论证 | [html](solutions/greedy/p14357-number/visualization.html) |
 | [P14359](https://www.luogu.com.cn/problem/P14359) | [[CSP-J 2025] 异或和](solutions/greedy/p14359-xor/README.md) | 贪心 / 前缀异或 | 前缀异或配对 + 最多不相交区间最早结束贪心 | [html](solutions/greedy/p14359-xor/visualization.html) |
+| [P9749](https://www.luogu.com.cn/problem/P9749) | [[CSP-J 2023] 公路](solutions/greedy/p9749-road/README.md) | 贪心 / **历史最低价** | 油箱无限大 ⇒ 可以在最便宜的那个站**提前买油**；维护 `minp`（历史最低价）+ `rest`（还能跑多远）一趟扫完。答案可达 $10^{15}$ 必须 `long long`；"整数升"必须向上取整 | [html](solutions/greedy/p9749-road/visualization.html) |
+| [P9755](https://www.luogu.com.cn/problem/P9755) | [[CSP-S 2023] 种树](solutions/greedy/p9755-tree/README.md) | 贪心 / **二分答案**·树上 | **只讲骗分、不实现正解**：答案单调 ⇒ 二分是唯一救命稻草；链上种树顺序唯一可贪心，菊花上贪心失效而二分有效。数值坑：累计高度可达 $10^{23}$ 必须 `__int128` | —— |
+| [P11231](https://www.luogu.com.cn/problem/P11231) | [[CSP-S 2024] 决斗](solutions/greedy/p11231-duel/README.md) | 贪心 / 二分图最大匹配 | "每只至多攻击一次"+"被杀就退出"正是匹配的两条边约束 ⇒ 答案 $=n-$ 最大匹配；排序后双指针四行搞定。读题陷阱：**已攻击过的怪兽仍可被杀**（样例 1 第 3 回合） | [html](solutions/greedy/p11231-duel/visualization.html) |
 | [T228758](https://www.luogu.com.cn/problem/T228758) | [L1-008 字符串](solutions/greedy/t228758-string/README.md) | 贪心 / 字符串字典序 | 两个"非空"把首尾钉死 ⇒ 只看下一个字符与 s2[0]，严格更小才延长 | —— |
 | [P1036](https://www.luogu.com.cn/problem/P1036) | [[NOIP 2002 普及组] 选数](solutions/search/p1036-choose-prime/README.md) | 搜索 / DFS·组合枚举 | 枚举归搜索（下一层起点 = 上一个下标 + 1，`sum` 当参数带走所以回溯免费），判定归数学（$v<2$ 先否、只试除到 $i\times i\le v$） | —— |
 | [P1135](https://www.luogu.com.cn/problem/P1135) | [奇怪的电梯](solutions/search/p1135-strange-elevator/README.md) | 搜索 / BFS·最短路 | "状态只有 $n$ 个、每状态固定两个动作"就是 BFS 的信号：楼层当点、按键当边，`dist` 的 $-1$ 初值兼职 vis 与"无解"输出 | —— |
@@ -95,6 +99,7 @@
 | [P1596](https://www.luogu.com.cn/problem/P1596) | [[USACO10OCT] Lake Counting S / 数水塘](solutions/search/p1596-lake-counting/README.md) | 搜索 / DFS·连通块计数 | 与 P1451 同一套模板，**唯一代码差异**是八方向偏移表：斜角相连也算同一个塘 | —— |
 | [P1605](https://www.luogu.com.cn/problem/P1605) | [迷宫](solutions/search/p1605-maze/README.md) | 搜索 / DFS·回溯计数 | 数"块"不撤销、数"路"必须撤销 `vis` —— 这一行写不写就是两类搜索题的分界线 | —— |
 | [P1706](https://www.luogu.com.cn/problem/P1706) | [全排列问题](solutions/search/p1706-permutation/README.md) | 搜索 / DFS·回溯 | 回溯三句话：做了什么 → 往下递归 → 撤销什么；每层从 $1..n$ 试、靠 `vis[]` 去重，`setw(5)` 场宽是格式分 | —— |
+| [P9748](https://www.luogu.com.cn/problem/P9748) | [[CSP-J 2023] 小苹果](solutions/math/p9748-apple/README.md) | 数学 / 递推·模拟 | 只维护"还剩几个 `cnt`"和"目标排第几 `pos`"两个量 ⇒ 把 $O(n)$ 模拟压成 $O(\log n)$ 递推；$n\le10^9$ 直接堵死数组方案。特殊性质"第一天就取走 $n$"可把第二问写死为 1 | [html](solutions/math/p9748-apple/visualization.html) |
 
 > 上表标 **骗分练习 ①~⑤** 的五题 + 五道纯模拟题，配套教案见 [notes/partial-score-handbook.md](notes/partial-score-handbook.md)（骗分 / 部分分技术手册，含每个技术点的实测证据与考场时间预算表）。
 

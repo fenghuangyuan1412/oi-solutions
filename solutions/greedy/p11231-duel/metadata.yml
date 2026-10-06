@@ -1,0 +1,12 @@
+id: P11231
+title: "[CSP-S 2024] 决斗"
+source: luogu
+url: https://www.luogu.com.cn/problem/P11231
+topics: [greedy/matching]
+difficulty: 普及-
+complexity:
+  time: O(n log n)
+  space: O(n)
+status: 未本地评测（洛谷提交需登录）；本地 g++ -static -O2 -std=c++14 编译，两个样例（2 / 8）均逐字正确；正解与 O(n^2) 暴力版对拍 200 组 0 不一致；n=10^5 实测 368 ms（含进程启动）
+visualization: false
+notes: 关键转化是把"每只至多攻击一次 + 被杀就退出"读成二分图匹配的两条边约束，答案 = n - 最大匹配；排序后双指针四行求最大匹配。最大读题陷阱是"已经攻击过的怪兽仍然可以被杀"（样例 1 第 3 回合即如此）；特殊性质 A（a_i 随机）下答案极小（实测 n=1e5 只有 8），但那是蒙不是骗分

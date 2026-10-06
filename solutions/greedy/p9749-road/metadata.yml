@@ -1,0 +1,12 @@
+id: P9749
+title: "[CSP-J 2023] 公路"
+source: luogu
+url: https://www.luogu.com.cn/problem/P9749
+topics: [greedy/historical-min]
+difficulty: 普及-
+complexity:
+  time: O(n)
+  space: O(n)
+status: 未本地评测（洛谷提交需登录）；本地 g++ -static -O2 -std=c++14 编译，样例输出 79 逐字正确；正解与 O(n^2) 慢速版对拍 200 组 0 不一致；n=10^5 实测 376 ms（含进程启动）
+visualization: false
+notes: 核心是"油箱无限大 ⇒ 可在最便宜站预买"，维护 minp（历史最低价）+ rest（还能跑多少公里）；易错点第一名是答案要用 long long（可达 1e15）、第二名是整数升必须向上取整；特殊性质 A（站点 1 油价最低）可直接在站点 1 买满全程

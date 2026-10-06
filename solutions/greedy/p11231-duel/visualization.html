@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P11231 决斗 · 排序 + 双指针求最大匹配</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --fresh:#c084fc; --mid:#fbbf24; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:22px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:12px; }
+  .sub b { color:var(--ink); }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:12px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 10px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:7px 13px; font-size:14px; cursor:pointer; margin-right:6px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .prog { color:var(--acc); font-size:14px; margin-left:auto; font-weight:700; }
+  .wrap { display:flex; gap:12px; flex-wrap:wrap; }
+  .wrap > div { flex:1; min-width:320px; }
+  pre.code { margin:0; font:13px/1.75 Consolas,monospace; }
+  pre.code .ln { display:block; padding:0 8px; border-left:3px solid transparent; white-space:pre; }
+  pre.code .ln.on { background:#173a4a; border-left-color:var(--acc); color:var(--acc); }
+  .note { font-size:14px; min-height:96px; }
+  .note b { color:var(--acc); } .note .bad { color:var(--warn); } .note .good { color:var(--ok); }
+  .note .mid { color:var(--mid); } .note .pu { color:var(--fresh); }
+  .bars { display:flex; align-items:flex-end; gap:10px; height:170px; padding:0 4px; }
+  .bar { flex:1; position:relative; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; }
+  .bar .col { width:100%; border-radius:6px 6px 0 0; background:#2b3358; transition:all .25s; }
+  .bar .val { font:13px Consolas,monospace; color:var(--ink); margin-bottom:4px; }
+  .bar .idx { font:11px Consolas,monospace; color:var(--dim); margin-top:4px; }
+  .bar.attacker .col { background:#1f3b5c; box-shadow:0 0 0 2px var(--acc) inset; }
+  .bar.target .col { background:#3b2f5c; box-shadow:0 0 0 2px var(--fresh) inset; }
+  .bar.dead .col { background:#3a2030; opacity:.55; }
+  .bar .tag { font:11px Consolas,monospace; position:absolute; top:-2px; color:var(--mid); }
+  .row { font:14px Consolas,monospace; margin:6px 0; }
+  .row .lbl { color:var(--dim); display:inline-block; width:76px; }
+  .row .val { color:var(--acc); font-weight:700; }
+  .ans { margin-top:10px; text-align:center; font:15px Consolas,monospace; color:var(--dim); }
+  .ans b { color:var(--ok); font-size:22px; }
+  .err { color:var(--warn); font-size:13px; }
+</style>
+</head>
+<body>
+<h1>P11231 [CSP-S 2024] 决斗</h1>
+<div class="sub">答案 = <b>n − 最大匹配</b>；排序后用双指针，一趟求出最多能杀几只</div>
+
+<div class="topbar">
+  <button id="prev">← 上一步</button>
+  <button id="next">下一步 →</button>
+  <button id="play">自动播放</button>
+  <button id="last">跳到结尾</button>
+  <button id="reset">重置</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="wrap">
+  <div>
+    <div class="card">
+      <h2>排序后的怪兽（柱高 = 攻击力 = 防御力）</h2>
+      <div class="bars" id="bars"></div>
+      <div class="row"><span class="lbl">i（攻击者）</span><span class="val" id="vi">—</span></div>
+      <div class="row"><span class="lbl">j（目标）</span><span class="val" id="vj">—</span></div>
+      <div class="row"><span class="lbl">killed</span><span class="val" id="vk"></span></div>
+      <div class="ans" id="ansline">答案 = n − killed</div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>讲解代码</h2>
+      <pre class="code" id="code"></pre>
+    </div>
+    <div class="card">
+      <h2>这一步在做什么</h2>
+      <div class="note" id="note"></div>
+    </div>
+  </div>
+</div>
+
+<div class="err" id="err"></div>
+
+<script>
+const A = [1,1,2,2,3];        // 样例 1 排序后
+const N = A.length;
+const CODE = [
+  'sort(a.begin(), a.end());',           // 0
+  '',                                    // 1
+  'int killed = 0, j = 0;',              // 2
+  'for (int i = 0; i < n; ++i) {',       // 3
+  '    if (a[i] > a[j]) {',              // 4
+  '        ++killed;',                   // 5
+  '        ++j;',                        // 6
+  '    }',                               // 7
+  '}',                                   // 8
+  '',                                    // 9
+  'cout << n - killed << "\\n";'         // 10
+];
+
+// killed 记录"被杀掉的怪兽下标"（配对 i 杀 j）
+const STEPS = [
+  { line:0, i:null, j:null, killed:[], text:'<b>先排序。</b>原序列 <code>[1,2,3,1,2]</code> 升序后变成 <code>[1,1,2,2,3]</code>。<br>排序是贪心能成立的前提：<b>大的总在右边</b>。' },
+  { line:2, i:null, j:0, killed:[], text:'初始化：<code>i = 0, j = 0, killed = 0</code>。<br><code>j</code> 始终指向"当前最小的、还没被杀掉的目标"。' },
+  { line:4, i:0, j:0, killed:[], text:'<b>i = 0, j = 0。</b>比较 <code>a[0] = 1</code> 与 <code>a[0] = 1</code>：<br><code>1 > 1</code> 为<b>假</b> ⇒ 不能杀（而且本来就是同一只，不能自己打自己）。<span class="mid">这一步不需要特判 i==j，条件天然为假。</span>' },
+  { line:4, i:1, j:0, killed:[], text:'<b>i = 1, j = 0。</b><code>a[1] = 1 > a[0] = 1</code>？为<b>假</b> ⇒ 这只攻击力也不够。<br>继续把 <code>i</code> 前移，找更大的攻击者。' },
+  { line:4, i:2, j:0, killed:[], text:'<b>i = 2, j = 0。</b><code>a[2] = 2 > a[0] = 1</code>？为<b>真</b> ⇒ 配对成功！' },
+  { line:6, i:2, j:1, killed:[0], text:'<b>killed = 1</b>，<code>j</code> 前移到 1。<br>含义：第 3 只怪兽（攻 2）杀掉了第 1 只（防 1），<b>第 1 只退出</b>。' },
+  { line:4, i:3, j:1, killed:[0], text:'<b>i = 3, j = 1。</b><code>a[3] = 2 > a[1] = 1</code>？为<b>真</b> ⇒ 再配对一只。' },
+  { line:6, i:3, j:2, killed:[0,1], text:'<b>killed = 2</b>，<code>j</code> 前移到 2。<br>第 4 只怪兽（攻 2）杀掉第 2 只（防 1）。' },
+  { line:4, i:4, j:2, killed:[0,1], text:'<b>i = 4, j = 2。</b><code>a[4] = 3 > a[2] = 2</code>？为<b>真</b> ⇒ 配对。' },
+  { line:6, i:4, j:3, killed:[0,1,2], text:'<b>killed = 3</b>，<code>j</code> 前移到 3。<br>第 5 只怪兽（攻 3）杀掉第 3 只（防 2）。<br><span class="good">注意被杀的这只"已经攻击过"了——题面只限制"至多攻击一次"，没限制"不能被攻击"。</span>' },
+  { line:8, i:null, j:3, killed:[0,1,2], text:'<code>i</code> 扫到 n，循环结束。<br><code>j</code> 停在 3，说明还有 2 只（下标 3、4）没被杀掉。' },
+  { line:10, i:null, j:3, killed:[0,1,2], final:true, text:'<b>输出 n − killed = 5 − 3 = 2</b> —— 与官方样例一致 ✓<br><br>顺带验证另一组样例：<code>[136,136,136,2417,136,136,2417,136,136,136]</code> 排序后只有 2 个 2417，能杀掉的也就 2 只，答案 <b>8</b> ✓' }
+];
+
+let cur = 0, timer = null;
+const $ = (id) => document.getElementById(id);
+
+function renderCode(activeLine) {
+  $('code').innerHTML = CODE.map((l, i) =>
+    '<span class="ln' + (i === activeLine ? ' on' : '') + '">' +
+    l.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</span>').join('');
+}
+
+function renderBars(st) {
+  const max = Math.max.apply(null, A);
+  const killed = new Set(st.killed || []);
+  let h = '';
+  for (let k = 0; k < N; ++k) {
+    let cls = 'bar';
+    if (killed.has(k)) cls += ' dead';
+    if (st.i === k) cls += ' attacker';
+    else if (st.j === k) cls += ' target';
+    let tag = '';
+    if (st.i === k && st.j === k) tag = 'i=j';
+    else if (st.i === k) tag = 'i';
+    else if (st.j === k) tag = 'j';
+    const hgt = Math.round(A[k] / max * 120) + 8;
+    h += '<div class="' + cls + '">' + (tag ? '<span class="tag">' + tag + '</span>' : '') +
+         '<div class="val">' + A[k] + '</div>' +
+         '<div class="col" style="height:' + hgt + 'px"></div>' +
+         '<div class="idx">#' + k + '</div></div>';
+  }
+  $('bars').innerHTML = h;
+}
+
+function render() {
+  const st = STEPS[cur];
+  renderCode(st.line);
+  renderBars(st);
+  $('vi').textContent = (st.i === null) ? '—' : st.i + '（攻 ' + A[st.i] + '）';
+  $('vj').textContent = (st.j === null) ? '—' : st.j + '（防 ' + A[st.j] + '）';
+  $('vk').textContent = (st.killed || []).length;
+  if (st.final) $('ansline').innerHTML = '答案 = 5 − 3 = <b>2</b> <span style="color:var(--ok)">✓</span>';
+  else $('ansline').textContent = '答案 = n − killed（还没定）';
+  $('note').innerHTML = st.text;
+  $('prog').textContent = (cur + 1) + ' / ' + STEPS.length;
+  $('prev').disabled = (cur === 0);
+  $('next').disabled = (cur === STEPS.length - 1);
+}
+
+function stopPlay() { if (timer) { clearInterval(timer); timer = null; $('play').textContent = '自动播放'; } }
+$('prev').onclick = () => { stopPlay(); if (cur > 0) { --cur; render(); } };
+$('next').onclick = () => { stopPlay(); if (cur < STEPS.length - 1) { ++cur; render(); } };
+$('last').onclick = () => { stopPlay(); cur = STEPS.length - 1; render(); };
+$('reset').onclick = () => { stopPlay(); cur = 0; render(); };
+$('play').onclick = () => {
+  if (timer) { stopPlay(); return; }
+  $('play').textContent = '暂停';
+  timer = setInterval(() => {
+    if (cur < STEPS.length - 1) { ++cur; render(); } else stopPlay();
+  }, 1200);
+};
+
+if (typeof window !== 'undefined') render();
+</script>
+</body>
+</html>
