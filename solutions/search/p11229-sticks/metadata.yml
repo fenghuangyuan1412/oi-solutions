@@ -1,0 +1,12 @@
+id: P11229
+title: "[CSP-J 2024] 小木棍"
+source: luogu
+url: https://www.luogu.com.cn/problem/P11229
+topics: [search/dfs-backtracking, greedy/construction]
+difficulty: 普及+/提高-
+complexity:
+  time: O(n)（正解，输出长度即 Θ(n/7) 位）/ 指数级（骗分版 DFS，仅 n≤50 实测可用）
+  space: O(n)
+status: 未本地评测（洛谷提交需登录）；本地 g++ -static -O2 -std=c++14 编译，官方样例输出 -1/1/7/6/208 逐字正确；正解与骗分版 DFS 对 n=1..60 全量输出一致（60/60，verify.js）；正解 50 组 n=100000 实测 74 ms（含进程启动）
+visualization: true
+notes: 正解 = 最少位数 ceil(n/7) + 逐位贪心，核心是充要可行性判据"k 个空位装 r 根 ⇔ 2k≤r≤7k"。骗分三档：①测试点 1~2（n≤20/50）裸 DFS 只卡下界剪枝，实测 n=50 单组 987657 结点、50 组 78 ms，n=65 起 3072 ms、n=70 实测 20 秒跑不完；②特殊性质 A（n=7k, k≥15）答案就是 k 个 8（与正解核对 k=15..200 全一致）；③特殊性质 B（n=7k+1）答案 = "10" + (k-1) 个 8（核对 k=1..200 一致）。补一行上界剪枝 n=18 结点 123→13，即正解雏形。易错点全部编译了故意写错的版本跑官方样例：忘"无前导 0" 输出 0/000；位数用下取整输出 4 行空行；判据漏上界输出 1/100；删掉 n=1 两道防线后第一行变空行。

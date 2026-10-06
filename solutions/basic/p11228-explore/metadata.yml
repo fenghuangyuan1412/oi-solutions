@@ -1,0 +1,12 @@
+id: P11228
+title: "[CSP-J 2024] 地图探险"
+source: luogu
+url: https://www.luogu.com.cn/problem/P11228
+topics: [basic/simulation]
+difficulty: 普及−（洛谷 difficulty=2）
+complexity:
+  time: O(n·m + k) 每组
+  space: O(n·m)
+status: 未本地评测（洛谷提交需登录）；本地 g++ -static -O2 -std=c++14 编译，正解官方样例输出 3 / 13 逐字正确；正解与暴力版随机小数据对拍 100 组 0 不一致；最坏 T=5、n=m=1000、k=10^6 实测正解 31 ms、暴力版 5319 ms（超 1000 ms 时限）
+visualization: true
+notes: 纯模拟：dx/dy 表把「朝向->位移」统一表达，走不了就 d=(d+1)%4 原地右转。去重「经过的格子」是本题唯一的分档点——正解用 bool vis[n][m] 边踩边标记 O(1) 查询；暴力版把经过格子塞 vector 线性查重 O(k^2)，只够 k<=2000 的点 1~6（约 60 分），k=10^6 超时。易错：起点没算进经过数、忘记判断障碍只判越界、右转写成左转

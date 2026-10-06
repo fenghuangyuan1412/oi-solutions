@@ -1,0 +1,16 @@
+id: P14361
+title: "[CSP-S 2025] 社团招新"
+source: luogu
+url: https://www.luogu.com.cn/problem/P14361
+topics: [greedy/exchange-argument, dp/counting-state]
+difficulty: 普及/提高-
+complexity:
+  time: O(n log n)        # 正解；骗分版 DP 为 O(n * (n/2)^2)
+  space: O(n)             # 骗分版 O(n^2)
+status: 未本地评测（洛谷提交需登录）；本地 g++ -static -O2 -std=c++14 编译，官方样例实测输出 18 / 4 / 13，与题面逐字一致（两版相同）；node verify.js 把正解贪心、骗分 DP、JS 按题面 3^n 全枚举参照三者对拍 100 组（n<=8）0 不一致；n=10^5、t=5 极限数据（输入 8.1 MB）正解 9 次实测最快 164 ms、中位 861 ms（含进程启动；同数据"只读不算"基线 154 ms，本机当时并发负载高，故给区间），骗分 DP 实测 n=200 28 ms / n=1000 386 ms / n=2000 3274 ms（超时），n=10^5 状态表 2500100001 项约 9.0 GiB、本机 60 s 未跑完；DFS 暴力实测 n=10 5 ms / n=16 139 ms / n=18 1230 ms；性质 A、B 的单档写法在自造 n=10^5 数据上与正解输出逐字相同
+visualization: true
+notes: |
+  两条撑起正解的观察：超载部门至多一个（两个就超过 n 人）、接收部门空位一定 >= r（另两部门总共只有 n/2-r 人），
+  于是"请谁出去"与"他们去哪"解耦，只需减去最小的 r 个改派代价。
+  最阴的坑是 loss 用 max(其他两个部门) 而不是 min，以及 DP 里 c3 = (i-1)-c1-c2 写成 i-c1-c2 ——
+  后者官方样例照样输出 18 4 13，本机用小数据（4 人只对部门 3 给 10 分，正确答案 20）才抓出来：40 / 10。

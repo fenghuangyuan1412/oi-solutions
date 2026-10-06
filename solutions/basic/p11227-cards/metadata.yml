@@ -1,0 +1,12 @@
+id: P11227
+title: "[CSP-J 2024] 扑克牌"
+source: luogu
+url: https://www.luogu.com.cn/problem/P11227
+topics: [basic/counting]
+difficulty: 入门（洛谷 difficulty=1）
+complexity:
+  time: O(n)
+  space: O(1)
+status: 未本地评测（洛谷提交需登录）；本地 g++ -static -O2 -std=c++14 编译，正解官方样例输出 51 / 49 逐字正确；整副 52 张完整牌实测输出 0；骗分版 52−n 在含重复牌的样例 2 上实测 48（正解 49）、在 52 张同为 SA 时实测 0（正解 51），据此判定其只覆盖「两两不同」档
+visualization: true
+notes: 核心=答案只跟「出现过的不同牌种数」有关，重复牌不贡献；52 − 去重后的牌种数。骗分档（性质 A 两两不同）直接 52−n，约 40 分；去重用 bool seen[4][13]。易错：把点数当整数读（10 记为 T）会读崩、去重维度漏一个、忘记再套 52−。n<=52 规模极小

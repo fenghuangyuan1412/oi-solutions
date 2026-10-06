@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P14361 社团招新 · 先随便选，再请超编的人出去</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --fresh:#c084fc; --mid:#fbbf24; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:22px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:12px; }
+  .sub b { color:var(--ink); }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:12px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 10px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:7px 13px; font-size:14px; cursor:pointer; margin-right:6px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .prog { color:var(--acc); font-size:14px; margin-left:auto; font-weight:700; }
+  .wrap { display:flex; gap:12px; flex-wrap:wrap; }
+  .wrap > div { flex:1; min-width:340px; }
+  pre.code { margin:0; font:13px/1.75 Consolas,monospace; }
+  pre.code .ln { display:block; padding:0 8px; border-left:3px solid transparent; white-space:pre; }
+  pre.code .ln.on { background:#173a4a; border-left-color:var(--acc); color:var(--acc); }
+  .note { font-size:14px; min-height:120px; }
+  .note b { color:var(--acc); } .note .bad { color:var(--warn); } .note .good { color:var(--ok); }
+  .note .mid { color:var(--mid); } .note .pu { color:var(--fresh); }
+  svg.bars { width:100%; height:290px; display:block; }
+  .row { font:14px Consolas,monospace; margin:5px 0; }
+  .row .lbl { color:var(--dim); display:inline-block; width:88px; }
+  .row .val { color:var(--acc); font-weight:700; }
+  .row .val.bad { color:var(--warn); } .row .val.ok { color:var(--ok); }
+  .ans { margin-top:8px; text-align:center; font:15px Consolas,monospace; color:var(--dim); }
+  .ans b { color:var(--ok); font-size:22px; }
+  table.people { width:100%; border-collapse:collapse; font:13px Consolas,monospace; }
+  table.people th, table.people td { border-bottom:1px solid #262c4a; padding:3px 5px; text-align:center; }
+  table.people th { color:var(--dim); font-weight:600; }
+  table.people td.best { color:var(--ok); font-weight:700; }
+  table.people td.lossv { color:var(--fresh); }
+</style>
+</head>
+<body>
+<h1>P14361 [CSP-S 2025] 社团招新</h1>
+<div class="sub">官方样例第 ② 组：<b>n = 4</b>（<b>half = 2</b>），四个人的满意度是 <b>0 1 0 / 0 1 0 / 0 2 0 / 0 2 0</b>，正确答案 <b>4</b>。三步：<b>①每人先选最爱 → ②找出唯一超载的部门 → ③请走损失最小的 r 个人</b>。</div>
+
+<div class="topbar">
+  <button id="prev">← 上一步</button>
+  <button id="next">下一步 →</button>
+  <button id="play">自动播放</button>
+  <button id="last">跳到结尾</button>
+  <button id="reset">重置</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="wrap">
+  <div>
+    <div class="card">
+      <h2>三个部门的人数条（虚线 = n/2 上限）</h2>
+      <svg class="bars" id="bars" viewBox="0 0 520 292"></svg>
+      <div class="row"><span class="lbl">tot</span><span class="val" id="vtot"></span></div>
+      <div class="row"><span class="lbl">heavy</span><span class="val" id="vheavy"></span></div>
+      <div class="row"><span class="lbl">r</span><span class="val" id="vr"></span></div>
+      <div class="row"><span class="lbl">loss 排序</span><span class="val" id="vloss"></span></div>
+    </div>
+    <div class="card">
+      <h2>本组数据的人员表（本机实测，与 solution_partial.cpp 的 DP 一致）</h2>
+      <table class="people" id="tbl"></table>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>讲解代码（solution.cpp 骨架）</h2>
+      <pre class="code" id="code"></pre>
+    </div>
+    <div class="card">
+      <h2>这一步在做什么</h2>
+      <div class="note" id="note"></div>
+    </div>
+    <div class="card">
+      <h2>另两组官方样例（实测）</h2>
+      <div class="row"><span class="lbl">第 ① 组</span><span class="val ok">18</span> <span style="color:var(--dim)">— 没人超载，基准方案就是答案</span></div>
+      <div class="row"><span class="lbl">第 ② 组</span><span class="val ok">4</span> <span style="color:var(--dim)">— 本页正在演示</span></div>
+      <div class="row"><span class="lbl">第 ③ 组</span><span class="val ok">13</span> <span style="color:var(--dim)">— loss = [1,4]，r = 1，走损失小的那个</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CODE = [
+  'while (T--) {',                                              // 0
+  '    int n; cin >> n; const int half = n / 2;',               // 1
+  '    for (int i = 0; i < n; ++i) {',                          // 2
+  '        int b = argmax(a);                  // 最爱的部门',    // 3
+  '        int second = max(a[j]), j != b;     // 次优备选',      // 4
+  '        ++cnt[b]; tot += a[b];',                             // 5
+  '        loss[b].push_back(a[b] - second);   // >= 0',         // 6
+  '    }',                                                      // 7
+  '    int heavy = -1;',                                        // 8
+  '    for (int j = 0; j < 3; ++j) if (cnt[j] > half) heavy = j;',  // 9
+  '    if (heavy != -1) {',                                     // 10
+  '        int r = cnt[heavy] - half;          // 必须走 r 个人', // 11
+  '        sort(loss[heavy].begin(), loss[heavy].end());',       // 12
+  '        for (int k = 0; k < r; ++k) tot -= loss[heavy][k];',  // 13
+  '    }',                                                      // 14
+  '    cout << tot << "\\n";'                                    // 15
+];
+// 官方样例第 ② 组：每人 (a1,a2,a3)，最爱部门（1 起）、loss
+const P = [
+  { a: [0, 1, 0], b: 2, loss: 1 },
+  { a: [0, 1, 0], b: 2, loss: 1 },
+  { a: [0, 2, 0], b: 2, loss: 2 },
+  { a: [0, 2, 0], b: 2, loss: 2 }
+];
+function mk(cnt, tot, heavy, r, lossTxt, line, done, head, text) {
+  return { cnt, tot, heavy, r, lossTxt, line, done, head, text };
+}
+const STEPS = [
+  mk([0, 0, 0], 0, '—', '—', '—', 1, 0, '读入',
+     '<code>n = 4</code> ⇒ <code>half = n/2 = 2</code>：任何部门最多 2 人。先什么都不分配。'),
+  mk([0, 1, 0], 1, '—', '—', '[1]', 5, 1, '人 1：0 1 0',
+     '最爱部门 2（1 分）。改派代价 <code>loss = 1 - max(0,0) = 1</code>。<br>基准方案<b>先不管限制</b>。'),
+  mk([0, 2, 0], 2, '—', '—', '[1,1]', 5, 2, '人 2：0 1 0',
+     '又是部门 2，<code>tot = 2</code>，loss 列表 <code>[1,1]</code>。'),
+  mk([0, 3, 0], 4, '—', '—', '[1,1,2]', 3, 3, '人 3：0 2 0',
+     '<code>argmax</code> 还是部门 2（2 分），<code>tot = 4</code>，<code>loss = 2 - 0 = 2</code>。'),
+  mk([0, 4, 0], 6, '—', '—', '[1,1,2,2]', 6, 4, '人 4：0 2 0',
+     '四个人全进了部门 2：<code>tot = 6</code>。<br><span class="mid">这就是"不设限制"的答案 —— 官方样例上它输出 6，是错的（正确 4）。</span>'),
+  mk([0, 4, 0], 6, '部门 2', '—', '[1,1,2,2]', 9, 4, '查超载：至多一个部门',
+     '<code>cnt = [0,4,0]</code>，只有部门 2 的 4 &gt; half = 2 ⇒ <code>heavy = 2</code>。<br><b>为什么"至多一个"：</b>两个部门都严格超过 n/2，人数和就 &gt; n 了，矛盾。'),
+  mk([0, 4, 0], 6, '部门 2', '2', '[1,1,2,2]', 11, 4, '算 r：必须走几个人',
+     '<code>r = cnt[heavy] - half = 4 - 2 = 2</code> —— 不是"走 1 个人试试"，是<b>定死的 2 个</b>。<br><span class="mid">把 r 写死成 1 是本仓库实测的坑：样例输出会变成 <code>18 5 13</code>。</span>'),
+  mk([0, 4, 0], 6, '部门 2', '2', '[1,1,2,2] → 取前 2 个 = 1 + 1', 12, 4, '排 loss：谁最便宜',
+     '把部门 2 里 4 个人的改派代价排序：<code>1, 1, 2, 2</code>，取最小的 <code>r = 2</code> 个 ⇒ 损失 <code>1 + 1 = 2</code>。<br><b>注意</b>：代价是"最爱 - <b>次优</b>备选"，写成"最爱 - 最差备选"样例就变 <code>18 4 12</code>。'),
+  mk([2, 2, 0], 4, '部门 2', '2', '1 + 1 = 2', 13, 4, '请出去：容量够不够？',
+     '被请走的 2 个人（loss = 1 的那两个）各自去自己次优的部门（部门 1，0 分）。<br><b>为什么一定塞得下：</b>另外两个部门在基准方案里一共只有 n/2 - r = 2 - 2 = 0 人，所以<b>每个</b>部门的空位都 ≥ r = 2 —— 极端情况下 2 个人全挤进同一个部门也不超。<span class="good">"选谁走"和"走去哪"因此彻底解耦。</span>'),
+  mk([2, 2, 0], 4, '—', '—', '—', 15, 4, '输出 4',
+     '<code>tot = 6 - 2 = 4</code> ⇒ <b>输出 4</b>，与官方样例第二行逐字一致 ✓<br>最终各部门人数 <code>2, 2, 0</code>，正是题面样例解释那一组分配（原话："则三个部门的新成员数量分别为 2,2,0，均不超过 4/2 = 2，满意度为 0 + 0 + 2 + 2 = 4"）。', true)
+];
+
+let cur = 0, timer = null;
+const $ = (id) => document.getElementById(id);
+
+function renderCode(active) {
+  $('code').innerHTML = CODE.map((l, i) =>
+    '<span class="ln' + (i === active ? ' on' : '') + '">' +
+    l.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</span>').join('');
+}
+
+function renderBars(st) {
+  const X0 = 60, BW = 90, GAP = 60, YB = 210, HALF = 2, MAXC = 4;
+  const scale = 34;                                  // 每 1 人 34 px
+  let h = '';
+  h += '<line x1="' + (X0 - 20) + '" y1="' + YB + '" x2="500" y2="' + YB + '" stroke="#3d4778" stroke-width="2"/>';
+  const yl = YB - HALF * scale - 4;
+  h += '<line x1="' + (X0 - 20) + '" y1="' + yl + '" x2="500" y2="' + yl + '" stroke="#fbbf24" stroke-width="2" stroke-dasharray="6 5"/>';
+  h += '<text x="498" y="' + (yl - 6) + '" text-anchor="end" fill="#fbbf24" style="font:12px Consolas">上限 n/2 = 2</text>';
+  const names = ['部门 1', '部门 2', '部门 3'];
+  for (let j = 0; j < 3; ++j) {
+    const x = X0 + (BW + GAP) * j;
+    const c = st.cnt[j];
+    const over = c > HALF;
+    const col = over ? '#f87171' : (c === 0 ? '#3d4778' : '#5eead4');
+    h += '<rect x="' + x + '" y="' + (YB - c * scale) + '" width="' + BW + '" height="' + (c * scale) + '" rx="6" fill="' + col + '" opacity="0.85"/>';
+    h += '<text x="' + (x + BW / 2) + '" y="' + (YB - c * scale - 8) + '" text-anchor="middle" fill="' + (over ? '#f87171' : '#e8ecff') + '" style="font:15px Consolas">' + c + ' 人</text>';
+    h += '<text x="' + (x + BW / 2) + '" y="' + (YB + 22) + '" text-anchor="middle" fill="#8b93b5" style="font:13px Consolas">' + names[j] + '</text>';
+    if (over) h += '<text x="' + (x + BW / 2) + '" y="' + (YB + 42) + '" text-anchor="middle" fill="#f87171" style="font:12px Consolas">超载！</text>';
+  }
+  h += '<text x="' + X0 + '" y="282" fill="#8b93b5" style="font:12px Consolas">已处理 ' + st.done + ' / 4 人　tot = ' + st.tot + '</text>';
+  $('bars').innerHTML = h;
+}
+
+function renderTable(st) {
+  let h = '<tr><th>新成员</th><th>a1</th><th>a2</th><th>a3</th><th>最爱</th><th>loss</th></tr>';
+  h += P.map((p, i) => {
+    const on = i < st.done;
+    const bg = on ? ' style="background:#173a4a"' : '';
+    return '<tr' + bg + '><td>' + (i + 1) + '</td><td>' + p.a[0] + '</td><td>' + p.a[1] + '</td><td>' + p.a[2] +
+      '</td><td class="best">' + (on ? '部门 ' + p.b : '—') + '</td><td class="lossv">' + (on ? p.loss : '—') + '</td></tr>';
+  }).join('');
+  $('tbl').innerHTML = h;
+}
+
+function render() {
+  const st = STEPS[cur];
+  renderCode(st.line);
+  renderBars(st);
+  renderTable(st);
+  $('vtot').textContent = st.tot;
+  $('vheavy').textContent = st.heavy;
+  $('vheavy').className = 'val ' + (st.heavy === '—' ? '' : 'bad');
+  $('vr').textContent = st.r;
+  $('vloss').textContent = st.lossTxt;
+  $('note').innerHTML = '<b>' + st.head + '。</b>' + st.text;
+  $('prog').textContent = (cur + 1) + ' / ' + STEPS.length;
+  $('prev').disabled = (cur === 0);
+  $('next').disabled = (cur === STEPS.length - 1);
+}
+
+function stopPlay() { if (timer) { clearInterval(timer); timer = null; $('play').textContent = '自动播放'; } }
+$('prev').onclick = () => { stopPlay(); if (cur > 0) { --cur; render(); } };
+$('next').onclick = () => { stopPlay(); if (cur < STEPS.length - 1) { ++cur; render(); } };
+$('last').onclick = () => { stopPlay(); cur = STEPS.length - 1; render(); };
+$('reset').onclick = () => { stopPlay(); cur = 0; render(); };
+$('play').onclick = () => {
+  if (timer) { stopPlay(); return; }
+  $('play').textContent = '暂停';
+  timer = setInterval(() => { if (cur < STEPS.length - 1) { ++cur; render(); } else stopPlay(); }, 1600);
+};
+
+render();
+</script>
+</body>
+</html>

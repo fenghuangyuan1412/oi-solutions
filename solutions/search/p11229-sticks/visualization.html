@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P11229 小木棍 · DFS 回溯与剪枝（n=18 → 208）</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --fresh:#c084fc; --mid:#fbbf24; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:22px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:12px; }
+  .sub b { color:var(--ink); }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:12px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 10px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:7px 13px; font-size:14px; cursor:pointer; margin-right:6px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .prog { color:var(--acc); font-size:14px; margin-left:auto; font-weight:700; }
+  .wrap { display:flex; gap:12px; flex-wrap:wrap; }
+  .wrap > div { flex:1; min-width:330px; }
+  pre.code { margin:0; font:13px/1.75 Consolas,monospace; }
+  pre.code .ln { display:block; padding:0 8px; border-left:3px solid transparent; white-space:pre; }
+  pre.code .ln.on { background:#173a4a; border-left-color:var(--acc); color:var(--acc); }
+  .note { font-size:14px; min-height:130px; }
+  .note b { color:var(--acc); } .note .bad { color:var(--warn); } .note .good { color:var(--ok); }
+  .note .mid { color:var(--mid); } .note .pu { color:var(--fresh); }
+  #digits { display:flex; gap:10px; align-items:flex-start; min-height:96px; flex-wrap:wrap; }
+  .dg { text-align:center; }
+  .dg svg { width:44px; height:66px; display:block; }
+  .dg .c { color:var(--dim); font:12px Consolas,monospace; }
+  .seg { stroke:#3d4778; } .seg.on { stroke:var(--acc); }
+  .row { font:14px Consolas,monospace; margin:5px 0; }
+  .row .lbl { color:var(--dim); display:inline-block; width:110px; }
+  .row .val { color:var(--acc); font-weight:700; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:999px; font-size:13px; font-weight:700; }
+  .b-no { background:#4b2530; color:var(--warn); }
+  .b-yes { background:#1d3a2c; color:var(--ok); }
+  .b-back { background:#3a2f52; color:var(--fresh); }
+  .ansline { margin-top:8px; font:14px Consolas,monospace; color:var(--dim); }
+  .ansline b { color:var(--ok); font-size:20px; }
+  .err { color:var(--warn); font-size:13px; }
+</style>
+</head>
+<body>
+<h1>P11229 [CSP-J 2024] 小木棍 · DFS 回溯（官方样例 n = 18）</h1>
+<div class="sub">恰好 <b>18</b> 根木棍摆出最小的正整数。看<b>当前选择 → 剩余根数 → 剪枝是否生效</b>；
+最后一步对比"补一行上界剪枝"的效果（123 个结点 → 13 个）。</div>
+
+<div class="topbar">
+  <button id="prev">← 上一步</button>
+  <button id="next">下一步 →</button>
+  <button id="play">自动播放</button>
+  <button id="last">跳到结尾</button>
+  <button id="reset">重置</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="wrap">
+  <div>
+    <div class="card">
+      <h2>正在摆的数（七段数码管）</h2>
+      <div id="digits"></div>
+      <div class="ansline" id="ansline"></div>
+    </div>
+    <div class="card">
+      <h2>变量状态</h2>
+      <div class="row"><span class="lbl">n（总根数）</span><span class="val" id="v-n"></span></div>
+      <div class="row"><span class="lbl">L（当前位数）</span><span class="val" id="v-L"></span></div>
+      <div class="row"><span class="lbl">depth（第几位）</span><span class="val" id="v-d"></span></div>
+      <div class="row"><span class="lbl">当前前缀</span><span class="val" id="v-p"></span></div>
+      <div class="row"><span class="lbl">used（已用根数）</span><span class="val" id="v-u"></span></div>
+      <div class="row"><span class="lbl">剩余根数</span><span class="val" id="v-r"></span></div>
+      <div class="row"><span class="lbl">剩余空位</span><span class="val" id="v-s"></span></div>
+      <div class="row"><span class="lbl">nodes（结点数）</span><span class="val" id="v-nd"></span></div>
+      <div class="row"><span class="lbl">剪枝判定</span><span id="v-b"></span></div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>讲解代码（solution_partial.cpp 的骨架）</h2>
+      <pre class="code" id="code"></pre>
+    </div>
+    <div class="card">
+      <h2>这一步在做什么</h2>
+      <div class="note" id="note"></div>
+    </div>
+  </div>
+</div>
+
+<div class="err" id="err"></div>
+
+<script>
+const C = [6,2,5,5,4,5,6,3,7,6];
+const SEG = {0:"abcdef",1:"bc",2:"abged",3:"abcdg",4:"fgbc",5:"agfdc",6:"afgedc",7:"abc",8:"abcdefg",9:"abcdfg"};
+const CODE = [
+  'const int C[10]={6,2,5,5,4,5,6,3,7,6};',          // 0
+  'bool dfs(int depth, int used){',                   // 1
+  '    ++nodes;',                                     // 2
+  '    if (depth == L) return used == n;',            // 3
+  '    if (used + 2*(L-depth) > n) return false;',    // 4  剪枝① 下界
+  '    // 缺剪枝②：used + 7*(L-depth) < n 必失败',    // 5
+  '    for (int d = (depth?0:1); d <= 9; ++d){',      // 6
+  '        if (dfs(depth+1, used+C[d]))',             // 7
+  '            { sol[depth]=d; return true; }',       // 8
+  '    }',                                            // 9
+  '    return false;',                                // 10
+  '}',                                                // 11
+  'for (L = 1; 2*L <= n; ++L) {',                     // 12
+  '    if (7*L >= n && dfs(0,0)) break; }'            // 13
+];
+// 每一步：line=高亮行, st=变量状态, badge=剪枝判定, text=讲解
+const STEPS = [
+ {line:0, st:{n:18,L:'-',d:'-',p:'',u:0,r:18,s:'-',nd:0}, b:null,
+  text:'摆数字 0~9 分别要 6/2/5/5/4/5/6/3/7/6 根（题面七段图）。<br>目标：恰好 18 根、无前导 0、<b>数最小</b>。'},
+ {line:13, st:{n:18,L:1,d:'-',p:'',u:0,r:18,s:'-',nd:0}, b:null,
+  text:'先定<b>位数 L</b>，从 1 开始试。L=1：一位数最多 7 根（数字 8），<span class="bad">7 &lt; 18，不可能</span>，跳过。'},
+ {line:13, st:{n:18,L:2,d:'-',p:'',u:0,r:18,s:'-',nd:0}, b:null,
+  text:'L=2：两位数最多 7+7=14 根，<span class="bad">14 &lt; 18，不可能</span>，跳过。<br>（少一位的数一定更小，所以位数必须从小到大试。）'},
+ {line:1, st:{n:18,L:3,d:0,p:'',u:0,r:18,s:3,nd:1}, b:{t:'ok',cls:'b-yes',txt:'可行'},
+  text:'L=3：最少 2×3=6 根、最多 21 根，<span class="good">6 ≤ 18 ≤ 21 可行</span> ⇒ 进入 DFS，从最高位开始逐位试 0~9（首位从 1）。'},
+ {line:7, st:{n:18,L:3,d:1,p:'1',u:2,r:16,s:2,nd:2}, b:{t:'no',cls:'b-no',txt:'剪枝未生效'},
+  text:'首位试 <b>1</b>（2 根）：剩 16 根、2 个空位。<br><span class="bad">剪枝①（下界）拦不住</span>：就算放两个 1 也只 4 根，不超。<br><span class="mid">弱点在这里</span>：其实 2 个空位最多装 14 根，<b>16 &gt; 14 应该立刻回头</b>——但本版本没有剪枝②，只能继续往下钻。'},
+ {line:3, st:{n:18,L:3,d:2,p:'10',u:8,r:10,s:1,nd:13}, b:{t:'no',cls:'b-no',txt:'叶子才发觉'},
+  text:'第二位试 0（6 根）：used=8，第三位需要 18−8=<b>10</b> 根。<br>第三位在 0~9 里逐个试（结点 4~13）：<span class="bad">一位最多 7 根，10 永远凑不出</span>，10 个叶子全部失败。'},
+ {line:10, st:{n:18,L:3,d:1,p:'1',u:2,r:16,s:2,nd:112}, b:{t:'back',cls:'b-back',txt:'回溯'},
+  text:'"1" 开头：第二位 0~9 共 10 个子树全部失败，<br>烧掉 <b>10 × 11 = 110 个结点</b>（10 个子根 + 100 个叶子）才回到首位。<span class="bad">这就是没有剪枝②的代价。</span>'},
+ {line:7, st:{n:18,L:3,d:1,p:'2',u:5,r:13,s:2,nd:113}, b:{t:'ok',cls:'b-yes',txt:'本可一步拦下前面'},
+  text:'首位试 <b>2</b>（5 根）：剩 13 根、2 个空位，<span class="good">13 ≤ 14 可行</span> ⇒ 这次往下走是对的。<br>（对比：上一位"1"若带剪枝②，一步就被拦下，根本不会有 110 个废结点。）'},
+ {line:7, st:{n:18,L:3,d:2,p:'20',u:11,r:7,s:1,nd:114}, b:{t:'ok',cls:'b-yes',txt:'可行'},
+  text:'第二位试 0（6 根）：used=11，第三位还差 <b>7</b> 根 —— 在 [2,7] 范围内，可行。'},
+ {line:3, st:{n:18,L:3,d:3,p:'200~207',u:'-',r:'-',s:0,nd:122}, b:{t:'no',cls:'b-no',txt:'8 个叶子失败'},
+  text:'第三位从 0 试起：0(6)→17 根、1(2)→13 根、2(5)→16、3→16、4→15、5→16、6→17、7(3)→14 ——<br><span class="bad">都不等于 18</span>，8 个叶子失败（结点 115~122 里的前 8 个）。'},
+ {line:8, st:{n:18,L:3,d:3,p:'208',u:18,r:0,s:0,nd:123}, b:{t:'ok',cls:'b-yes',txt:'命中'},
+  text:'第三位试 <b>8</b>（7 根）：2+6+… 即 5+6+7=<b>18</b>，恰好用完 ⇒ <span class="good">success！</span>回溯记录 sol = (2,0,8)。'},
+ {line:13, st:{n:18,L:3,d:'-',p:'208',u:18,r:0,s:0,nd:123}, b:{t:'ok',cls:'b-yes',txt:'输出'},
+  text:'输出 <b>208</b> —— 与官方样例第 5 行一致 ✓（题面解释：208 需 5+6+7=18 根，小于 208 的数都凑不出 18 根）。<br>全程 <b>123 个结点</b>（本机实测，程序 stderr 打印）。'},
+ {line:5, st:{n:18,L:3,d:'-',p:'208',u:18,r:0,s:0,nd:13}, b:{t:'ok',cls:'b-yes',txt:'剪枝②生效'},
+  text:'结尾彩蛋：只补一行 <code>if (used + 7*(L-depth) &lt; n) return false;</code>（剩余根数超过 7×空位数必败），<br>结点 <b>123 → 13</b>（本机实测），而且<span class="pu">从此 DFS 再也不需要回溯</span> —— 每条被放行 path 都必然能走通。<br><span class="mid">把这条剪枝写成"剩余∈[2k,7k]"的判定，就是本目录正解 solution.cpp。</span>'}
+];
+
+let cur = 0, timer = null;
+const $ = id => document.getElementById(id);
+
+function digitSvg(d) {
+  const s = SEG[String(d)];
+  const P = {a:[8,4,28,4],b:[34,8,34,26],c:[34,34,34,52],d:[8,56,28,56],e:[2,34,2,52],f:[2,8,2,26],g:[8,30,28,30]};
+  let out = '<svg viewBox="0 0 40 60">';
+  for (const k of "abcdefg") {
+    const [x1,y1,x2,y2] = P[k];
+    const cls = s.includes(k) ? 'seg on' : 'seg';
+    out += '<line class="' + cls + '" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 +
+           '" stroke-width="5" stroke-linecap="round"' + (s.includes(k) ? '' : ' opacity=.25') + '></line>';
+  }
+  out += '</svg>';
+  return out;
+}
+
+function render() {
+  const S = STEPS[cur];
+  CODE.forEach((t, i) => { const sp = document.createElement('span'); sp.className = 'ln' + (i === S.line ? ' on' : ''); sp.textContent = t; $('code').appendChild(sp); });
+  const st = S.st;
+  $('v-n').textContent = st.n; $('v-L').textContent = st.L; $('v-d').textContent = st.d;
+  $('v-p').textContent = st.p === '' ? '（空）' : st.p;
+  $('v-u').textContent = st.u; $('v-r').textContent = st.r; $('v-s').textContent = st.s; $('v-nd').textContent = st.nd;
+  $('v-b').innerHTML = S.b ? '<span class="badge ' + S.b.cls + '">' + S.b.txt + '</span>' : '—';
+  $('note').innerHTML = S.text;
+  const dg = $('digits'); dg.innerHTML = '';
+  const shown = st.p.length === 1 || /^[0-9]{1,3}$/.test(st.p) ? st.p : (st.p === '200~207' ? '20' : st.p.replace(/[^0-9]/g, '').slice(0, 3));
+  for (const ch of shown) {
+    if (ch < '0' || ch > '9') continue;
+    const div = document.createElement('div'); div.className = 'dg';
+    div.innerHTML = digitSvg(ch) + '<div class="c">' + C[+ch] + ' 根</div>';
+    dg.appendChild(div);
+  }
+  $('ansline').innerHTML = cur >= 11 ? '答案：<b>' + (cur === 12 ? '208（已定）' : '208') + '</b>　结点数：' + st.nd : '（尚未得到答案）';
+  $('prog').textContent = (cur + 1) + ' / ' + STEPS.length;
+  $('prev').disabled = cur === 0; $('next').disabled = cur === STEPS.length - 1;
+}
+function go(x) {
+  cur = Math.max(0, Math.min(STEPS.length - 1, x));
+  $('code').innerHTML = '';
+  render();
+}
+$('prev').onclick = () => go(cur - 1);
+$('next').onclick = () => go(cur + 1);
+$('last').onclick = () => { stop(); go(STEPS.length - 1); };
+$('reset').onclick = () => { stop(); go(0); };
+function stop() { if (timer) { clearInterval(timer); timer = null; $('play').textContent = '自动播放'; } }
+$('play').onclick = () => {
+  if (timer) { stop(); return; }
+  $('play').textContent = '暂停';
+  timer = setInterval(() => { if (cur >= STEPS.length - 1) stop(); else go(cur + 1); }, 1400);
+};
+window.onerror = (m, f, l) => { $('err').textContent = 'JS 错误: ' + m + ' @line ' + l; };
+go(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P11228 地图探险 · 方向表模拟 + 二维标记</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --fresh:#c084fc; --mid:#fbbf24; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:22px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:12px; }
+  .sub b { color:var(--ink); }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:12px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 10px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:7px 13px; font-size:14px; cursor:pointer; margin-right:6px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .prog { color:var(--acc); font-size:14px; margin-left:auto; font-weight:700; }
+  .wrap { display:flex; gap:12px; flex-wrap:wrap; }
+  .wrap > div { flex:1; min-width:340px; }
+  pre.code { margin:0; font:13px/1.75 Consolas,monospace; }
+  pre.code .ln { display:block; padding:0 8px; border-left:3px solid transparent; white-space:pre; }
+  pre.code .ln.on { background:#173a4a; border-left-color:var(--acc); color:var(--acc); }
+  .note { font-size:14px; min-height:110px; }
+  .note b { color:var(--acc); } .note .bad { color:var(--warn); } .note .good { color:var(--ok); }
+  .note .mid { color:var(--mid); } .note .pu { color:var(--fresh); }
+  .map { display:grid; grid-template-columns:repeat(5,46px); gap:5px; justify-content:center; }
+  .sq { width:46px; height:46px; border-radius:7px; display:flex; align-items:center; justify-content:center;
+        font:13px Consolas,monospace; position:relative; border:1px solid #333c66; }
+  .sq.floor { background:#20263f; color:#4a5480; }
+  .sq.wall { background:#2a1620; border-color:#5a2a3a; color:#7a3b52; }
+  .sq.vis { background:#173024; border-color:#2f6b45; color:#4f9b6b; }
+  .sq.cur { background:#173a4a; border-color:var(--acc); box-shadow:0 0 0 2px var(--acc); }
+  .sq.try { outline:2px dashed var(--warn); }
+  .coord { position:absolute; top:2px; left:4px; font:9px Consolas,monospace; color:#5a6389; }
+  .row { font:14px Consolas,monospace; margin:6px 0; }
+  .row .lbl { color:var(--dim); display:inline-block; width:120px; }
+  .row .val { color:var(--acc); font-weight:700; }
+  .ans { margin-top:10px; text-align:center; font:15px Consolas,monospace; color:var(--dim); }
+  .ans b { color:var(--ok); font-size:22px; }
+  .barwrap { height:12px; background:#232a4a; border-radius:6px; overflow:hidden; margin-top:4px; }
+  .bar { height:100%; background:linear-gradient(90deg,#5eead4,#86efac); width:0; transition:width .35s; }
+  .err { color:var(--warn); font-size:13px; }
+</style>
+</head>
+<body>
+<h1>P11228 [CSP-J 2024] 地图探险</h1>
+<div class="sub">方向表 <b>dx/dy</b> 把「走 / 转」统一成两行；<b>bool vis[n][m]</b> 边踩边标记数不同格子。数据取自官方样例 1 第 2 组（<b>5×5，k=20</b>，答案 13）。</div>
+
+<div class="topbar">
+  <button id="prev">← 上一步</button>
+  <button id="next">下一步 →</button>
+  <button id="play">自动播放</button>
+  <button id="last">跳到结尾</button>
+  <button id="reset">重置</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="wrap">
+  <div>
+    <div class="card">
+      <h2>地图（绿=已经过，青=当前，暗红=障碍 x，红虚线=想走但走不通）</h2>
+      <div class="map" id="map"></div>
+      <div class="row" style="margin-top:12px"><span class="lbl">位置 (x, y)</span><span class="val" id="vpos"></span></div>
+      <div class="row"><span class="lbl">朝向 d</span><span class="val" id="vdir"></span></div>
+      <div class="row"><span class="lbl">经过格数 cnt</span><span class="val" id="vcnt"></span></div>
+      <div class="barwrap"><div class="bar" id="bar"></div></div>
+      <div class="ans" id="ansline"></div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>讲解代码</h2>
+      <pre class="code" id="code"></pre>
+    </div>
+    <div class="card">
+      <h2>这一步在做什么</h2>
+      <div class="note" id="note"></div>
+    </div>
+  </div>
+</div>
+
+<div class="err" id="err"></div>
+
+<script>
+const N = 5, M = 5;
+// 地图行（1 起，前补空格对齐列号）：'.' 空地 'x' 障碍
+const G = ['', '.....', '.xxx.', '.x.x.', '..xx.', 'x....'];
+const DIR = ['东','南','西','北'];
+const DX = [0,1,0,-1], DY = [1,0,-1,0];
+
+const CODE = [
+  'vis[x][y] = 1; int cnt = 1;      // 起点算已经过',      // 0
+  'for (long long step = 0; step < k; ++step) {',          // 1
+  '    int nx = x + dx[d], ny = y + dy[d];',               // 2
+  '    if (inside(nx,ny) && g[nx][ny] == \'.\') {',        // 3
+  '        x = nx; y = ny;',                               // 4
+  '        if (!vis[x][y]) { vis[x][y] = 1; ++cnt; }',     // 5
+  '    } else {',                                          // 6
+  '        d = (d + 1) % 4;   // 原地右转',                // 7
+  '    }',                                                 // 8
+  '}',                                                     // 9
+  'cout << cnt << "\\n";'                                  // 10
+];
+
+// 忠实于 solution.cpp 的 20 步轨迹（本机实测得到，FINAL cnt=13 与官方一致）
+// kind: init/move/turn; x,y,d 为动作后的状态; try=[nx,ny] 转向时想走却被挡的格
+const RAW = [
+  { kind:'init', x:1,y:1,d:0, cnt:1, line:0, text:'初始：机器人在 <code>(1,1)</code>，朝<b>东</b>（d=0）。<code>vis[1][1]=1</code>，<code>cnt=1</code>（起点算已经过）。' },
+  { kind:'move', x:1,y:2,d:0, cnt:2, line:4, text:'朝东下一步 (1,2) 界内且是空地 ⇒ <b>前进</b>。新格 ⇒ cnt=2。' },
+  { kind:'move', x:1,y:3,d:0, cnt:3, line:4, text:'(1,3) 空地 ⇒ 前进，cnt=3。' },
+  { kind:'move', x:1,y:4,d:0, cnt:4, line:4, text:'(1,4) 空地 ⇒ 前进，cnt=4。' },
+  { kind:'move', x:1,y:5,d:0, cnt:5, line:4, text:'(1,5) 空地 ⇒ 前进，cnt=5。到第 1 行最右。' },
+  { kind:'turn', x:1,y:5,d:1, cnt:5, line:7, try:[1,6], text:'<span class="bad">下一步 (1,6) 越界 ⇒ 不能走，原地右转</span> d 0→1（改朝<b>南</b>）。位置不变。' },
+  { kind:'move', x:2,y:5,d:1, cnt:6, line:4, text:'朝南 (2,5) 是空地 ⇒ 前进，cnt=6。' },
+  { kind:'move', x:3,y:5,d:1, cnt:7, line:4, text:'(3,5) 是空地 ⇒ 前进，cnt=7。' },
+  { kind:'move', x:4,y:5,d:1, cnt:8, line:4, text:'(4,5) 是空地 ⇒ 前进，cnt=8。' },
+  { kind:'move', x:5,y:5,d:1, cnt:9, line:4, text:'(5,5) 是空地 ⇒ 前进，cnt=9。到右下角。' },
+  { kind:'turn', x:5,y:5,d:2, cnt:9, line:7, try:[6,5], text:'下一步 (6,5) 越界 ⇒ 右转 d 1→2（朝<b>西</b>）。' },
+  { kind:'move', x:5,y:4,d:2, cnt:10, line:4, text:'朝西 (5,4) 是空地 ⇒ 前进，cnt=10。' },
+  { kind:'move', x:5,y:3,d:2, cnt:11, line:4, text:'(5,3) 是空地 ⇒ 前进，cnt=11。' },
+  { kind:'move', x:5,y:2,d:2, cnt:12, line:4, text:'(5,2) 是空地 ⇒ 前进，cnt=12。' },
+  { kind:'turn', x:5,y:2,d:3, cnt:12, line:7, try:[5,1], text:'<span class="bad">下一步 (5,1) 是障碍 x ⇒ 右转</span> d 2→3（朝<b>北</b>）。' },
+  { kind:'move', x:4,y:2,d:3, cnt:13, line:4, text:'朝北 (4,2) 是空地 ⇒ 前进，<b>cnt=13</b>。' },
+  { kind:'turn', x:4,y:2,d:0, cnt:13, line:7, try:[3,2], text:'下一步 (3,2) 是障碍 x ⇒ 右转 d 3→0（朝东）。cnt 不变。' },
+  { kind:'turn', x:4,y:2,d:1, cnt:13, line:7, try:[4,3], text:'再试朝东 (4,3) 又是障碍 x ⇒ 右转 d 0→1（朝南）。' },
+  { kind:'move', x:5,y:2,d:1, cnt:13, line:5, text:'朝南 (5,2) 空地 ⇒ 前进，但 <span class="mid">(5,2) 早走过</span> ⇒ <b>不 ++cnt</b>，仍 13。' },
+  { kind:'turn', x:5,y:2,d:2, cnt:13, line:7, try:[6,2], text:'朝南 (6,2) 越界 ⇒ 右转 d 1→2。' },
+  { kind:'turn', x:5,y:2,d:3, cnt:13, line:7, try:[5,1], text:'朝西 (5,1) 障碍 x ⇒ 右转 d 2→3。第 20 步结束。', final:true },
+];
+
+// 预计算每一步的「已经过格子」集合（从起点回放）
+function computeVisited(upTo){
+  const set = new Set();
+  for (let i=0;i<=upTo;i++){
+    const s = RAW[i];
+    if (s.kind==='init' || s.kind==='move') set.add(s.x+'_'+s.y);
+  }
+  return set;
+}
+
+let cur = 0, timer = null;
+const $ = (id) => document.getElementById(id);
+
+function renderCode(line){
+  $('code').innerHTML = CODE.map((l,i)=>
+    '<span class="ln'+(i===line?' on':'')+'">'+l.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</span>').join('');
+}
+
+function renderMap(st){
+  const vis = computeVisited(cur);
+  let h = '';
+  for (let r=1;r<=N;r++) for (let c=1;c<=M;c++){
+    const wall = G[r][c]==='x';
+    const isCur = (st.x===r && st.y===c);
+    const isTry = st.try && st.try[0]===r && st.try[1]===c;
+    let cls = 'sq';
+    if (wall) cls += ' wall';
+    else if (isCur) cls += ' cur';
+    else if (vis.has(r+'_'+c)) cls += ' vis';
+    else cls += ' floor';
+    if (isTry) cls += ' try';
+    let mark = wall ? 'x' : (isCur ? ('<span style="font-size:18px">'+arrow(st.d)+'</span>') : (vis.has(r+'_'+c)?'·':''));
+    h += '<div class="'+cls+'"><span class="coord">'+r+','+c+'</span>'+mark+'</div>';
+  }
+  $('map').innerHTML = h;
+}
+function arrow(d){ return ['→','↓','←','↑'][d]; }
+
+function render(){
+  const st = RAW[cur];
+  renderCode(st.line);
+  renderMap(st);
+  $('vpos').textContent = '('+st.x+', '+st.y+')';
+  $('vdir').textContent = st.d + ' ' + DIR[st.d] + ' ' + arrow(st.d);
+  $('vcnt').textContent = st.cnt;
+  $('bar').style.width = (st.cnt/25*100) + '%';
+  $('ansline').innerHTML = st.final ? '20 步后共经过 <b>13</b> 个格子 <span style="color:var(--ok)">✓</span>'
+    : '第 '+(cur)+' / 20 步';
+  $('note').innerHTML = st.text;
+  $('prog').textContent = (cur+1)+' / '+RAW.length;
+  $('prev').disabled = (cur===0);
+  $('next').disabled = (cur===RAW.length-1);
+}
+
+function stopPlay(){ if(timer){clearInterval(timer);timer=null;$('play').textContent='自动播放';} }
+$('prev').onclick = () => { stopPlay(); if(cur>0){--cur;render();} };
+$('next').onclick = () => { stopPlay(); if(cur<RAW.length-1){++cur;render();} };
+$('last').onclick = () => { stopPlay(); cur=RAW.length-1; render(); };
+$('reset').onclick = () => { stopPlay(); cur=0; render(); };
+$('play').onclick = () => {
+  if(timer){stopPlay();return;}
+  $('play').textContent='暂停';
+  timer=setInterval(()=>{ if(cur<RAW.length-1){++cur;render();} else stopPlay(); },1100);
+};
+
+if (typeof window !== 'undefined') render();
+</script>
+</body>
+</html>

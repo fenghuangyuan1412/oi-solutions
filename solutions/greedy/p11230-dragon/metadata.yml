@@ -1,0 +1,16 @@
+id: P11230
+title: "[CSP-J 2024] 接龙"
+source: luogu
+url: https://www.luogu.com.cn/problem/P11230
+topics: [greedy, graph/reachability, search/memo]
+difficulty: 普及+/提高
+complexity:
+  time: 小档 O(q · 状态数)；r=1 档 O(sum l + q)   # 满档需正解分层 BFS，本目录不实现
+  space: O(sum l · min(k,l))                       # 建 reach 表
+status: 未本地评测（洛谷提交需登录）；本地 g++ -static -O2 -std=c++14 编译，官方样例输出 1 0 1 0 1 0 0 逐字正确；r=1 档(n=1e5,q=1e3)实测 0.28 s，n<=10/r<=5 档 0.04 s，性质A n=1000/r<=10 档 0.05 s；满档(n=1e5,q=1e5,r<=100)实测 20 s 后被 timeout 终止(exit 124)，本目录不实现正解
+visualization: false
+notes: >
+  主线是按 problem.txt 的数据范围表拿部分分：测试点1(r=1)约束全消，查一轮可达表 canOne 即 O(1)；
+  测试点2,3 及性质A/B/C 小数据用记忆化 DFS 精确枚举 (第几轮,起始值,上一个人)，"相邻两轮不同人"是核心限制；
+  满档 n=r=q=1e5/100 需把"上一个人"压进按轮分层 BFS(官方 O(r·sum l))，实现代价高故不写正解。
+  易错点均有实测：漏"相邻不同人"→ 1 0 1 1 1 0 0；漏"长度>=2"→ 1 0 1 1 1 1 0；漏"第一轮从1开头"→ 1 1 1 0 1 1 0。

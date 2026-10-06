@@ -1,0 +1,18 @@
+id: P11232
+title: "[CSP-S 2024] 超速检测"
+source: luogu
+url: https://www.luogu.com.cn/problem/P11232
+topics: [greedy/interval-stabbing, binary-search, math]
+difficulty: 普及+/提高
+complexity:
+  time: O((n+m) log (n+m))   # 每测试数据：排序 + 每车两次二分 + 区间排序
+  space: O(n+m)
+status: 未本地评测（洛谷提交需登录）；本地 g++ -static -O2 -std=c++14 编译，官方样例输出 3 3 逐字正确；正解与 O(nm) 暴力版随机对拍 300 组 0 不一致；n=m=1e5 单组实测约 0.30 s（含进程启动），暴力版同档 7.86 s 超 2000ms 时限
+visualization: false
+verify: verify.js   # 正解 vs 暴力对拍，仅用于验证，非讲解代码
+notes: >
+  核心两条：(1) 判超速用整数速度平方 g(x)=v^2+2a(x-d) 与 V^2 比，全程整数避开浮点精度；
+  (2) 每辆超速车对应排序后测速仪的一段连续下标区间，第二问=区间打点贪心（按右端点排序，
+  遇未覆盖就钉右端点），最多关闭 = m - 最少保留。分档：n,m<=10 与 n,m<=3000 走 O(nm) 暴力；
+  n=m=1e5 需排序+二分降到 O(n log m)。特殊性质 C（a_i<0 且不在最北端驶离）可只写前缀分支。
+  problem.txt 的分值表与特殊性质 A/B 定义在抓取时截断，本目录分档仅依据题面可见的 n,m 约束。

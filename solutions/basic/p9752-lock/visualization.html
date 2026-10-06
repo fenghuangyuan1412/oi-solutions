@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P9752 密码锁 · 把"转一次"翻译成差值</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --ink:#e8ecff; --dim:#8b93b5; --acc:#5eead4; --warn:#f87171; --ok:#86efac; --fresh:#c084fc; --mid:#fbbf24; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:22px; background:var(--bg); color:var(--ink);
+         font:15px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:12px; }
+  .sub b { color:var(--ink); }
+  .card { background:var(--card); border:1px solid #262c4a; border-radius:12px; padding:14px 16px; margin-bottom:12px; }
+  .card h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 10px; }
+  button { background:#2b3358; color:var(--ink); border:1px solid #3d4778; border-radius:8px;
+           padding:7px 13px; font-size:14px; cursor:pointer; margin-right:6px; }
+  button:hover:not(:disabled) { background:#394373; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  .topbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .prog { color:var(--acc); font-size:14px; margin-left:auto; font-weight:700; }
+  .wrap { display:flex; gap:12px; flex-wrap:wrap; }
+  .wrap > div { flex:1; min-width:340px; }
+  pre.code { margin:0; font:13px/1.75 Consolas,monospace; }
+  pre.code .ln { display:block; padding:0 8px; border-left:3px solid transparent; white-space:pre; }
+  pre.code .ln.on { background:#173a4a; border-left-color:var(--acc); color:var(--acc); }
+  .note { font-size:14px; min-height:110px; }
+  .note b { color:var(--acc); } .note .bad { color:var(--warn); } .note .good { color:var(--ok); }
+  .note .mid { color:var(--mid); } .note .pu { color:var(--fresh); }
+  svg.dials { width:100%; height:230px; display:block; }
+  .row { font:14px Consolas,monospace; margin:5px 0; }
+  .row .lbl { color:var(--dim); display:inline-block; width:96px; }
+  .row .val { color:var(--acc); font-weight:700; }
+  .row .val.bad { color:var(--warn); } .row .val.ok { color:var(--ok); }
+  .ans { margin-top:8px; text-align:center; font:15px Consolas,monospace; color:var(--dim); }
+  .ans b { color:var(--ok); font-size:22px; }
+  table.state { width:100%; border-collapse:collapse; font:13px Consolas,monospace; }
+  table.state th, table.state td { border-bottom:1px solid #262c4a; padding:3px 6px; text-align:center; }
+  table.state th { color:var(--dim); font-weight:600; }
+  .bar { height:16px; background:#232a4a; border-radius:8px; overflow:hidden; margin:3px 0 8px; }
+  .bar i { display:block; height:100%; background:var(--acc); }
+  .bar.double i { background:var(--fresh); }
+  .barlbl { font:13px Consolas,monospace; color:var(--dim); }
+  .barlbl b { color:var(--ink); }
+</style>
+</head>
+<body>
+<h1>P9752 [CSP-S 2023] 密码锁</h1>
+<div class="sub">官方样例：观测状态 <b>0 0 1 1 5</b>（<b>n = 1</b>），答案 <b>81</b>。规则只有两条：<b>转一个拨圈</b>（幅度 1~9）或 <b>同时转相邻两个拨圈且幅度相同</b>。逐个候选密码算"差值"即可判定。</div>
+
+<div class="topbar">
+  <button id="prev">← 上一步</button>
+  <button id="next">下一步 →</button>
+  <button id="play">自动播放</button>
+  <button id="last">跳到结尾</button>
+  <button id="reset">重置</button>
+  <span class="prog" id="prog"></span>
+</div>
+
+<div class="wrap">
+  <div>
+    <div class="card">
+      <h2>拨圈与差值（观测状态 S − 候选 P，按模 10）</h2>
+      <svg class="dials" id="dials" viewBox="0 0 560 230"></svg>
+      <div class="row"><span class="lbl">nz</span><span class="val" id="vnz"></span></div>
+      <div class="row"><span class="lbl">非零位置</span><span class="val" id="vpos"></span></div>
+      <div class="row"><span class="lbl">判定</span><span class="val" id="vver"></span></div>
+      <div class="row"><span class="lbl">ans</span><span class="val" id="vans"></span></div>
+    </div>
+    <div class="card">
+      <h2>81 是怎么凑出来的</h2>
+      <div class="barlbl">单拨圈前像 <b id="b1"></b> ／ 5 个位置 × 9 种幅度</div>
+      <div class="bar"><i id="f1"></i></div>
+      <div class="barlbl">相邻双拨圈前像 <b id="b2"></b> ／ 4 对相邻 × 9 种幅度</div>
+      <div class="bar double"><i id="f2"></i></div>
+      <div class="ans" id="ansline"></div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>讲解代码（reachable 判定 + 外层枚举）</h2>
+      <pre class="code" id="code"></pre>
+    </div>
+    <div class="card">
+      <h2>这一步在做什么</h2>
+      <div class="note" id="note"></div>
+    </div>
+    <div class="card">
+      <h2>候选密码一览（本机脚本实测分类）</h2>
+      <table class="state" id="tbl"></table>
+    </div>
+  </div>
+</div>
+
+<script>
+const S = [0, 0, 1, 1, 5];                      // 官方样例的观测状态
+// reachable() 里每一行（下标用于高亮）
+const CODE = [
+  'for (int i = 1; i <= 5; ++i) {',                              // 0
+  '    dif[i] = (s[i] - p[i] + 10) % 10;',                       // 1
+  '    if (dif[i] != 0) pos[nz++] = i;',                         // 2
+  '}',                                                           // 3
+  'if (nz == 0) return false;   // 状态就是密码',                 // 4
+  'if (nz == 1) return true;    // 只转一个拨圈',                  // 5
+  'if (nz == 2 && pos[1] == pos[0] + 1 &&',                      // 6
+  '    dif[pos[0]] == dif[pos[1]]) return true;  // 相邻同幅度',    // 7
+  'return false;                  // 其余形状一律非法',            // 8
+  'if (ok) ++ans;   // 外层：枚举 00000~99999'                    // 9
+];
+const ROWS = [
+  ['0 0 1 1 5', '0 0 0 0 0', '—',        '非法'],
+  ['0 0 1 1 4', '0 0 0 0 1', '5',        '单圈'],
+  ['1 0 1 1 5', '9 0 0 0 0', '1',        '单圈'],
+  ['9 9 1 1 5', '1 1 0 0 0', '1,2',      '双圈'],
+  ['9 8 1 1 5', '1 2 0 0 0', '1,2',      '非法'],
+  ['9 0 1 1 4', '1 0 0 0 1', '1,5',      '非法'],
+  ['5 5 5 5 5', '5 5 6 6 0', '1,2,3,4',  '非法']
+];
+
+function mk(cand, dif, pos, nz, ver, line, ans, s1, s2, text, summary) {
+  return { cand, dif, pos, nz, ver, line, ans, s1, s2, text, summary: !!summary };
+}
+const STEPS = [
+  mk('— — — — —', '— — — — —', '—', '—', '还没开始', 9, 0, 0, 0,
+     '主循环：<code>for (int x = 0; x < 100000; ++x)</code> —— 把 <code>00000~99999</code> 全试一遍。<br>密码一共只有 10 万个，<b>枚举本身就是正解</b>。'),
+  mk('0 0 1 1 5', '0 0 0 0 0', '无', '0', '❌ 状态就是密码', 4, 0, 0, 0,
+     '第一个候选就是观测状态本身：差值全 0，意味着"一次都没转"。<br>题面写明<b>"这 n 个状态都不是正确密码"</b> ⇒ 判 <span class="bad">非法</span>。<span class="mid">漏掉这一条，样例就会输出 82 而不是 81。</span>'),
+  mk('0 0 1 1 4', '0 0 0 0 1', '5', '1', '✅ 单圈可达', 5, 1, 1, 0,
+     '差值只有第 5 位非零 ⇒ 只转了一个拨圈，合法。<br>这就是那 <b>45</b> 个单圈前像里的一个：5 个位置 × 9 种幅度。'),
+  mk('1 0 1 1 5', '9 0 0 0 0', '1', '1', '✅ 单圈可达', 1, 2, 2, 0,
+     '第 1 圈差值是 <code>9</code>。因为拨圈是 <b>0~9 循环</b>的，"向前 9 格"和"向后 1 格"是同一个动作，<br>所以 <code>(s[i]-p[i]+10)%10</code> 一次就把两个方向都覆盖了。'),
+  mk('9 9 1 1 5', '1 1 0 0 0', '1,2', '2', '✅ 双圈可达', 7, 3, 2, 1,
+     '两位非零、位置 <code>1</code> 与 <code>2</code> 相邻、差值都是 <code>1</code> ⇒ "相邻两圈同幅度"成立。<br>这属于另外 <b>36</b> 个前像：4 对相邻 × 9 种幅度。'),
+  mk('9 8 1 1 5', '1 2 0 0 0', '1,2', '2', '❌ 幅度不同', 8, 3, 2, 1,
+     '位置相邻，但差值是 1 和 2 —— 题面原话：<b>"不会转成 1 2 1 1 5"</b>。<br><span class="bad">只判相邻、不判同幅度</span>的话，样例答案会从 81 变成 369。'),
+  mk('9 0 1 1 4', '1 0 0 0 1', '1,5', '2', '❌ 不相邻', 8, 3, 2, 1,
+     '差值相同（都是 1），但动的第 1 圈和第 5 圈<b>不相邻</b> ⇒ 一次操作做不到。<br><span class="bad">漏掉相邻条件</span>，样例输出会变成 135。'),
+  mk('5 5 5 5 5', '5 5 6 6 0', '1,2,3,4', '4', '❌ 动了四个圈', 8, 3, 2, 1,
+     '非零位数 &gt; 2，一次只能动 1 个或相邻 2 个 ⇒ 非法，<code>return false</code> 兜住所有剩下的形状。'),
+  mk('— — — — —', '5×9 = 45', '单圈', '45', '数完了第一类', 9, 45, 45, 0,
+     '把 10 万个候选都跑一遍，"恰好 1 位非零"的密码有多少个？<br>答：<b>45</b> —— 5 个位置各 9 种幅度，全都不同（本机脚本实测 45）。', true),
+  mk('— — — — —', '4×9 = 36', '双圈', '36', '数完了第二类', 9, 81, 45, 36,
+     '"恰好 2 位非零、相邻、同幅度"的密码有 <b>36</b> 个：4 对相邻各 9 种幅度。<br>单圈前像只改 1 位、双圈前像改 2 位 ⇒ 两类不会重合，可以直接相加。', true),
+  mk('— — — — —', '45 + 36 = 81', '全部', '81', '输出 81', 9, 81, 45, 36,
+     '<b>输出 81</b> —— 与官方样例逐字一致 ✓，也和题面"样例解释"里那句 <i>"转动一个拨圈的方案有 45 种，转动两个拨圈的方案有 36 种"</i> 完全对上。<br><span class="pu">骗分版只认单圈 → 只有 45；官方样例是 n=1，所以要先特判输出 81。</span>', true)
+];
+STEPS[STEPS.length - 1].final = true;
+
+let cur = 0, timer = null;
+const $ = (id) => document.getElementById(id);
+
+function renderCode(active) {
+  $('code').innerHTML = CODE.map((l, i) =>
+    '<span class="ln' + (i === active ? ' on' : '') + '">' +
+    l.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</span>').join('');
+}
+
+function renderDials(st) {
+  const Y0 = 55, Y1 = 145, X0 = 60, GAP = 105;
+  const tokens = st.dif.split(' ');
+  const summary = st.summary;                            // 最后三步是"数总量"，不针对某个候选
+  const cand = st.cand.split(' ').map(x => (x === '—' ? null : Number(x)));
+  let h = '';
+  h += '<text x="14" y="' + (Y0 + 6) + '" fill="#8b93b5" style="font:12px Consolas">S</text>';
+  h += '<text x="14" y="' + (Y1 + 6) + '" fill="#8b93b5" style="font:12px Consolas">P</text>';
+  for (let i = 0; i < 5; ++i) {
+    const x = X0 + GAP * i;
+    const d = summary ? '—' : tokens[i];
+    const bad = !summary && d !== '0';
+    const invalid = st.ver.indexOf('❌') >= 0;
+    const col = d === '—' ? '#5a6389' : (bad ? (invalid ? '#f87171' : '#86efac') : '#5a6389');
+    // 观测状态圈
+    h += '<circle cx="' + x + '" cy="' + Y0 + '" r="26" fill="#232a4a" stroke="#5a6389" stroke-width="2"/>';
+    h += '<text x="' + x + '" y="' + (Y0 + 7) + '" text-anchor="middle" fill="#e8ecff" style="font:16px Consolas">' + S[i] + '</text>';
+    h += '<text x="' + x + '" y="' + (Y0 - 34) + '" text-anchor="middle" fill="#8b93b5" style="font:11px Consolas">第' + (i + 1) + '圈</text>';
+    // 差值
+    h += '<line x1="' + x + '" y1="' + (Y0 + 26) + '" x2="' + x + '" y2="' + (Y1 - 26) + '" stroke="' + col + '" stroke-width="' + (bad ? 3 : 1) + '" stroke-dasharray="' + (bad ? '0' : '4 4') + '"/>';
+    if (!summary) h += '<text x="' + (x + 14) + '" y="' + ((Y0 + Y1) / 2 + 6) + '" fill="' + col + '" style="font:14px Consolas">' + d + '</text>';
+    // 候选圈
+    const cv = (summary || cand[i] === null) ? '·' : cand[i];
+    h += '<circle cx="' + x + '" cy="' + Y1 + '" r="26" fill="' + (bad ? '#1c3b2a' : '#232a4a') + '" stroke="' + col + '" stroke-width="2"/>';
+    h += '<text x="' + x + '" y="' + (Y1 + 7) + '" text-anchor="middle" fill="#e8ecff" style="font:16px Consolas">' + cv + '</text>';
+  }
+  const bottom = summary ? ('合计：单圈 ' + st.s1 + ' + 相邻双圈 ' + st.s2 + ' = ' + (st.s1 + st.s2) + ' 个合法前像')
+                         : ('候选 P = ' + st.cand + '　→　nz = ' + st.nz + '　→　' + st.ver);
+  h += '<text x="' + X0 + '" y="200" fill="#8b93b5" style="font:12px Consolas">' + bottom + '</text>';
+  $('dials').innerHTML = h;
+}
+
+function renderBars(st) {
+  $('b1').textContent = st.s1;
+  $('b2').textContent = st.s2;
+  $('f1').style.width = Math.min(st.s1 / 45 * 100, 100) + '%';
+  $('f2').style.width = Math.min(st.s2 / 45 * 100, 100) + '%';
+  if (st.final) $('ansline').innerHTML = '总答案 <b>81</b> <span style="color:var(--ok)">✓ 与官方样例一致</span>';
+  else $('ansline').textContent = '（正在数合法前像）';
+}
+
+function renderTable(st) {
+  let h = '<tr><th>候选 P</th><th>dif</th><th>非零位置</th><th>判定</th></tr>';
+  const hit = ROWS.findIndex(r => r[0] === st.cand);
+  h += ROWS.map((r, i) => {
+    const on = i === hit;
+    const c = r[3] === '非法' ? 'var(--warn)' : 'var(--ok)';
+    return '<tr' + (on ? ' style="background:#173a4a"' : '') + '><td>' + r[0] + '</td><td>' + r[1] +
+      '</td><td>' + r[2] + '</td><td style="color:' + c + '">' + r[3] + '</td></tr>';
+  }).join('');
+  $('tbl').innerHTML = h;
+}
+
+function render() {
+  const st = STEPS[cur];
+  renderCode(st.line);
+  renderDials(st);
+  renderBars(st);
+  renderTable(st);
+  $('vnz').textContent = st.nz;
+  $('vpos').textContent = st.pos;
+  $('vver').textContent = st.ver;
+  $('vver').className = 'val ' + (st.ver.indexOf('❌') >= 0 ? 'bad' : (st.ver.indexOf('✅') >= 0 ? 'ok' : ''));
+  $('vans').textContent = st.ans;
+  $('note').innerHTML = st.text;
+  $('prog').textContent = (cur + 1) + ' / ' + STEPS.length;
+  $('prev').disabled = (cur === 0);
+  $('next').disabled = (cur === STEPS.length - 1);
+}
+
+function stopPlay() { if (timer) { clearInterval(timer); timer = null; $('play').textContent = '自动播放'; } }
+$('prev').onclick = () => { stopPlay(); if (cur > 0) { --cur; render(); } };
+$('next').onclick = () => { stopPlay(); if (cur < STEPS.length - 1) { ++cur; render(); } };
+$('last').onclick = () => { stopPlay(); cur = STEPS.length - 1; render(); };
+$('reset').onclick = () => { stopPlay(); cur = 0; render(); };
+$('play').onclick = () => {
+  if (timer) { stopPlay(); return; }
+  $('play').textContent = '暂停';
+  timer = setInterval(() => { if (cur < STEPS.length - 1) { ++cur; render(); } else stopPlay(); }, 1500);
+};
+
+render();
+</script>
+</body>
+</html>

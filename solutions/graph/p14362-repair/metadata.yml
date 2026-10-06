@@ -1,0 +1,20 @@
+id: P14362
+title: "[CSP-S 2025] 道路修复"
+source: luogu
+url: https://www.luogu.com.cn/problem/P14362
+topics: [graph/mst, graph/subset-enumeration]
+difficulty: 提高（洛谷 difficulty=5）
+complexity:
+  time: O(m log m + 2^k · (m + k·n))（k<=5 精确枚举档）；性质 A：O(m log m + k·n log(k·n)) 一次 Kruskal
+  space: O(m + k·n)
+status: 未本地评测（洛谷提交需登录）；官方样例输出 13 逐字正确；与自写"枚举乡镇子集×枚举边子集"暴力在 60 组随机小数据 0 不一致。本目录为骗分版，k=10 无性质档未实现正解
+visualization: false
+notes: >
+  固定乡镇子集 S 后答案 = sum c_j + MST(n+|S| 个点全连通)，min over S 即全局最优（两边夹证明见 README）。
+  三条精确路径：k=0 裸 Kruskal（1~4，实测 181ms）；性质 A（c_j=0 且带 0 边）全乡镇一次 Kruskal（13,14 实测 186ms）；
+  k<=5 全枚举 2^k（5~12、17~20，最重档 n=1e4 m=1e6 实测 422ms，另一批 506ms）。k=10 无性质（15,16、21~25 共 28 分）
+  全枚举实测跑完 7689ms（n=1e3）/13821ms（n=1e4），远超 2000ms 时限，放弃；兜底只试空集+单乡镇+全集，
+  自造数据上给出上界 422461152 vs 全枚举最优 418826792，不保证正确。可拿约 72 分。
+  必须 fread 快读：scanf 读 20MB 实测约 1.1s（探针 1211ms 其中 sort 仅 59ms）。
+  易错点全部实测：忘加 c_j（样例 10）、int 累加（样例查不出，极限数据 -78423533）、乡镇编号撞城市（样例 12）、
+  DSU 漏初始化乡镇节点（样例查不出，自造数据 3 / 41317296898）、子集枚举不全（样例查不出，自造数据 57 vs 真值 9）。
